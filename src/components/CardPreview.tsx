@@ -20,11 +20,148 @@ export const CardPreview = ({ card, onClose }: CardPreviewProps) => {
             <head>
               <title>Card ${card.name}</title>
               <style>
-                body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
-                .card { width: 10cm; height: 7cm; }
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                body { 
+                  margin: 0; 
+                  padding: 20px; 
+                  font-family: Arial, sans-serif; 
+                  background: white;
+                }
+                .card-container { 
+                  width: 10cm; 
+                  height: 7cm; 
+                  position: relative;
+                  border: 2px solid #000;
+                  border-radius: 8px;
+                  overflow: hidden;
+                  background-size: cover;
+                  background-position: center;
+                  background-repeat: no-repeat;
+                }
+                .card-overlay { 
+                  position: absolute; 
+                  inset: 0; 
+                  background: rgba(0,0,0,0.2); 
+                }
+                .card-content { 
+                  position: relative; 
+                  height: 100%; 
+                  padding: 8px; 
+                  display: flex; 
+                  flex-direction: column; 
+                  color: #000; 
+                }
+                .card-header { 
+                  display: flex; 
+                  justify-content: space-between; 
+                  align-items: flex-start; 
+                  margin-bottom: 4px; 
+                }
+                .card-title { 
+                  background: rgba(255,255,255,0.9); 
+                  padding: 4px 8px; 
+                  border-radius: 4px; 
+                  font-size: 12px; 
+                  font-weight: bold; 
+                  max-width: 60%; 
+                  white-space: nowrap; 
+                  overflow: hidden; 
+                  text-overflow: ellipsis; 
+                }
+                .total-force { 
+                  background: rgba(255,255,255,0.9); 
+                  padding: 4px 8px; 
+                  border-radius: 4px; 
+                  text-align: center; 
+                }
+                .total-force-label { font-size: 8px; font-weight: normal; }
+                .total-force-value { font-size: 16px; font-weight: bold; }
+                .card-main { 
+                  display: flex; 
+                  flex: 1; 
+                  gap: 8px; 
+                }
+                .attributes-sidebar { 
+                  background: rgba(255,255,255,0.9); 
+                  border-radius: 4px; 
+                  padding: 4px; 
+                  width: 48px; 
+                }
+                .attribute-item { 
+                  text-align: center; 
+                  padding: 2px 0; 
+                  border-bottom: 1px solid #ccc; 
+                }
+                .attribute-item:last-child { border-bottom: none; }
+                .attribute-label { font-size: 8px; font-weight: bold; }
+                .attribute-value { font-size: 12px; font-weight: bold; }
+                .center-content { 
+                  flex: 1; 
+                  display: flex; 
+                  flex-direction: column; 
+                }
+                .abilities-section { 
+                  background: rgba(255,255,255,0.9); 
+                  border-radius: 4px; 
+                  padding: 4px; 
+                  margin-bottom: 8px; 
+                }
+                .abilities-title { font-size: 8px; font-weight: bold; margin-bottom: 4px; }
+                .ability-item { font-size: 8px; margin-bottom: 2px; }
+                .postures-sidebar { 
+                  background: rgba(255,255,255,0.9); 
+                  border-radius: 4px; 
+                  padding: 4px; 
+                  width: 64px; 
+                }
+                .postures-title { 
+                  font-size: 8px; 
+                  font-weight: bold; 
+                  text-align: center; 
+                  margin-bottom: 4px; 
+                }
+                .posture-item { 
+                  border: 1px solid #000; 
+                  border-radius: 2px; 
+                  padding: 2px; 
+                  font-size: 7px; 
+                  text-align: center; 
+                  margin-bottom: 2px; 
+                }
+                .damage-section { 
+                  margin-top: 8px; 
+                }
+                .damage-markers { 
+                  background: rgba(255,255,255,0.9); 
+                  border-radius: 4px; 
+                  padding: 4px; 
+                  display: flex; 
+                  justify-content: space-between; 
+                  align-items: center; 
+                }
+                .damage-label { font-size: 8px; font-weight: bold; }
+                .damage-circles { display: flex; gap: 2px; }
+                .damage-circle { 
+                  width: 12px; 
+                  height: 12px; 
+                  border: 1px solid #000; 
+                  border-radius: 50%; 
+                }
+                .pressure-circle { border-color: #dc2626; }
+                .permanent-circle { border-color: #000; }
+                .experience-badge { 
+                  position: absolute; 
+                  bottom: 4px; 
+                  left: 4px; 
+                  background: rgba(255,255,255,0.9); 
+                  border: 1px solid #000; 
+                  border-radius: 4px; 
+                  padding: 2px 4px; 
+                  font-size: 8px; 
+                }
                 @media print {
                   body { margin: 0; padding: 0; }
-                  .card { width: 10cm; height: 7cm; page-break-after: always; }
+                  .card-container { page-break-after: always; }
                 }
               </style>
             </head>
@@ -71,68 +208,70 @@ export const CardPreview = ({ card, onClose }: CardPreviewProps) => {
         <div className="flex justify-center">
           <div 
             id="printable-card"
-            className="relative bg-white border-2 border-gray-800 rounded-lg shadow-lg"
+            className="card-container"
             style={{
               width: '10cm',
               height: '7cm',
-              backgroundImage: card.backgroundImage ? `url(${card.backgroundImage})` : 'none',
+              position: 'relative',
+              border: '2px solid #000',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              backgroundImage: card.backgroundImage ? `url(${card.backgroundImage})` : 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat'
             }}
           >
             {/* Overlay para melhor legibilidade */}
-            <div className="absolute inset-0 bg-black/20 rounded-lg"></div>
+            <div className="card-overlay" style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)' }}></div>
             
             {/* Conteúdo do card */}
-            <div className="relative h-full p-2 flex flex-col text-black">
+            <div className="card-content" style={{ position: 'relative', height: '100%', padding: '8px', display: 'flex', flexDirection: 'column', color: '#000' }}>
               {/* Header */}
-              <div className="flex justify-between items-start mb-1">
-                <h2 className="text-sm font-bold bg-white/90 px-2 py-1 rounded shadow max-w-[60%] truncate">
+              <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                <div className="card-title" style={{ background: 'rgba(255,255,255,0.9)', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', maxWidth: '60%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {card.name}
-                </h2>
-                <div className="bg-white/90 px-2 py-1 rounded shadow text-center">
-                  <div className="text-xs font-medium">Força</div>
-                  <div className="text-lg font-bold">{card.totalForce}</div>
+                </div>
+                <div className="total-force" style={{ background: 'rgba(255,255,255,0.9)', padding: '4px 8px', borderRadius: '4px', textAlign: 'center' }}>
+                  <div className="total-force-label" style={{ fontSize: '8px', fontWeight: 'normal' }}>Força</div>
+                  <div className="total-force-value" style={{ fontSize: '16px', fontWeight: 'bold' }}>{card.totalForce}</div>
                 </div>
               </div>
 
               {/* Main content area */}
-              <div className="flex flex-1 gap-2">
+              <div className="card-main" style={{ display: 'flex', flex: 1, gap: '8px' }}>
                 {/* Left sidebar - Attributes */}
-                <div className="bg-white/90 rounded shadow p-1 w-12">
-                  <div className="space-y-1 text-center">
-                    <div className="border-b pb-1">
-                      <div className="text-xs font-bold">AT</div>
-                      <div className="text-sm font-bold">{card.attack}</div>
-                    </div>
-                    <div className="border-b pb-1">
-                      <div className="text-xs font-bold">DEF</div>
-                      <div className="text-sm font-bold">{card.defense}</div>
-                    </div>
-                    <div className="border-b pb-1">
-                      <div className="text-xs font-bold">TIR</div>
-                      <div className="text-sm font-bold">{card.ranged}</div>
-                    </div>
-                    <div className="border-b pb-1">
-                      <div className="text-xs font-bold">MOV</div>
-                      <div className="text-sm font-bold">{card.movement}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold">MOR</div>
-                      <div className="text-sm font-bold">{card.morale}</div>
-                    </div>
+                <div className="attributes-sidebar" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '4px', padding: '4px', width: '48px' }}>
+                  <div className="attribute-item" style={{ textAlign: 'center', padding: '2px 0', borderBottom: '1px solid #ccc' }}>
+                    <div className="attribute-label" style={{ fontSize: '8px', fontWeight: 'bold' }}>AT</div>
+                    <div className="attribute-value" style={{ fontSize: '12px', fontWeight: 'bold' }}>{card.attack}</div>
+                  </div>
+                  <div className="attribute-item" style={{ textAlign: 'center', padding: '2px 0', borderBottom: '1px solid #ccc' }}>
+                    <div className="attribute-label" style={{ fontSize: '8px', fontWeight: 'bold' }}>DEF</div>
+                    <div className="attribute-value" style={{ fontSize: '12px', fontWeight: 'bold' }}>{card.defense}</div>
+                  </div>
+                  <div className="attribute-item" style={{ textAlign: 'center', padding: '2px 0', borderBottom: '1px solid #ccc' }}>
+                    <div className="attribute-label" style={{ fontSize: '8px', fontWeight: 'bold' }}>TIR</div>
+                    <div className="attribute-value" style={{ fontSize: '12px', fontWeight: 'bold' }}>{card.ranged}</div>
+                  </div>
+                  <div className="attribute-item" style={{ textAlign: 'center', padding: '2px 0', borderBottom: '1px solid #ccc' }}>
+                    <div className="attribute-label" style={{ fontSize: '8px', fontWeight: 'bold' }}>MOV</div>
+                    <div className="attribute-value" style={{ fontSize: '12px', fontWeight: 'bold' }}>{card.movement}</div>
+                  </div>
+                  <div className="attribute-item" style={{ textAlign: 'center', padding: '2px 0' }}>
+                    <div className="attribute-label" style={{ fontSize: '8px', fontWeight: 'bold' }}>MOR</div>
+                    <div className="attribute-value" style={{ fontSize: '12px', fontWeight: 'bold' }}>{card.morale}</div>
                   </div>
                 </div>
 
                 {/* Center - Special abilities and image space */}
-                <div className="flex-1 flex flex-col">
+                <div className="center-content" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   {card.specialAbilities.length > 0 && (
-                    <div className="bg-white/90 rounded shadow p-1 mb-2">
-                      <div className="text-xs font-bold mb-1">Habilidades:</div>
-                      <div className="space-y-1">
-                        {card.specialAbilities.map((ability, index) => (
-                          <div key={ability.id} className="text-xs">
+                    <div className="abilities-section" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '4px', padding: '4px', marginBottom: '8px' }}>
+                      <div className="abilities-title" style={{ fontSize: '8px', fontWeight: 'bold', marginBottom: '4px' }}>Habilidades:</div>
+                      <div>
+                        {card.specialAbilities.map((ability) => (
+                          <div key={ability.id} className="ability-item" style={{ fontSize: '8px', marginBottom: '2px' }}>
                             • {ability.name}
                           </div>
                         ))}
@@ -141,46 +280,42 @@ export const CardPreview = ({ card, onClose }: CardPreviewProps) => {
                   )}
                   
                   {/* Spacer for center image area */}
-                  <div className="flex-1"></div>
+                  <div style={{ flex: 1 }}></div>
                 </div>
 
                 {/* Right sidebar - Postures */}
-                <div className="bg-white/90 rounded shadow p-1 w-16">
-                  <div className="text-xs font-bold text-center mb-1">Posturas</div>
-                  <div className="space-y-1 text-xs text-center">
-                    <div className="border rounded p-1">Ofensiva</div>
-                    <div className="border rounded p-1">Defensiva</div>
-                    <div className="border rounded p-1">Carga</div>
-                    <div className="border rounded p-1">Reorganização</div>
+                <div className="postures-sidebar" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '4px', padding: '4px', width: '64px' }}>
+                  <div className="postures-title" style={{ fontSize: '8px', fontWeight: 'bold', textAlign: 'center', marginBottom: '4px' }}>Posturas</div>
+                  <div>
+                    <div className="posture-item" style={{ border: '1px solid #000', borderRadius: '2px', padding: '2px', fontSize: '7px', textAlign: 'center', marginBottom: '2px' }}>Ofensiva</div>
+                    <div className="posture-item" style={{ border: '1px solid #000', borderRadius: '2px', padding: '2px', fontSize: '7px', textAlign: 'center', marginBottom: '2px' }}>Defensiva</div>
+                    <div className="posture-item" style={{ border: '1px solid #000', borderRadius: '2px', padding: '2px', fontSize: '7px', textAlign: 'center', marginBottom: '2px' }}>Carga</div>
+                    <div className="posture-item" style={{ border: '1px solid #000', borderRadius: '2px', padding: '2px', fontSize: '7px', textAlign: 'center' }}>Reorganização</div>
                   </div>
                 </div>
               </div>
 
               {/* Bottom - Damage markers */}
-              <div className="mt-2">
-                <div className="bg-white/90 rounded shadow p-1">
-                  <div className="flex justify-between items-center">
-                    <div className="text-xs font-bold">Pressão:</div>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map(i => (
-                        <div key={i} className="w-3 h-3 border border-red-500 rounded-full"></div>
-                      ))}
-                    </div>
-                    <div className="text-xs font-bold">Perm:</div>
-                    <div className="flex gap-1">
-                      {[1, 2].map(i => (
-                        <div key={i} className="w-3 h-3 border border-black rounded-full"></div>
-                      ))}
-                    </div>
+              <div className="damage-section" style={{ marginTop: '8px' }}>
+                <div className="damage-markers" style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '4px', padding: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="damage-label" style={{ fontSize: '8px', fontWeight: 'bold' }}>Pressão:</div>
+                  <div className="damage-circles" style={{ display: 'flex', gap: '2px' }}>
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <div key={i} className="damage-circle pressure-circle" style={{ width: '12px', height: '12px', border: '1px solid #dc2626', borderRadius: '50%' }}></div>
+                    ))}
+                  </div>
+                  <div className="damage-label" style={{ fontSize: '8px', fontWeight: 'bold' }}>Perm:</div>
+                  <div className="damage-circles" style={{ display: 'flex', gap: '2px' }}>
+                    {[1, 2].map(i => (
+                      <div key={i} className="damage-circle permanent-circle" style={{ width: '12px', height: '12px', border: '1px solid #000', borderRadius: '50%' }}></div>
+                    ))}
                   </div>
                 </div>
               </div>
 
               {/* Experience level indicator */}
-              <div className="absolute bottom-1 left-1">
-                <Badge variant="outline" className="text-xs bg-white/90">
-                  {card.experience}
-                </Badge>
+              <div className="experience-badge" style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(255,255,255,0.9)', border: '1px solid #000', borderRadius: '4px', padding: '2px 4px', fontSize: '8px' }}>
+                {card.experience}
               </div>
             </div>
           </div>
