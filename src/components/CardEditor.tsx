@@ -52,6 +52,18 @@ export const CardEditor = ({ card, onSave, onCancel }: CardEditorProps) => {
     backgroundImage: card?.backgroundImage || '',
   });
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setFormData(prev => ({ ...prev, backgroundImage: result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const calculateTotalForce = () => {
     const baseForce = formData.attack + formData.defense + (formData.ranged * 0.5) + formData.morale;
     const abilityCost = formData.specialAbilities.reduce((sum, ability) => sum + ability.cost, 0);
@@ -145,14 +157,44 @@ export const CardEditor = ({ card, onSave, onCancel }: CardEditorProps) => {
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="backgroundImage">URL da Imagem de Fundo</Label>
-                  <Input
-                    id="backgroundImage"
-                    value={formData.backgroundImage}
-                    onChange={(e) => setFormData(prev => ({ ...prev, backgroundImage: e.target.value }))}
-                    placeholder="https://exemplo.com/imagem.jpg"
-                  />
+                <div className="space-y-2">
+                  <Label htmlFor="backgroundImage">Imagem de Fundo</Label>
+                  <div className="space-y-2">
+                    <Input
+                      id="backgroundImage"
+                      value={formData.backgroundImage}
+                      onChange={(e) => setFormData(prev => ({ ...prev, backgroundImage: e.target.value }))}
+                      placeholder="Cole a URL da imagem aqui"
+                    />
+                    <div className="text-center text-sm text-muted-foreground">ou</div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="flex-1"
+                      />
+                      {formData.backgroundImage && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setFormData(prev => ({ ...prev, backgroundImage: '' }))}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    {formData.backgroundImage && (
+                      <div className="mt-2">
+                        <div className="text-sm font-medium mb-1">Preview:</div>
+                        <div 
+                          className="w-full h-20 bg-cover bg-center rounded border"
+                          style={{ backgroundImage: `url(${formData.backgroundImage})` }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
