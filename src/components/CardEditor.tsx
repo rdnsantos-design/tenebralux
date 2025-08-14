@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Plus, X } from "lucide-react";
+import { ArrowLeft, Save, Plus, X, Upload, Wand2 } from "lucide-react";
 import { UnitCard, ExperienceLevel, SpecialAbility } from "@/types/UnitCard";
+import { resizeImageForCard, processImageForCard } from "@/utils/imageProcessing";
+import { toast } from "sonner";
 
 interface CardEditorProps {
   card?: UnitCard | null;
@@ -37,6 +39,7 @@ const experienceLimits = {
 };
 
 export const CardEditor = ({ card, onSave, onCancel }: CardEditorProps) => {
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [formData, setFormData] = useState<UnitCard>({
     id: card?.id || '',
     name: card?.name || '',
@@ -52,15 +55,52 @@ export const CardEditor = ({ card, onSave, onCancel }: CardEditorProps) => {
     backgroundImage: card?.backgroundImage || '',
   });
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setFormData(prev => ({ ...prev, backgroundImage: result }));
-      };
-      reader.readAsDataURL(file);
+      setIsProcessingImage(true);
+      toast("Processando imagem...");
+      
+      try {
+        const processedImage = await resizeImageForCard(file);
+        setFormData(prev => ({ ...prev, backgroundImage: processedImage }));
+        toast("Imagem processada e redimensionada automaticamente!");
+      } catch (error) {
+        console.error('Error processing image:', error);
+        toast("Erro ao processar imagem. Usando imagem original.");
+        
+        // Fallback to original method
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          setFormData(prev => ({ ...prev, backgroundImage: result }));
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsProcessingImage(false);
+      }
+    }
+  };
+
+  const handleAdvancedImageProcessing = async (file: File, removeBackground: boolean) => {
+    setIsProcessingImage(true);
+    toast(removeBackground ? "Removendo fundo da imagem..." : "Processando imagem...");
+    
+    try {
+      const processedImage = await processImageForCard(file, {
+        width: 378,
+        height: 265,
+        fit: 'cover',
+        removeBackground
+      });
+      setFormData(prev => ({ ...prev, backgroundImage: processedImage }));
+      toast(removeBackground ? "Fundo removido com sucesso!" : "Imagem processada!");
+    } catch (error) {
+      console.error('Error processing image:', error);
+      toast("Erro no processamento avançado. Tente novamente.");
+    } finally {
+      setIsProcessingImage(false);
     }
   };
 
@@ -162,29 +202,67 @@ export const CardEditor = ({ card, onSave, onCancel }: CardEditorProps) => {
                   <div className="space-y-2">
                     <Input
                       id="backgroundImage"
-                      value={formData.backgroundImage}
+                      value={typeof formData.backgroundImage === 'string' && formData.backgroundImage.startsWith('http') ? formData.backgroundImage : ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, backgroundImage: e.target.value }))}
                       placeholder="Cole a URL da imagem aqui"
                     />
                     <div className="text-center text-sm text-muted-foreground">ou</div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="flex-1"
-                      />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="flex-1"
+                          disabled={isProcessingImage}
+                        />
+                        {formData.backgroundImage && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setFormData(prev => ({ ...prev, backgroundImage: '' }))}
+                            disabled={isProcessingImage}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {/* Advanced processing options */}
                       {formData.backgroundImage && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setFormData(prev => ({ ...prev, backgroundImage: '' }))}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = 'image/*';
+                              input.onchange = (e) => {
+                                const file = (e.target as HTMLInputElement).files?.[0];
+                                if (file) handleAdvancedImageProcessing(file, true);
+                              };
+                              input.click();
+                            }}
+                            disabled={isProcessingImage}
+                            className="flex-1"
+                          >
+                            <Wand2 className="w-4 h-4 mr-1" />
+                            Remover Fundo
+                          </Button>
+                        </div>
                       )}
                     </div>
+                    
+                    {isProcessingImage && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                        Processando imagem...
+                      </div>
+                    )}
+                    
                     {formData.backgroundImage && (
                       <div className="mt-2">
                         <div className="text-sm font-medium mb-1">Preview:</div>
@@ -192,6 +270,9 @@ export const CardEditor = ({ card, onSave, onCancel }: CardEditorProps) => {
                           className="w-full h-20 bg-cover bg-center rounded border"
                           style={{ backgroundImage: `url(${formData.backgroundImage})` }}
                         />
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Imagem será automaticamente ajustada para o tamanho do card (10x7cm)
+                        </div>
                       </div>
                     )}
                   </div>
