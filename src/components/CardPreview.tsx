@@ -36,7 +36,7 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                 }
                 .card-container {
                   display: inline-block !important;
-                  width: 9cm !important;
+                  width: 10cm !important;
                   height: 6.5cm !important;
                   max-width: none !important;
                   max-height: none !important;
@@ -44,7 +44,7 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                 }
                 .card-container img {
                   display: block !important;
-                  width: 9cm !important;
+                  width: 10cm !important;
                   height: 6.5cm !important;
                   max-width: none !important;
                   max-height: none !important;
