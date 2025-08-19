@@ -32,10 +32,13 @@ const Index = () => {
       try {
         const parsedTemplates = JSON.parse(savedTemplates);
         console.log('Templates parseados:', parsedTemplates);
+        console.log('Definindo templates no estado:', parsedTemplates);
         setTemplates(parsedTemplates);
       } catch (error) {
         console.error('Erro ao carregar templates:', error);
       }
+    } else {
+      console.log('Nenhum template encontrado no localStorage');
     }
     
     if (savedCards) {
