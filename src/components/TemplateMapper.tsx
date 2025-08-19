@@ -159,6 +159,18 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
       
       const newX = Math.max(0, Math.min(BASE_W - (field.width || 100), dragData.startX + deltaXPx));
       const newY = Math.max(0, Math.min(BASE_H - (field.height || 30), dragData.startY + deltaYPx));
+      
+      // 🔍 DEBUG: Log detalhado do arraste
+      console.log('🐛 DRAG DEBUG:', {
+        rect: { width: rect.width, height: rect.height },
+        scales: { scaleX, scaleY },
+        deltas: { deltaX, deltaY, deltaXPx, deltaYPx },
+        field: { width: field.width || 100, height: field.height || 30 },
+        limits: { maxX: BASE_W - (field.width || 100), maxY: BASE_H - (field.height || 30) },
+        calculated: { newX, newY },
+        constants: { BASE_W, BASE_H }
+      });
+      
       updateField(dragData.field, { x: Math.round(newX), y: Math.round(newY) });
     } else if (dragData.mode === 'resize') {
       // Converter delta para pixels usando dimensões padronizadas
