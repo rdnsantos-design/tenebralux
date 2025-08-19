@@ -11,7 +11,6 @@ import { UnitCard } from "@/types/UnitCard";
 import { CardTemplate } from "@/types/CardTemplate";
 
 const Index = () => {
-  console.log("Index component is rendering");
   const [cards, setCards] = useState<UnitCard[]>([]);
   const [editingCard, setEditingCard] = useState<UnitCard | null>(null);
   const [previewCard, setPreviewCard] = useState<UnitCard | null>(null);
@@ -54,8 +53,6 @@ const Index = () => {
   const handleDeleteTemplate = (templateId: string) => {
     setTemplates(templates.filter(t => t.id !== templateId));
   };
-
-  console.log("Rendering with state:", { showEditor, showTemplateCreator, editingTemplate, previewCard });
 
   if (showTemplateCreator) {
     return (
