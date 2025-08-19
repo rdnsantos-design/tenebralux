@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +18,40 @@ const Index = () => {
   const [templates, setTemplates] = useState<CardTemplate[]>([]);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<CardTemplate | null>(null);
+
+  // Carregar dados do localStorage na inicialização
+  useEffect(() => {
+    const savedTemplates = localStorage.getItem('cardTemplates');
+    const savedCards = localStorage.getItem('unitCards');
+    
+    if (savedTemplates) {
+      try {
+        const parsedTemplates = JSON.parse(savedTemplates);
+        setTemplates(parsedTemplates);
+      } catch (error) {
+        console.error('Erro ao carregar templates:', error);
+      }
+    }
+    
+    if (savedCards) {
+      try {
+        const parsedCards = JSON.parse(savedCards);
+        setCards(parsedCards);
+      } catch (error) {
+        console.error('Erro ao carregar cards:', error);
+      }
+    }
+  }, []);
+
+  // Salvar templates no localStorage sempre que mudarem
+  useEffect(() => {
+    localStorage.setItem('cardTemplates', JSON.stringify(templates));
+  }, [templates]);
+
+  // Salvar cards no localStorage sempre que mudarem
+  useEffect(() => {
+    localStorage.setItem('unitCards', JSON.stringify(cards));
+  }, [cards]);
 
   const handleSaveCard = (card: UnitCard) => {
     if (editingCard) {
