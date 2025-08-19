@@ -34,6 +34,20 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
     height: template.height || 767
   });
 
+  // Estado para os valores de teste
+  const [testValues, setTestValues] = useState({
+    name: 'Cavaleiros de Ferro',
+    number: '#001',
+    attack: '8',
+    defense: '6',
+    ranged: '4',
+    movement: '3',
+    morale: '7',
+    experience: 'Veterano',
+    'total-force': '12',
+    'maintenance-cost': '25'
+  });
+
   const updateField = (fieldId: string, property: keyof TextFieldMapping, value: any) => {
     const existingField = template.fields.find(f => f.id === fieldId);
     
@@ -139,23 +153,67 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
             const scaleX = img.offsetWidth / imageDimensions.width;
             const scaleY = img.offsetHeight / imageDimensions.height;
             
+            // Obter o valor de teste para este campo
+            const testValue = testValues[field.id as keyof typeof testValues] || 'Texto';
+            
             return (
               <div
                 key={field.id}
-                className="absolute border-2 border-red-500 bg-red-500/20 pointer-events-none"
+                className="absolute border-2 border-red-500 bg-red-500/20 pointer-events-none flex items-center justify-center"
                 style={{
                   left: `${(field.x as number) * scaleX}px`,
                   top: `${(field.y as number) * scaleY}px`,
                   width: `${Math.max(60, field.fontSize * scaleX * 3)}px`,
                   height: `${Math.max(20, field.fontSize * scaleY * 1.2)}px`,
+                  fontSize: `${Math.max(8, field.fontSize * Math.min(scaleX, scaleY) * 0.8)}px`,
+                  fontFamily: field.fontFamily,
+                  fontWeight: field.fontWeight || 'normal',
+                  color: field.color,
+                  textAlign: field.textAlign || 'center',
+                  textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.3)' : undefined,
+                  transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
+                  transformOrigin: 'center',
                 }}
               >
+                {testValue}
                 <div className="absolute -top-6 left-0 bg-red-500 text-white px-1 text-xs whitespace-nowrap">
                   {fieldLabels[field.id as keyof typeof fieldLabels]}
                 </div>
               </div>
             );
           })}
+        </div>
+      </Card>
+
+      {/* Valores de Teste */}
+      <Card className="p-6">
+        <h3 className="text-xl font-semibold mb-4">📝 Valores de Teste (Para Visualizar)</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Digite os valores que você quer testar no preview acima:
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {Object.entries(fieldLabels).map(([fieldId, label]) => (
+            <div key={fieldId}>
+              <Label className="text-sm font-medium">{label}</Label>
+              <Input 
+                value={testValues[fieldId as keyof typeof testValues] || ''}
+                onChange={(e) => setTestValues(prev => ({
+                  ...prev,
+                  [fieldId]: e.target.value
+                }))}
+                placeholder={
+                  fieldId === 'name' ? 'Nome da unidade' :
+                  fieldId === 'number' ? '#001' :
+                  fieldId.includes('attack') || fieldId.includes('defense') || 
+                  fieldId.includes('ranged') || fieldId.includes('movement') || 
+                  fieldId.includes('morale') ? '0-9' :
+                  fieldId === 'experience' ? 'Veterano' :
+                  'Valor'
+                }
+                className="mt-1"
+              />
+            </div>
+          ))}
         </div>
       </Card>
 
@@ -306,7 +364,7 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
                 {/* Preview específico do campo */}
                 {field && (
                   <div className="mt-4 p-3 bg-gray-50 rounded border">
-                    <Label className="text-sm font-medium text-gray-600">Preview:</Label>
+                    <Label className="text-sm font-medium text-gray-600">Preview com seu texto:</Label>
                     <div 
                       className="mt-2"
                       style={{
@@ -320,17 +378,7 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
                         transformOrigin: 'left center'
                       }}
                     >
-                      {label === 'Nome da Unidade' ? 'Cavaleiros de Ferro' :
-                       label === 'Número do Card' ? '#001' :
-                       label === 'Ataque' ? '8' :
-                       label === 'Defesa' ? '6' :
-                       label === 'Distância (Tiro)' ? '4' :
-                       label === 'Movimento' ? '3' :
-                       label === 'Moral' ? '7' :
-                       label === 'Experiência' ? 'Veterano' :
-                       label === 'Força Total' ? '12' :
-                       'Exemplo'
-                      }
+                      {testValues[fieldId as keyof typeof testValues] || 'Digite um valor de teste acima'}
                     </div>
                   </div>
                 )}
