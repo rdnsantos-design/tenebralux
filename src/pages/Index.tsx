@@ -11,6 +11,7 @@ import { UnitCard } from "@/types/UnitCard";
 import { CardTemplate } from "@/types/CardTemplate";
 
 const Index = () => {
+  console.log("Index component is rendering");
   const [cards, setCards] = useState<UnitCard[]>([]);
   const [editingCard, setEditingCard] = useState<UnitCard | null>(null);
   const [previewCard, setPreviewCard] = useState<UnitCard | null>(null);
