@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Download, Eye, Settings, Image } from "lucide-react";
+import { Plus, Edit, Download, Eye, Settings, Image, Trash2 } from "lucide-react";
 import { CardEditor } from "@/components/CardEditor";
 import { CardPreview } from "@/components/CardPreview";
 import { TemplateCreator } from "@/components/TemplateCreator";
@@ -123,6 +123,10 @@ const Index = () => {
     if (editingTemplate?.id === templateId) {
       setEditingTemplate(null);
     }
+  };
+
+  const handleDeleteCard = (cardId: string) => {
+    setCards(cards.filter(c => c.id !== cardId));
   };
 
   if (showTemplateCreator) {
@@ -263,6 +267,14 @@ const Index = () => {
                         >
                           <Edit className="w-4 h-4 mr-1" />
                           Editar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteCard(card.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </CardContent>
