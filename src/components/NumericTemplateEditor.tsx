@@ -5,6 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { CardTemplate, TextFieldMapping } from '@/types/CardTemplate';
 
+// Constantes padronizadas do sistema de coordenadas
+const BASE_W = 1181;
+const BASE_H = 768;
+
 interface NumericTemplateEditorProps {
   template: CardTemplate;
   onTemplateUpdate: (template: CardTemplate) => void;
@@ -79,7 +83,7 @@ export const NumericTemplateEditor: React.FC<NumericTemplateEditorProps> = ({
               value={editedTemplate.width}
               onChange={(e) => setEditedTemplate({
                 ...editedTemplate,
-                width: parseInt(e.target.value) || 1181
+                width: parseInt(e.target.value) || BASE_W
               })}
             />
           </div>
@@ -90,7 +94,7 @@ export const NumericTemplateEditor: React.FC<NumericTemplateEditorProps> = ({
               value={editedTemplate.height}
               onChange={(e) => setEditedTemplate({
                 ...editedTemplate,
-                height: parseInt(e.target.value) || 767
+                height: parseInt(e.target.value) || BASE_H
               })}
             />
           </div>

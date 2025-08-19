@@ -5,6 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { CardTemplate, TextFieldMapping } from '@/types/CardTemplate';
 
+// Constantes padronizadas do sistema de coordenadas
+const BASE_W = 1181;
+const BASE_H = 768;
+
 interface SimpleTemplateEditorProps {
   template: CardTemplate;
   onTemplateUpdate: (template: CardTemplate) => void;
@@ -34,8 +38,8 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   
   const [imageDimensions, setImageDimensions] = useState({
-    width: template.width || 1181,
-    height: template.height || 767
+    width: BASE_W,  // Sempre usar dimensões padronizadas
+    height: BASE_H  // Sempre usar dimensões padronizadas
   });
 
   // IMPORTANTE: Valores de teste APENAS para preview visual - NÃO são salvos no card

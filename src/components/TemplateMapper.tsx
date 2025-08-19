@@ -6,6 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CardTemplate, TextFieldMapping } from '@/types/CardTemplate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+// Constantes padronizadas do sistema de coordenadas (mesmas do CardRenderer)
+const BASE_W = 1181;
+const BASE_H = 768;
+
 const FONT_OPTIONS = [
   'Arial, sans-serif',
   'Cinzel, serif',
@@ -65,9 +69,9 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
     
-    // Converter para coordenadas em pixels baseadas nas dimensões do template
-    const scaleX = template.width / rect.width;
-    const scaleY = template.height / rect.height;
+    // Converter para coordenadas em pixels baseadas nas dimensões padronizadas
+    const scaleX = BASE_W / rect.width;
+    const scaleY = BASE_H / rect.height;
     
     const x = Math.round(clickX * scaleX);
     const y = Math.round(clickY * scaleY);
@@ -146,26 +150,26 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
     if (!field) return;
 
     if (dragData.mode === 'move') {
-      // Converter delta para pixels
-      const scaleX = template.width / rect.width;
-      const scaleY = template.height / rect.height;
+      // Converter delta para pixels usando dimensões padronizadas
+      const scaleX = BASE_W / rect.width;
+      const scaleY = BASE_H / rect.height;
       
       const deltaXPx = deltaX * scaleX;
       const deltaYPx = deltaY * scaleY;
       
-      const newX = Math.max(0, Math.min(template.width - (field.width || 100), dragData.startX + deltaXPx));
-      const newY = Math.max(0, Math.min(template.height - (field.height || 30), dragData.startY + deltaYPx));
+      const newX = Math.max(0, Math.min(BASE_W - (field.width || 100), dragData.startX + deltaXPx));
+      const newY = Math.max(0, Math.min(BASE_H - (field.height || 30), dragData.startY + deltaYPx));
       updateField(dragData.field, { x: Math.round(newX), y: Math.round(newY) });
     } else if (dragData.mode === 'resize') {
-      // Converter delta para pixels
-      const scaleX = template.width / rect.width;
-      const scaleY = template.height / rect.height;
+      // Converter delta para pixels usando dimensões padronizadas
+      const scaleX = BASE_W / rect.width;
+      const scaleY = BASE_H / rect.height;
       
       const deltaWidthPx = deltaX * scaleX;
       const deltaHeightPx = deltaY * scaleY;
       
-      const newWidth = Math.max(20, Math.min(template.width - field.x, (field.width || 100) + deltaWidthPx));
-      const newHeight = Math.max(15, Math.min(template.height - field.y, (field.height || 30) + deltaHeightPx));
+      const newWidth = Math.max(20, Math.min(BASE_W - field.x, (field.width || 100) + deltaWidthPx));
+      const newHeight = Math.max(15, Math.min(BASE_H - field.y, (field.height || 30) + deltaHeightPx));
       updateField(dragData.field, { width: Math.round(newWidth), height: Math.round(newHeight) });
     }
   };
@@ -260,8 +264,8 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
               const imgRect = imageRef.current?.getBoundingClientRect();
               if (!imgRect) return null;
               
-              const scaleX = imgRect.width / template.width;
-              const scaleY = imgRect.height / template.height;
+              const scaleX = imgRect.width / BASE_W;
+              const scaleY = imgRect.height / BASE_H;
               
               const leftPx = (field.x as number) * scaleX;
               const topPx = (field.y as number) * scaleY;

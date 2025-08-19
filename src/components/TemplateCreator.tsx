@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CardTemplate } from '@/types/CardTemplate';
 import { Upload } from 'lucide-react';
 
+// Constantes padronizadas do sistema de coordenadas
+const STANDARD_WIDTH = 1181;
+const STANDARD_HEIGHT = 768;
+
 interface TemplateCreatorProps {
   onTemplateCreated: (template: CardTemplate) => void;
   onCancel: () => void;
@@ -48,8 +52,8 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({ onTemplateCrea
       id: Date.now().toString(),
       name: templateName,
       templateImage,
-      width: imageDimensions.width,
-      height: imageDimensions.height,
+      width: STANDARD_WIDTH,  // Sempre usar dimensões padronizadas
+      height: STANDARD_HEIGHT, // Sempre usar dimensões padronizadas
       fields: []
     };
 
@@ -109,7 +113,11 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({ onTemplateCrea
 
               {imageLoaded && (
                 <div className="text-sm text-muted-foreground">
-                  <p>Dimensões: {imageDimensions.width} x {imageDimensions.height} pixels</p>
+                  <p>Dimensões originais: {imageDimensions.width} x {imageDimensions.height} pixels</p>
+                  <p>Dimensões do template: {STANDARD_WIDTH} x {STANDARD_HEIGHT} pixels</p>
+                  <p className="text-xs mt-1 text-amber-600">
+                    ⚠️ A imagem será redimensionada para as dimensões padrão do sistema
+                  </p>
                 </div>
               )}
 
