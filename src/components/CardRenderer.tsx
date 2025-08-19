@@ -8,64 +8,52 @@ interface CardRendererProps {
 }
 
 export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className }) => {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = React.useState({ width: 0, height: 0 });
-  
-  React.useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setContainerSize({ width: rect.width, height: rect.height });
-      }
-    };
-    
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
+  const imageRef = React.useRef<HTMLImageElement>(null);
+  const [imageLoaded, setImageLoaded] = React.useState(false);
   
   const renderField = (fieldId: string, value: string | number) => {
     const field = template.fields.find(f => f.id === fieldId);
-    if (!field || containerSize.width === 0) return null;
+    if (!field || !imageRef.current || !imageLoaded) return null;
 
-    // Calcular escala baseada nas dimensões do template vs container atual
-    const scaleX = containerSize.width / template.width;
-    const scaleY = containerSize.height / template.height;
-    const scale = Math.min(scaleX, scaleY); // Manter proporção
-
-    console.log('Renderizando campo:', {
+    // USAR A MESMA LÓGICA DO TEMPLATEMAPPER
+    const imgRect = imageRef.current.getBoundingClientRect();
+    if (!imgRect) return null;
+    
+    const scaleX = imgRect.width / template.width;
+    const scaleY = imgRect.height / template.height;
+    
+    const leftPx = (field.x as number) * scaleX;
+    const topPx = (field.y as number) * scaleY;
+    const widthPx = (field.width || 100) * scaleX;
+    const heightPx = (field.height || 30) * scaleY;
+    
+    console.log('CardRenderer - Cálculo de escala:', {
       fieldId,
-      originalPos: { x: field.x, y: field.y },
       templateSize: { width: template.width, height: template.height },
-      containerSize,
-      scale,
-      finalPos: { 
-        x: (field.x as number) * scaleX, 
-        y: (field.y as number) * scaleY 
-      }
+      imageSize: { width: imgRect.width, height: imgRect.height },
+      scale: { x: scaleX, y: scaleY },
+      originalPos: { x: field.x, y: field.y },
+      finalPos: { x: leftPx, y: topPx }
     });
 
     const style: React.CSSProperties = {
       position: 'absolute',
-      left: `${(field.x as number) * scaleX}px`,
-      top: `${(field.y as number) * scaleY}px`,
-      fontSize: `${Math.max(8, field.fontSize * scale)}px`,
+      left: `${leftPx}px`,
+      top: `${topPx}px`,
+      width: `${widthPx}px`,
+      height: `${heightPx}px`,
+      fontSize: `${Math.max(8, field.fontSize * Math.min(scaleX, scaleY))}px`,
       fontFamily: field.fontFamily,
       fontWeight: field.fontWeight || 'normal',
       color: field.color,
       textAlign: field.textAlign || 'left',
       transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
-      width: field.width ? `${(field.width as number) * scaleX}px` : 'auto',
-      height: field.height ? `${(field.height as number) * scaleY}px` : 'auto',
       overflow: 'hidden',
       lineHeight: '1.2',
-      maxHeight: field.maxLines ? `${field.fontSize * scale * 1.2 * field.maxLines}px` : undefined,
-      display: field.maxLines ? '-webkit-box' : 'flex',
-      WebkitLineClamp: field.maxLines,
-      WebkitBoxOrient: field.maxLines ? 'vertical' as const : undefined,
-      textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.3)' : undefined,
+      display: 'flex',
       alignItems: 'center',
       justifyContent: field.textAlign === 'center' ? 'center' : field.textAlign === 'right' ? 'flex-end' : 'flex-start',
+      textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.3)' : undefined,
       zIndex: 10,
       pointerEvents: 'none'
     };
@@ -177,11 +165,11 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
 
   return (
     <div 
-      ref={containerRef}
       className={className} 
       style={{ position: 'relative', display: 'inline-block', width: '100%', height: '100%' }}
     >
       <img 
+        ref={imageRef}
         src={template.templateImage} 
         alt="Card Template"
         style={{ 
@@ -190,13 +178,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
           display: 'block',
           objectFit: 'contain'
         }}
-        onLoad={() => {
-          // Atualizar tamanho quando a imagem carregar
-          if (containerRef.current) {
-            const rect = containerRef.current.getBoundingClientRect();
-            setContainerSize({ width: rect.width, height: rect.height });
-          }
-        }}
+        onLoad={() => setImageLoaded(true)}
       />
       
       {/* Campos mapeados */}
