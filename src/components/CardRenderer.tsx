@@ -5,9 +5,10 @@ interface CardRendererProps {
   template: CardTemplate;
   data: CardData;
   className?: string;
+  isExport?: boolean;
 }
 
-export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className }) => {
+export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className, isExport = false }) => {
   const imageRef = React.useRef<HTMLImageElement>(null);
   const [imageLoaded, setImageLoaded] = React.useState(false);
   
@@ -23,7 +24,13 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     const scaleY = imgRect.height / template.height;
     
     const leftPx = (field.x as number) * scaleX;
-    const topPx = (field.y as number) * scaleY;
+    
+    // Detectar se está sendo usado para exportação pelo contexto
+    const containerElement = imageRef.current.closest('[data-export="true"]');
+    const isExportContext = isExport || containerElement !== null;
+    
+    // Aplicar ajuste para compensar diferença no html2canvas
+    const topPx = (field.y as number) * scaleY - (isExportContext ? 8 : 0);
     const widthPx = (field.width || 100) * scaleX;
     const heightPx = (field.height || 30) * scaleY;
     
@@ -33,7 +40,8 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
       imageSize: { width: imgRect.width, height: imgRect.height },
       scale: { x: scaleX, y: scaleY },
       originalPos: { x: field.x, y: field.y },
-      finalPos: { x: leftPx, y: topPx }
+      finalPos: { x: leftPx, y: topPx },
+      isExportContext
     });
 
     const style: React.CSSProperties = {

@@ -130,10 +130,11 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
         tempContainer.style.backgroundColor = 'white';
         tempContainer.style.width = 'fit-content';
 
-        // Adicionar múltiplas cópias do card
+        // Adicionar múltiplas cópias do card com flag de exportação
         for (let i = 0; i < cardsPerPage; i++) {
           const cardClone = cardElement.cloneNode(true) as HTMLElement;
           cardClone.id = `printable-card-${i}`;
+          cardClone.setAttribute('data-export', 'true');
           tempContainer.appendChild(cardClone);
         }
 
