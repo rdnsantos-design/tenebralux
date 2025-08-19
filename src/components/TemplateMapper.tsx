@@ -31,10 +31,11 @@ const FIELD_OPTIONS = [
   { id: 'experience', label: 'Experiência' },
   { id: 'total-force', label: 'Força Total' },
   { id: 'maintenance-cost', label: 'Custo de Manutenção' },
-  { id: 'posture', label: 'Postura' },
-  { id: 'special-abilities', label: 'Habilidades Especiais' },
-  { id: 'pressure-boxes', label: 'Caixas de Pressão' },
-  { id: 'life-boxes', label: 'Caixas de Vida' },
+  { id: 'special-ability-1', label: 'Habilidade Especial 1' },
+  { id: 'special-ability-2', label: 'Habilidade Especial 2' },
+  { id: 'special-ability-3', label: 'Habilidade Especial 3' },
+  { id: 'special-ability-4', label: 'Habilidade Especial 4' },
+  { id: 'special-ability-5', label: 'Habilidade Especial 5' },
 ];
 
 interface TemplateMapperProps {

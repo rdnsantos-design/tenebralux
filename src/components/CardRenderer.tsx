@@ -105,30 +105,37 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
   };
 
   const renderSpecialAbilities = () => {
-    const abilitiesField = template.fields.find(f => f.id === 'special-abilities');
-    if (!abilitiesField) return null;
-
-    return (
-      <div
-        style={{
-          position: 'absolute',
-          left: `${abilitiesField.x}px`,
-          top: `${abilitiesField.y}px`,
-          width: abilitiesField.width ? `${abilitiesField.width}px` : 'auto',
-          height: abilitiesField.height ? `${abilitiesField.height}px` : 'auto',
-          fontSize: `${abilitiesField.fontSize}px`,
-          fontFamily: abilitiesField.fontFamily,
-          color: abilitiesField.color,
-          overflow: 'hidden',
-        }}
-      >
-        {data.specialAbilities.map((ability, index) => (
-          <div key={index} style={{ marginBottom: '4px' }}>
-            {ability}
+    const elements = [];
+    
+    for (let i = 1; i <= 5; i++) {
+      const abilityField = template.fields.find(f => f.id === `special-ability-${i}`);
+      if (abilityField && data.specialAbilities[i - 1]) {
+        elements.push(
+          <div
+            key={`ability-${i}`}
+            style={{
+              position: 'absolute',
+              left: `${abilityField.x}px`,
+              top: `${abilityField.y}px`,
+              width: abilityField.width ? `${abilityField.width}px` : 'auto',
+              height: abilityField.height ? `${abilityField.height}px` : 'auto',
+              fontSize: `${abilityField.fontSize}px`,
+              fontFamily: abilityField.fontFamily,
+              fontWeight: abilityField.fontWeight || 'normal',
+              color: abilityField.color,
+              textAlign: abilityField.textAlign || 'left',
+              transform: abilityField.rotation ? `rotate(${abilityField.rotation}deg)` : undefined,
+              textShadow: abilityField.textShadow ? '1px 1px 2px rgba(0,0,0,0.5)' : undefined,
+              overflow: 'hidden',
+            }}
+          >
+            {data.specialAbilities[i - 1]}
           </div>
-        ))}
-      </div>
-    );
+        );
+      }
+    }
+    
+    return elements.length > 0 ? <>{elements}</> : null;
   };
 
   return (
