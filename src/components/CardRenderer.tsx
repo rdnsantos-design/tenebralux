@@ -8,50 +8,47 @@ interface CardRendererProps {
 }
 
 export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className }) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  
+  console.log('CardRenderer renderizado:', { 
+    template: template.name, 
+    fieldsCount: template.fields.length,
+    fields: template.fields,
+    data: data
+  });
+  
   const renderField = (fieldId: string, value: string | number) => {
     const field = template.fields.find(f => f.id === fieldId);
     if (!field) return null;
 
-    // Obter dimensões do container atual
-    const container = document.querySelector('.card-container') as HTMLElement;
-    if (!container) return null;
-    
-    const containerRect = container.getBoundingClientRect();
-    const containerWidth = containerRect.width || container.offsetWidth;
-    const containerHeight = containerRect.height || container.offsetHeight;
-    
-    // Calcular escala baseada nas dimensões originais do template
-    const scaleX = containerWidth / template.width;
-    const scaleY = containerHeight / template.height;
-    
-    // Detectar contexto de impressão
-    const isPrintContext = window.matchMedia('print').matches || 
-                          document.documentElement.classList.contains('print-mode');
-    
-    // Escala da fonte baseada no menor fator de escala
-    const fontScale = Math.min(scaleX, scaleY);
+    // Para cálculos básicos, usar escala 1:1 como fallback
+    const scaleX = 1;
+    const scaleY = 1;
+    const fontScale = 1;
 
     const style: React.CSSProperties = {
       position: 'absolute',
-      left: `${(field.x as number) * scaleX}px`,
-      top: `${(field.y as number) * scaleY}px`,
-      fontSize: `${Math.max(8, field.fontSize * fontScale)}px`,
+      left: `${(field.x as number)}px`,
+      top: `${(field.y as number)}px`,
+      fontSize: `${Math.max(12, field.fontSize)}px`,
       fontFamily: field.fontFamily,
       fontWeight: field.fontWeight || 'normal',
       color: field.color,
       textAlign: field.textAlign || 'left',
       transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
-      width: field.width ? `${(field.width as number) * scaleX}px` : 'auto',
-      height: field.height ? `${(field.height as number) * scaleY}px` : 'auto',
+      width: field.width ? `${(field.width as number)}px` : 'auto',
+      height: field.height ? `${(field.height as number)}px` : 'auto',
       overflow: 'hidden',
       lineHeight: '1.2',
-      maxHeight: field.maxLines ? `${field.fontSize * fontScale * 1.2 * field.maxLines}px` : undefined,
+      maxHeight: field.maxLines ? `${field.fontSize * 1.2 * field.maxLines}px` : undefined,
       display: field.maxLines ? '-webkit-box' : 'flex',
       WebkitLineClamp: field.maxLines,
       WebkitBoxOrient: field.maxLines ? 'vertical' as const : undefined,
       textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.3)' : undefined,
       alignItems: 'center',
       justifyContent: field.textAlign === 'center' ? 'center' : field.textAlign === 'right' ? 'flex-end' : 'flex-start',
+      zIndex: 10,
+      pointerEvents: 'none'
     };
 
     return (
