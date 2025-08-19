@@ -174,17 +174,23 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
   return (
     <div 
       className={className} 
-      style={{ position: 'relative', display: 'inline-block', width: '100%', height: '100%' }}
+      style={{ 
+        position: 'relative', 
+        display: 'inline-block', 
+        width: '1181px', 
+        height: '768px',
+        overflow: 'hidden'
+      }}
     >
       <img 
         ref={imageRef}
         src={template.templateImage} 
         alt="Card Template"
         style={{ 
-          width: '100%', 
-          height: '100%',
+          width: '1181px', 
+          height: '768px',
           display: 'block',
-          objectFit: 'contain'
+          objectFit: 'fill'
         }}
         onLoad={() => setImageLoaded(true)}
       />
