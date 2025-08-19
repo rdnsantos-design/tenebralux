@@ -167,48 +167,176 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
         </p>
         
         <div className="space-y-6">
-          {Object.entries(fieldLabels).map(([fieldId, label]) => (
-            <div key={fieldId} className="border rounded-lg p-4">
-              <h4 className="font-medium mb-3">{label}</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div>
-                  <Label>X (pixels)</Label>
-                  <Input 
-                    type="number" 
-                    value={getFieldValue(fieldId, 'x')}
-                    onChange={(e) => updateField(fieldId, 'x', parseInt(e.target.value) || 0)}
-                    placeholder="Ex: 100"
-                  />
+          {Object.entries(fieldLabels).map(([fieldId, label]) => {
+            const field = template.fields.find(f => f.id === fieldId);
+            return (
+              <div key={fieldId} className="border rounded-lg p-6 bg-white">
+                <h4 className="font-semibold mb-4 text-lg">{label}</h4>
+                
+                {/* Linha 1: Posição e Tamanho */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <Label className="text-sm font-medium">X (pixels)</Label>
+                    <Input 
+                      type="number" 
+                      value={field?.x || ''}
+                      onChange={(e) => updateField(fieldId, 'x', parseInt(e.target.value) || 0)}
+                      placeholder="Ex: 100"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Y (pixels)</Label>
+                    <Input 
+                      type="number" 
+                      value={field?.y || ''}
+                      onChange={(e) => updateField(fieldId, 'y', parseInt(e.target.value) || 0)}
+                      placeholder="Ex: 150"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Tamanho da Fonte</Label>
+                    <Input 
+                      type="number" 
+                      value={field?.fontSize || ''}
+                      onChange={(e) => updateField(fieldId, 'fontSize', parseInt(e.target.value) || 24)}
+                      placeholder="Ex: 24"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Cor</Label>
+                    <Input 
+                      type="color" 
+                      value={field?.color || '#000000'}
+                      onChange={(e) => updateField(fieldId, 'color', e.target.value)}
+                      className="mt-1 h-10"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>Y (pixels)</Label>
-                  <Input 
-                    type="number" 
-                    value={getFieldValue(fieldId, 'y')}
-                    onChange={(e) => updateField(fieldId, 'y', parseInt(e.target.value) || 0)}
-                    placeholder="Ex: 150"
-                  />
+
+                {/* Linha 2: Formatação */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <Label className="text-sm font-medium">Fonte</Label>
+                    <select 
+                      className="w-full p-2 border rounded mt-1 bg-white"
+                      value={field?.fontFamily || 'Cinzel, serif'}
+                      onChange={(e) => updateField(fieldId, 'fontFamily', e.target.value)}
+                    >
+                      <option value="Cinzel, serif">Cinzel (Elegante)</option>
+                      <option value="Arial, sans-serif">Arial</option>
+                      <option value="Georgia, serif">Georgia</option>
+                      <option value="Times New Roman, serif">Times New Roman</option>
+                      <option value="Helvetica, sans-serif">Helvetica</option>
+                      <option value="Verdana, sans-serif">Verdana</option>
+                      <option value="Impact, sans-serif">Impact (Forte)</option>
+                      <option value="Trebuchet MS, sans-serif">Trebuchet MS</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Peso da Fonte</Label>
+                    <select 
+                      className="w-full p-2 border rounded mt-1 bg-white"
+                      value={field?.fontWeight || 'normal'}
+                      onChange={(e) => updateField(fieldId, 'fontWeight', e.target.value)}
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="bold">Negrito</option>
+                      <option value="300">Leve</option>
+                      <option value="500">Médio</option>
+                      <option value="600">Semi-Bold</option>
+                      <option value="700">Bold</option>
+                      <option value="800">Extra Bold</option>
+                      <option value="900">Black</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Alinhamento</Label>
+                    <select 
+                      className="w-full p-2 border rounded mt-1 bg-white"
+                      value={field?.textAlign || 'center'}
+                      onChange={(e) => updateField(fieldId, 'textAlign', e.target.value)}
+                    >
+                      <option value="left">← Esquerda</option>
+                      <option value="center">⬛ Centro</option>
+                      <option value="right">→ Direita</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <Label>Tamanho da Fonte</Label>
-                  <Input 
-                    type="number" 
-                    value={getFieldValue(fieldId, 'fontSize')}
-                    onChange={(e) => updateField(fieldId, 'fontSize', parseInt(e.target.value) || 24)}
-                    placeholder="Ex: 24"
-                  />
+
+                {/* Linha 3: Opções Avançadas */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Largura (opcional)</Label>
+                    <Input 
+                      type="number" 
+                      value={field?.width || ''}
+                      onChange={(e) => updateField(fieldId, 'width', parseInt(e.target.value) || undefined)}
+                      placeholder="Auto"
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Deixe vazio para largura automática</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Rotação (graus)</Label>
+                    <Input 
+                      type="number" 
+                      value={field?.rotation || ''}
+                      onChange={(e) => updateField(fieldId, 'rotation', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center space-x-2 mt-6">
+                      <input
+                        type="checkbox"
+                        id={`shadow-${fieldId}`}
+                        checked={field?.textShadow || false}
+                        onChange={(e) => updateField(fieldId, 'textShadow', e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                      <Label htmlFor={`shadow-${fieldId}`} className="text-sm">Sombra no texto</Label>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label>Cor</Label>
-                  <Input 
-                    type="color" 
-                    value={getFieldValue(fieldId, 'color') || '#000000'}
-                    onChange={(e) => updateField(fieldId, 'color', e.target.value)}
-                  />
-                </div>
+
+                {/* Preview específico do campo */}
+                {field && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded border">
+                    <Label className="text-sm font-medium text-gray-600">Preview:</Label>
+                    <div 
+                      className="mt-2"
+                      style={{
+                        fontSize: `${Math.max(12, field.fontSize * 0.5)}px`,
+                        fontFamily: field.fontFamily,
+                        fontWeight: field.fontWeight || 'normal',
+                        color: field.color,
+                        textAlign: field.textAlign || 'center',
+                        textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.3)' : undefined,
+                        transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
+                        transformOrigin: 'left center'
+                      }}
+                    >
+                      {label === 'Nome da Unidade' ? 'Cavaleiros de Ferro' :
+                       label === 'Número do Card' ? '#001' :
+                       label === 'Ataque' ? '8' :
+                       label === 'Defesa' ? '6' :
+                       label === 'Distância (Tiro)' ? '4' :
+                       label === 'Movimento' ? '3' :
+                       label === 'Moral' ? '7' :
+                       label === 'Experiência' ? 'Veterano' :
+                       label === 'Força Total' ? '12' :
+                       'Exemplo'
+                      }
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
 
