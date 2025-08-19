@@ -1,19 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Plus, X, Upload, Wand2 } from "lucide-react";
 import { UnitCard, ExperienceLevel, SpecialAbility } from "@/types/UnitCard";
-import { resizeImageForCard, processImageForCard } from "@/utils/imageProcessing";
-import { toast } from "sonner";
+
+import { CardRenderer } from '@/components/CardRenderer';
+import { CardTemplate, CardData } from '@/types/CardTemplate';
 
 interface CardEditorProps {
   card?: UnitCard | null;
+  templates?: CardTemplate[];
   onSave: (card: UnitCard) => void;
   onCancel: () => void;
 }
@@ -38,130 +36,177 @@ const experienceLimits = {
   'Elite': 6
 };
 
-export const CardEditor = ({ card, onSave, onCancel }: CardEditorProps) => {
-  const [isProcessingImage, setIsProcessingImage] = useState(false);
-  const [formData, setFormData] = useState<UnitCard>({
+export const CardEditor: React.FC<CardEditorProps> = ({ 
+  card, 
+  templates = [], 
+  onSave, 
+  onCancel 
+}) => {
+  const [selectedTemplate, setSelectedTemplate] = useState<CardTemplate | null>(null);
+  const [unitData, setUnitData] = useState<UnitCard>({
     id: card?.id || '',
     name: card?.name || '',
-    attack: card?.attack || 2,
-    defense: card?.defense || 2,
-    ranged: card?.ranged || 0,
-    movement: card?.movement || 2,
-    morale: card?.morale || 2,
+    attack: card?.attack || 1,
+    defense: card?.defense || 1,
+    ranged: card?.ranged || 1,
+    movement: card?.movement || 1,
+    morale: card?.morale || 1,
     experience: card?.experience || 'Green',
     totalForce: card?.totalForce || 0,
     maintenanceCost: card?.maintenanceCost || 0,
     specialAbilities: card?.specialAbilities || [],
-    backgroundImage: card?.backgroundImage || '',
+    currentPosture: card?.currentPosture || 'Ofensiva',
+    normalPressure: card?.normalPressure || 0,
+    permanentPressure: card?.permanentPressure || 0,
+    hits: card?.hits || 0,
+    disbanded: card?.disbanded || false,
+    backgroundImage: card?.backgroundImage || ''
   });
 
+  const [imageProcessing, setImageProcessing] = useState(false);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setIsProcessingImage(true);
-      toast("Processando imagem...");
-      
-      try {
-        const processedImage = await resizeImageForCard(file);
-        setFormData(prev => ({ ...prev, backgroundImage: processedImage }));
-        toast("Imagem processada e redimensionada automaticamente!");
-      } catch (error) {
-        console.error('Error processing image:', error);
-        toast("Erro ao processar imagem. Usando imagem original.");
-        
-        // Fallback to original method
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          setFormData(prev => ({ ...prev, backgroundImage: result }));
-        };
-        reader.readAsDataURL(file);
-      } finally {
-        setIsProcessingImage(false);
-      }
-    }
-  };
-
-  const handleAdvancedImageProcessing = async (file: File, removeBackground: boolean) => {
-    setIsProcessingImage(true);
-    toast(removeBackground ? "Removendo fundo da imagem..." : "Processando imagem...");
-    
-    try {
-      const processedImage = await processImageForCard(file, {
-        width: 378,
-        height: 265,
-        fit: 'cover',
-        removeBackground
-      });
-      setFormData(prev => ({ ...prev, backgroundImage: processedImage }));
-      toast(removeBackground ? "Fundo removido com sucesso!" : "Imagem processada!");
-    } catch (error) {
-      console.error('Error processing image:', error);
-      toast("Erro no processamento avançado. Tente novamente.");
-    } finally {
-      setIsProcessingImage(false);
-    }
-  };
-
-  const calculateTotalForce = () => {
-    const baseForce = formData.attack + formData.defense + (formData.ranged * 0.5) + formData.morale;
-    const abilityCost = formData.specialAbilities.reduce((sum, ability) => sum + ability.cost, 0);
-    return Math.round(baseForce + abilityCost);
-  };
+  const calculateTotalForce = useCallback(() => {
+    const baseForce = unitData.attack + unitData.defense + unitData.ranged + unitData.movement + unitData.morale;
+    const abilitiesBonus = unitData.specialAbilities.reduce((acc, ability) => {
+      const foundAbility = specialAbilitiesDatabase.find(db => db.name === ability.name);
+      return acc + (foundAbility?.cost || 0);
+    }, 0);
+    return Math.round(baseForce + abilitiesBonus);
+  }, [unitData.attack, unitData.defense, unitData.ranged, unitData.movement, unitData.morale, unitData.specialAbilities]);
 
   useEffect(() => {
-    const totalForce = calculateTotalForce();
-    const maintenanceCost = Math.ceil(totalForce * 0.1);
-    setFormData(prev => ({ ...prev, totalForce, maintenanceCost }));
-  }, [formData.attack, formData.defense, formData.ranged, formData.morale, formData.specialAbilities]);
-
-  const handleSave = () => {
-    onSave(formData);
-  };
-
-  const handleAttributeChange = (attr: keyof UnitCard, value: number) => {
-    const maxValue = experienceLimits[formData.experience];
-    const clampedValue = Math.max(0, Math.min(value, maxValue));
-    setFormData(prev => ({ ...prev, [attr]: clampedValue }));
-  };
-
-  const addSpecialAbility = (abilityId: string) => {
-    const ability = specialAbilitiesDatabase.find(a => a.id === abilityId);
-    if (ability && !formData.specialAbilities.find(a => a.id === abilityId)) {
-      setFormData(prev => ({
-        ...prev,
-        specialAbilities: [...prev.specialAbilities, ability]
-      }));
-    }
-  };
-
-  const removeSpecialAbility = (abilityId: string) => {
-    setFormData(prev => ({
+    const newTotalForce = calculateTotalForce();
+    const newMaintenanceCost = Math.ceil(newTotalForce * 0.1);
+    
+    setUnitData(prev => ({
       ...prev,
-      specialAbilities: prev.specialAbilities.filter(a => a.id !== abilityId)
+      totalForce: newTotalForce,
+      maintenanceCost: newMaintenanceCost
+    }));
+  }, [calculateTotalForce]);
+
+  const handleAttributeChange = (attribute: keyof UnitCard, value: number | string) => {
+    if (typeof value === 'number' && ['attack', 'defense', 'ranged', 'movement', 'morale'].includes(attribute)) {
+      const maxValue = experienceLimits[unitData.experience as ExperienceLevel];
+      value = Math.min(Math.max(value, 1), maxValue);
+    }
+    
+    setUnitData(prev => ({ ...prev, [attribute]: value }));
+  };
+
+  const addSpecialAbility = (ability: SpecialAbility) => {
+    if (unitData.specialAbilities.find(a => a.name === ability.name)) return;
+    setUnitData(prev => ({
+      ...prev,
+      specialAbilities: [...prev.specialAbilities, ability]
     }));
   };
 
-  const availableAbilities = specialAbilitiesDatabase.filter(
-    ability => !formData.specialAbilities.find(selected => selected.id === ability.id)
-  );
+  const removeSpecialAbility = (abilityName: string) => {
+    setUnitData(prev => ({
+      ...prev,
+      specialAbilities: prev.specialAbilities.filter(a => a.name !== abilityName)
+    }));
+  };
+
+  const handleSave = () => {
+    if (!unitData.name.trim()) return;
+    
+    const cardToSave = {
+      ...unitData,
+      id: card?.id || Date.now().toString()
+    };
+    
+    onSave(cardToSave);
+  };
+
+  const convertToCardData = (unit: UnitCard): CardData => ({
+    name: unit.name,
+    number: unit.id,
+    attack: unit.attack,
+    defense: unit.defense,
+    ranged: unit.ranged,
+    movement: unit.movement,
+    morale: unit.morale,
+    experience: unit.experience,
+    totalForce: unit.totalForce,
+    maintenanceCost: unit.maintenanceCost,
+    specialAbilities: unit.specialAbilities.map(a => a.name),
+    currentPosture: unit.currentPosture || 'Ofensiva',
+    normalPressure: unit.normalPressure || 0,
+    permanentPressure: unit.permanentPressure || 0,
+    hits: unit.hits || 0
+  });
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="outline" onClick={onCancel}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
-          <h1 className="text-3xl font-bold">
-            {card ? 'Editar Card' : 'Novo Card'}
-          </h1>
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">
+              {card ? 'Editar Card' : 'Novo Card'}
+            </h1>
+            <p className="text-muted-foreground">
+              {selectedTemplate ? `Usando template: ${selectedTemplate.name}` : 'Configure os atributos da unidade'}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onCancel}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={!unitData.name.trim()}>
+              Salvar Card
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Formulário */}
           <div className="space-y-6">
+            {/* Seleção de Template */}
+            {!card && templates.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Selecionar Template</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {templates.map(template => (
+                      <div
+                        key={template.id}
+                        className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                          selectedTemplate?.id === template.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                        onClick={() => setSelectedTemplate(
+                          selectedTemplate?.id === template.id ? null : template
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={template.templateImage}
+                            alt={template.name}
+                            className="w-16 h-16 object-contain border rounded"
+                          />
+                          <div>
+                            <h4 className="font-medium">{template.name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {template.fields.length} campos mapeados
+                            </p>
+                          </div>
+                          {selectedTemplate?.id === template.id && (
+                            <div className="ml-auto text-primary">✓</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Informações Básicas */}
             <Card>
               <CardHeader>
                 <CardTitle>Informações Básicas</CardTitle>
@@ -171,268 +216,114 @@ export const CardEditor = ({ card, onSave, onCancel }: CardEditorProps) => {
                   <Label htmlFor="name">Nome da Unidade</Label>
                   <Input
                     id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ex: Infantaria Pesada Khinasi"
+                    value={unitData.name}
+                    onChange={(e) => handleAttributeChange('name', e.target.value)}
+                    placeholder="Ex: Infantaria Pesada de Anuire"
                   />
                 </div>
-
+                
                 <div>
                   <Label htmlFor="experience">Nível de Experiência</Label>
                   <Select 
-                    value={formData.experience} 
-                    onValueChange={(value: ExperienceLevel) => 
-                      setFormData(prev => ({ ...prev, experience: value }))
-                    }
+                    value={unitData.experience} 
+                    onValueChange={(value: ExperienceLevel) => handleAttributeChange('experience', value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Green">Green (máx 3)</SelectItem>
-                      <SelectItem value="Profissional">Profissional (máx 4)</SelectItem>
-                      <SelectItem value="Veterano">Veterano (máx 5)</SelectItem>
-                      <SelectItem value="Elite">Elite (máx 6)</SelectItem>
+                      {Object.keys(experienceLimits).map(level => (
+                        <SelectItem key={level} value={level}>
+                          {level} (máx: {experienceLimits[level as ExperienceLevel]})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="backgroundImage">Imagem de Fundo</Label>
-                  <div className="space-y-2">
-                    <Input
-                      id="backgroundImage"
-                      value={typeof formData.backgroundImage === 'string' && formData.backgroundImage.startsWith('http') ? formData.backgroundImage : ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, backgroundImage: e.target.value }))}
-                      placeholder="Cole a URL da imagem aqui"
-                    />
-                    <div className="text-center text-sm text-muted-foreground">ou</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="flex-1"
-                          disabled={isProcessingImage}
-                        />
-                        {formData.backgroundImage && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setFormData(prev => ({ ...prev, backgroundImage: '' }))}
-                            disabled={isProcessingImage}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                      
-                      {/* Advanced processing options */}
-                      {formData.backgroundImage && (
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const input = document.createElement('input');
-                              input.type = 'file';
-                              input.accept = 'image/*';
-                              input.onchange = (e) => {
-                                const file = (e.target as HTMLInputElement).files?.[0];
-                                if (file) handleAdvancedImageProcessing(file, true);
-                              };
-                              input.click();
-                            }}
-                            disabled={isProcessingImage}
-                            className="flex-1"
-                          >
-                            <Wand2 className="w-4 h-4 mr-1" />
-                            Remover Fundo
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {isProcessingImage && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                        Processando imagem...
-                      </div>
-                    )}
-                    
-                    {formData.backgroundImage && (
-                      <div className="mt-2">
-                        <div className="text-sm font-medium mb-1">Preview:</div>
-                        <div 
-                          className="w-full h-20 bg-cover bg-center rounded border"
-                          style={{ backgroundImage: `url(${formData.backgroundImage})` }}
-                        />
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Imagem será automaticamente ajustada para o tamanho do card (10x7cm)
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
+            {/* Atributos */}
             <Card>
               <CardHeader>
-                <CardTitle>Atributos (1-{experienceLimits[formData.experience]})</CardTitle>
+                <CardTitle>Atributos (1-{experienceLimits[unitData.experience]})</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="attack">Ataque</Label>
+              <CardContent className="grid grid-cols-2 gap-4">
+                {[
+                  { key: 'attack', label: 'Ataque', icon: '⚔️' },
+                  { key: 'defense', label: 'Defesa', icon: '🛡️' },
+                  { key: 'ranged', label: 'Tiro', icon: '🏹' },
+                  { key: 'movement', label: 'Movimento', icon: '👟' },
+                  { key: 'morale', label: 'Moral', icon: '💪' }
+                ].map(({ key, label, icon }) => (
+                  <div key={key}>
+                    <Label htmlFor={key}>{icon} {label}</Label>
                     <Input
-                      id="attack"
+                      id={key}
                       type="number"
                       min="1"
-                      max={experienceLimits[formData.experience]}
-                      value={formData.attack}
-                      onChange={(e) => handleAttributeChange('attack', parseInt(e.target.value) || 0)}
+                      max={experienceLimits[unitData.experience]}
+                      value={unitData[key as keyof UnitCard] as number}
+                      onChange={(e) => handleAttributeChange(key as keyof UnitCard, parseInt(e.target.value) || 1)}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="defense">Defesa</Label>
-                    <Input
-                      id="defense"
-                      type="number"
-                      min="1"
-                      max={experienceLimits[formData.experience]}
-                      value={formData.defense}
-                      onChange={(e) => handleAttributeChange('defense', parseInt(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="ranged">Tiro</Label>
-                    <Input
-                      id="ranged"
-                      type="number"
-                      min="0"
-                      max={experienceLimits[formData.experience]}
-                      value={formData.ranged}
-                      onChange={(e) => handleAttributeChange('ranged', parseInt(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="movement">Movimento</Label>
-                    <Input
-                      id="movement"
-                      type="number"
-                      min="1"
-                      max={experienceLimits[formData.experience]}
-                      value={formData.movement}
-                      onChange={(e) => handleAttributeChange('movement', parseInt(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="morale">Moral</Label>
-                    <Input
-                      id="morale"
-                      type="number"
-                      min="1"
-                      max={experienceLimits[formData.experience]}
-                      value={formData.morale}
-                      onChange={(e) => handleAttributeChange('morale', parseInt(e.target.value) || 0)}
-                    />
-                  </div>
-                </div>
+                ))}
               </CardContent>
             </Card>
 
+            {/* Força Total e Manutenção */}
             <Card>
               <CardHeader>
                 <CardTitle>Força Total e Manutenção</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <div className="text-2xl font-bold">{formData.totalForce}</div>
-                    <div className="text-sm text-muted-foreground">Força Total</div>
-                  </div>
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <div className="text-2xl font-bold">{formData.maintenanceCost}</div>
-                    <div className="text-sm text-muted-foreground">Custo Manutenção</div>
-                  </div>
+              <CardContent className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Força Total</Label>
+                  <div className="text-2xl font-bold text-primary">{unitData.totalForce}</div>
+                  <p className="text-sm text-muted-foreground">Calculado automaticamente</p>
+                </div>
+                <div>
+                  <Label>Custo de Manutenção</Label>
+                  <div className="text-2xl font-bold text-secondary">{unitData.maintenanceCost}</div>
+                  <p className="text-sm text-muted-foreground">10% da força total</p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
+          {/* Preview do Card */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Habilidades Especiais</CardTitle>
+                <CardTitle>Preview do Card</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {formData.specialAbilities.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Habilidades Selecionadas</Label>
-                    {formData.specialAbilities.map((ability) => (
-                      <div key={ability.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{ability.name}</span>
-                            <Badge variant={ability.level === 1 ? "secondary" : "default"}>
-                              Nível {ability.level}
-                            </Badge>
-                            <Badge variant="outline">Custo {ability.cost}</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {ability.description}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeSpecialAbility(ability.id)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
+              <CardContent>
+                {selectedTemplate ? (
+                  <div className="flex justify-center">
+                    <CardRenderer
+                      template={selectedTemplate}
+                      data={convertToCardData(unitData)}
+                      className="max-w-full"
+                    />
                   </div>
-                )}
-
-                {availableAbilities.length > 0 && (
-                  <div>
-                    <Label>Adicionar Habilidade</Label>
-                    <Select onValueChange={addSpecialAbility}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma habilidade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableAbilities.map((ability) => (
-                          <SelectItem key={ability.id} value={ability.id}>
-                            <div className="flex items-center gap-2">
-                              <span>{ability.name}</span>
-                              <Badge variant={ability.level === 1 ? "secondary" : "default"} className="text-xs">
-                                Nível {ability.level}
-                              </Badge>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                ) : (
+                  <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
+                    <h3 className="text-lg font-medium mb-2">Preview do Card</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {templates.length > 0 
+                        ? 'Selecione um template para ver o preview' 
+                        : 'Crie um template para visualizar o card'
+                      }
+                    </p>
+                    <div className="text-sm space-y-1">
+                      <div><strong>Nome:</strong> {unitData.name || 'Sem nome'}</div>
+                      <div><strong>Força:</strong> {unitData.totalForce}</div>
+                      <div><strong>Ataque:</strong> {unitData.attack} | <strong>Defesa:</strong> {unitData.defense}</div>
+                    </div>
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            <div className="flex gap-4">
-              <Button onClick={onCancel} variant="outline" className="flex-1">
-                Cancelar
-              </Button>
-              <Button onClick={handleSave} className="flex-1">
-                <Save className="w-4 h-4 mr-2" />
-                Salvar Card
-              </Button>
-            </div>
           </div>
         </div>
       </div>

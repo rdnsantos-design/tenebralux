@@ -90,6 +90,7 @@ const Index = () => {
     return (
       <CardEditor
         card={editingCard}
+        templates={templates}
         onSave={handleSaveCard}
         onCancel={() => setShowEditor(false)}
       />
