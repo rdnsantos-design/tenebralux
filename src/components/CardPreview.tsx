@@ -55,17 +55,23 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                   background: white;
                   border: 1px solid #ddd;
                   flex-shrink: 0;
+                  overflow: hidden;
                 }
                 .card-container > div {
                   width: 100% !important;
                   height: 100% !important;
                   position: relative !important;
+                  background-size: cover !important;
+                  background-position: center !important;
+                  background-repeat: no-repeat !important;
                 }
                 .card-container img {
                   width: 100% !important;
                   height: 100% !important;
                   object-fit: cover !important;
                   display: block !important;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
                 }
                 .card-container > div > div {
                   position: absolute !important;
@@ -152,12 +158,13 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
               id="printable-card" 
               className="card-container"
               style={{
-                width: `${template.width}px`,
-                height: `${template.height}px`,
+                width: '400px',
+                height: '260px',
                 maxWidth: 'none',
                 maxHeight: 'none',
                 margin: '0 auto',
-                display: 'inline-block'
+                display: 'inline-block',
+                aspectRatio: '100/65'
               }}
             >
               <CardRenderer 
