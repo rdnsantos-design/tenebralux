@@ -6,7 +6,7 @@ import { Plus, Edit, Download, Eye, Settings, Image } from "lucide-react";
 import { CardEditor } from "@/components/CardEditor";
 import { CardPreview } from "@/components/CardPreview";
 import { TemplateCreator } from "@/components/TemplateCreator";
-import { SimpleTemplateEditor } from "@/components/SimpleTemplateEditor";
+import { TemplateMapper } from "@/components/TemplateMapper";
 import { UnitCard } from "@/types/UnitCard";
 import { CardTemplate } from "@/types/CardTemplate";
 
@@ -78,7 +78,7 @@ const Index = () => {
               Voltar aos Templates
             </Button>
           </div>
-          <SimpleTemplateEditor
+          <TemplateMapper 
             template={editingTemplate}
             onTemplateUpdate={handleTemplateUpdate}
             onFinish={() => setEditingTemplate(null)}

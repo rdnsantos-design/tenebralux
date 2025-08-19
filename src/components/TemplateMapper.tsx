@@ -65,20 +65,23 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
     
-    // Converter para coordenadas proporcionais (0-1)
-    const x = clickX / rect.width;
-    const y = clickY / rect.height;
+    // Converter para coordenadas em pixels baseadas nas dimensões do template
+    const scaleX = template.width / rect.width;
+    const scaleY = template.height / rect.height;
+    
+    const x = Math.round(clickX * scaleX);
+    const y = Math.round(clickY * scaleY);
 
     const newField: TextFieldMapping = {
       id: selectedField,
-      x: Number(x.toFixed(4)),
-      y: Number(y.toFixed(4)),
-      width: 0.1, // 10% da largura
-      height: 0.05, // 5% da altura
-      fontSize: 16,
-      fontFamily: 'Arial, sans-serif',
+      x: x,
+      y: y,
+      width: 100, // largura padrão em pixels
+      height: 30, // altura padrão em pixels
+      fontSize: 24,
+      fontFamily: 'Cinzel, serif',
       color: '#000000',
-      textAlign: 'left',
+      textAlign: 'center',
       textShadow: false,
     };
 
@@ -143,21 +146,27 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
     if (!field) return;
 
     if (dragData.mode === 'move') {
-      // Converter delta para proporções
-      const deltaXProp = deltaX / rect.width;
-      const deltaYProp = deltaY / rect.height;
+      // Converter delta para pixels
+      const scaleX = template.width / rect.width;
+      const scaleY = template.height / rect.height;
       
-      const newX = Math.max(0, Math.min(1, dragData.startX + deltaXProp));
-      const newY = Math.max(0, Math.min(1, dragData.startY + deltaYProp));
-      updateField(dragData.field, { x: Number(newX.toFixed(4)), y: Number(newY.toFixed(4)) });
+      const deltaXPx = deltaX * scaleX;
+      const deltaYPx = deltaY * scaleY;
+      
+      const newX = Math.max(0, Math.min(template.width - (field.width || 100), dragData.startX + deltaXPx));
+      const newY = Math.max(0, Math.min(template.height - (field.height || 30), dragData.startY + deltaYPx));
+      updateField(dragData.field, { x: Math.round(newX), y: Math.round(newY) });
     } else if (dragData.mode === 'resize') {
-      // Converter delta para proporções
-      const deltaWidthProp = deltaX / rect.width;
-      const deltaHeightProp = deltaY / rect.height;
+      // Converter delta para pixels
+      const scaleX = template.width / rect.width;
+      const scaleY = template.height / rect.height;
       
-      const newWidth = Math.max(0.02, Math.min(1, (field.width || 0.1) + deltaWidthProp));
-      const newHeight = Math.max(0.02, Math.min(1, (field.height || 0.05) + deltaHeightProp));
-      updateField(dragData.field, { width: Number(newWidth.toFixed(4)), height: Number(newHeight.toFixed(4)) });
+      const deltaWidthPx = deltaX * scaleX;
+      const deltaHeightPx = deltaY * scaleY;
+      
+      const newWidth = Math.max(20, Math.min(template.width - field.x, (field.width || 100) + deltaWidthPx));
+      const newHeight = Math.max(15, Math.min(template.height - field.y, (field.height || 30) + deltaHeightPx));
+      updateField(dragData.field, { width: Math.round(newWidth), height: Math.round(newHeight) });
     }
   };
 
@@ -258,20 +267,23 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
 
             {/* Visualizar campos mapeados com controles visuais */}
             {template.fields.map(field => {
-              // Calcular posições e tamanhos baseados nas proporções
+              // Calcular posições e tamanhos baseados nas dimensões do template
               const imgRect = imageRef.current?.getBoundingClientRect();
               if (!imgRect) return null;
               
-              const leftPx = field.x * imgRect.width;
-              const topPx = field.y * imgRect.height;
-              const widthPx = (field.width || 0.1) * imgRect.width;
-              const heightPx = (field.height || 0.05) * imgRect.height;
+              const scaleX = imgRect.width / template.width;
+              const scaleY = imgRect.height / template.height;
+              
+              const leftPx = (field.x as number) * scaleX;
+              const topPx = (field.y as number) * scaleY;
+              const widthPx = (field.width || 100) * scaleX;
+              const heightPx = (field.height || 30) * scaleY;
               
               return (
                 <div key={field.id}>
                   {/* Campo principal */}
                   <div
-                    className="absolute border-2 border-blue-500 bg-blue-500/10 cursor-move"
+                    className="absolute border-2 border-blue-500 bg-blue-500/10 cursor-move flex items-center justify-center"
                     style={{
                       left: `${leftPx}px`,
                       top: `${topPx}px`,
@@ -281,13 +293,34 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                     onMouseDown={(e) => handleMouseDown(e, field.id, 'move')}
                   >
                     {/* Label do campo */}
-                    <div className="absolute -top-6 left-0 bg-blue-500 text-white px-1 text-xs whitespace-nowrap">
+                    <div className="absolute -top-6 left-0 bg-blue-500 text-white px-1 text-xs whitespace-nowrap rounded">
                       {FIELD_OPTIONS.find(opt => opt.id === field.id)?.label}
+                    </div>
+                    
+                    {/* Texto de demonstração */}
+                    <div 
+                      className="text-xs font-medium pointer-events-none"
+                      style={{
+                        fontSize: `${Math.max(8, field.fontSize * Math.min(scaleX, scaleY) * 0.6)}px`,
+                        color: field.color,
+                        fontFamily: field.fontFamily
+                      }}
+                    >
+                      {field.id === 'name' ? 'Nome da Unidade' : 
+                       field.id === 'attack' ? '8' :
+                       field.id === 'defense' ? '6' :
+                       field.id === 'ranged' ? '4' :
+                       field.id === 'movement' ? '3' :
+                       field.id === 'morale' ? '7' :
+                       field.id === 'experience' ? 'Veterano' :
+                       field.id === 'total-force' ? '25' :
+                       field.id === 'maintenance-cost' ? '3' :
+                       'Texto'}
                     </div>
                     
                     {/* Alça de redimensionamento */}
                     <div
-                      className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 cursor-se-resize"
+                      className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 cursor-se-resize border border-white"
                       onMouseDown={(e) => handleMouseDown(e, field.id, 'resize')}
                     />
                   </div>
@@ -322,39 +355,35 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                 
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                   <div>
-                    <Label>X (%)</Label>
+                    <Label>X (px)</Label>
                     <Input
                       type="number"
-                      step="0.1"
-                      value={(field.x * 100).toFixed(1)}
-                      onChange={e => updateField(field.id, { x: Number((parseFloat(e.target.value) / 100).toFixed(4)) })}
+                      value={field.x}
+                      onChange={e => updateField(field.id, { x: parseInt(e.target.value) || 0 })}
                     />
                   </div>
                   <div>
-                    <Label>Y (%)</Label>
+                    <Label>Y (px)</Label>
                     <Input
                       type="number"
-                      step="0.1"
-                      value={(field.y * 100).toFixed(1)}
-                      onChange={e => updateField(field.id, { y: Number((parseFloat(e.target.value) / 100).toFixed(4)) })}
+                      value={field.y}
+                      onChange={e => updateField(field.id, { y: parseInt(e.target.value) || 0 })}
                     />
                   </div>
                   <div>
-                    <Label>Largura (%)</Label>
+                    <Label>Largura (px)</Label>
                     <Input
                       type="number"
-                      step="0.1"
-                      value={((field.width || 0.1) * 100).toFixed(1)}
-                      onChange={e => updateField(field.id, { width: Number((parseFloat(e.target.value) / 100).toFixed(4)) })}
+                      value={field.width || 100}
+                      onChange={e => updateField(field.id, { width: parseInt(e.target.value) || 100 })}
                     />
                   </div>
                   <div>
-                    <Label>Altura (%)</Label>
+                    <Label>Altura (px)</Label>
                     <Input
                       type="number"
-                      step="0.1"
-                      value={((field.height || 0.05) * 100).toFixed(1)}
-                      onChange={e => updateField(field.id, { height: Number((parseFloat(e.target.value) / 100).toFixed(4)) })}
+                      value={field.height || 30}
+                      onChange={e => updateField(field.id, { height: parseInt(e.target.value) || 30 })}
                     />
                   </div>
                   <div>
