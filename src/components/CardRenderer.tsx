@@ -10,7 +10,12 @@ interface CardRendererProps {
 export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className }) => {
   const renderField = (fieldId: string, value: string | number) => {
     const field = template.fields.find(f => f.id === fieldId);
-    if (!field) return null;
+    if (!field) {
+      console.log(`Campo ${fieldId} não encontrado no template. Campos disponíveis:`, template.fields.map(f => f.id));
+      return null;
+    }
+
+    console.log(`Renderizando campo ${fieldId}:`, field, `com valor:`, value);
 
     const style: React.CSSProperties = {
       position: 'absolute',
