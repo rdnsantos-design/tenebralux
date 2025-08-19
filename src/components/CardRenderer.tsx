@@ -12,18 +12,23 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     const field = template.fields.find(f => f.id === fieldId);
     if (!field) return null;
 
+    // Calcular escala baseada no container atual vs template original
+    const containerElement = document.querySelector('.card-container');
+    const scaleX = containerElement ? containerElement.clientWidth / template.width : 1;
+    const scaleY = containerElement ? containerElement.clientHeight / template.height : 1;
+
     const style: React.CSSProperties = {
       position: 'absolute',
-      left: `${field.x}px`,
-      top: `${field.y}px`,
-      fontSize: `${field.fontSize}px`,
+      left: `${field.x * scaleX}px`,
+      top: `${field.y * scaleY}px`,
+      fontSize: `${field.fontSize * Math.min(scaleX, scaleY)}px`,
       fontFamily: field.fontFamily,
       fontWeight: field.fontWeight || 'normal',
       color: field.color,
       textAlign: field.textAlign || 'left',
       transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
-      width: field.width ? `${field.width}px` : 'auto',
-      height: field.height ? `${field.height}px` : 'auto',
+      width: field.width ? `${field.width * scaleX}px` : 'auto',
+      height: field.height ? `${field.height * scaleY}px` : 'auto',
       overflow: 'hidden',
       lineHeight: '1.2',
       maxHeight: field.maxLines ? `${field.fontSize * 1.2 * field.maxLines}px` : undefined,
@@ -147,7 +152,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
           width: '100%', 
           height: '100%',
           display: 'block',
-          objectFit: 'cover'
+          objectFit: 'contain'
         }}
       />
       
