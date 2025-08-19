@@ -54,7 +54,12 @@ const Index = () => {
 
   // Salvar templates no localStorage sempre que mudarem
   useEffect(() => {
-    localStorage.setItem('cardTemplates', JSON.stringify(templates));
+    if (templates.length > 0) {
+      console.log('Salvando templates no localStorage:', templates);
+      localStorage.setItem('cardTemplates', JSON.stringify(templates));
+      // Backup adicional para proteger os dados
+      localStorage.setItem('cardTemplates_backup', JSON.stringify(templates));
+    }
   }, [templates]);
 
   // Salvar cards no localStorage sempre que mudarem
