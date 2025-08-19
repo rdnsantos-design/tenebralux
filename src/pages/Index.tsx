@@ -21,12 +21,17 @@ const Index = () => {
 
   // Carregar dados do localStorage na inicialização
   useEffect(() => {
+    console.log('Carregando dados do localStorage...');
     const savedTemplates = localStorage.getItem('cardTemplates');
     const savedCards = localStorage.getItem('unitCards');
+    
+    console.log('Templates salvos:', savedTemplates);
+    console.log('Cards salvos:', savedCards);
     
     if (savedTemplates) {
       try {
         const parsedTemplates = JSON.parse(savedTemplates);
+        console.log('Templates parseados:', parsedTemplates);
         setTemplates(parsedTemplates);
       } catch (error) {
         console.error('Erro ao carregar templates:', error);
@@ -36,6 +41,7 @@ const Index = () => {
     if (savedCards) {
       try {
         const parsedCards = JSON.parse(savedCards);
+        console.log('Cards parseados:', parsedCards);
         setCards(parsedCards);
       } catch (error) {
         console.error('Erro ao carregar cards:', error);
