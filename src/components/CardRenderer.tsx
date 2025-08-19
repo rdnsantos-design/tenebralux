@@ -6,7 +6,6 @@ interface CardRendererProps {
   data: CardData;
   className?: string;
   isExport?: boolean;
-  wireframeMode?: boolean;
 }
 
 // Constantes do sistema de coordenadas
@@ -23,13 +22,7 @@ interface FieldSpec {
   h: number;
 }
 
-export const CardRenderer: React.FC<CardRendererProps> = ({ 
-  template, 
-  data, 
-  className, 
-  isExport = false, 
-  wireframeMode = false 
-}) => {
+export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className, isExport = false }) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [isFrameReady, setIsFrameReady] = useState(false);
 
@@ -116,17 +109,8 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
       overflow: 'hidden'
     };
 
-    const dataLabel = wireframeMode ? 
-      `${fieldId} (${Math.round(spec.x)},${Math.round(spec.y)} ${Math.round(spec.w)}×${Math.round(spec.h)})` : 
-      undefined;
-
     return (
-      <div 
-        key={fieldId} 
-        className="field" 
-        style={style}
-        data-label={dataLabel}
-      >
+      <div key={fieldId} className="field" style={style}>
         {value}
       </div>
     );
@@ -148,10 +132,6 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
       const spec: FieldSpec = { x, y, w: boxSize, h: boxSize };
       const pos = getScaledPosition(spec);
       
-      const dataLabel = wireframeMode ? 
-        `pressure-${i} (${Math.round(x)},${Math.round(y)} ${boxSize}×${boxSize})` : 
-        undefined;
-      
       boxes.push(
         <div
           key={`pressure-${i}`}
@@ -164,7 +144,6 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
             backgroundColor: isFilled ? '#000' : 'transparent',
             border: '1px solid #000',
           }}
-          data-label={dataLabel}
         />
       );
     }
@@ -188,10 +167,6 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
       const spec: FieldSpec = { x, y, w: boxSize, h: boxSize };
       const pos = getScaledPosition(spec);
       
-      const dataLabel = wireframeMode ? 
-        `life-${i} (${Math.round(x)},${Math.round(y)} ${boxSize}×${boxSize})` : 
-        undefined;
-      
       boxes.push(
         <div
           key={`life-${i}`}
@@ -204,7 +179,6 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
             backgroundColor: isFilled ? '#ff69b4' : 'transparent',
             border: '1px solid #000',
           }}
-          data-label={dataLabel}
         />
       );
     }
@@ -232,10 +206,6 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
 
         const pos = getScaledPosition(spec);
         
-        const dataLabel = wireframeMode ? 
-          `special-ability-${i} (${Math.round(spec.x)},${Math.round(spec.y)} ${Math.round(spec.w)}×${Math.round(spec.h)})` : 
-          undefined;
-        
         elements.push(
           <div
             key={`ability-${i}`}
@@ -257,7 +227,6 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
               alignItems: 'center',
               justifyContent: abilityField.textAlign === 'center' ? 'center' : abilityField.textAlign === 'right' ? 'flex-end' : 'flex-start',
             }}
-            data-label={dataLabel}
           >
             {data.specialAbilities[i - 1]}
           </div>
@@ -290,7 +259,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({
   return (
     <div 
       ref={frameRef}
-      className={`card-frame ${wireframeMode ? 'wireframe-mode' : ''} ${className || ''}`}
+      className={`card-frame ${className || ''}`}
       style={{ 
         backgroundImage: `url(${template.templateImage})`
       }}

@@ -59,7 +59,6 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   });
 
   const [imageProcessing, setImageProcessing] = useState(false);
-  const [wireframeMode, setWireframeMode] = useState(false);
 
   const calculateTotalForce = useCallback(() => {
     const baseForce = unitData.attack + unitData.defense + unitData.ranged + unitData.movement + unitData.morale;
@@ -351,37 +350,17 @@ export const CardEditor: React.FC<CardEditorProps> = ({
           {/* Preview do Card */}
           <div className="space-y-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader>
                 <CardTitle>Preview do Card</CardTitle>
-                {selectedTemplate && (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="wireframe-mode"
-                      checked={wireframeMode}
-                      onChange={(e) => setWireframeMode(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    <Label htmlFor="wireframe-mode" className="text-sm font-normal">
-                      Wireframe Preview (sem fundo)
-                    </Label>
-                  </div>
-                )}
               </CardHeader>
               <CardContent>
                 {selectedTemplate ? (
-                  <div className="flex justify-center relative">
+                  <div className="flex justify-center">
                     <CardRenderer
                       template={selectedTemplate}
                       data={convertToCardData(unitData)}
                       className="max-w-full"
-                      wireframeMode={wireframeMode}
                     />
-                    {wireframeMode && (
-                      <div className="wireframe-badge">
-                        Wireframe Preview — sem fundo (somente esta tela)
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">

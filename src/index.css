@@ -47,54 +47,6 @@ html, body {
   z-index: 10;
 }
 
-/* Card preview styling for creation screen */
-.card-preview {
-  object-fit: contain !important;
-  background-size: contain !important;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-/* Wireframe mode styles */
-.card-frame.wireframe-mode {
-  background: #f7f7f9 !important;
-  background-image: none !important;
-}
-
-.card-frame.wireframe-mode .field {
-  outline: 1px dashed #888;
-  background: rgba(255,255,255,0.6);
-  pointer-events: auto;
-}
-
-.card-frame.wireframe-mode .field::after {
-  content: attr(data-label);
-  position: absolute;
-  top: -14px; 
-  left: 0;
-  font: 600 10px/1 ui-sans-serif, system-ui, -apple-system;
-  color: #444;
-  background: #fff;
-  padding: 1px 4px;
-  border: 1px solid #aaa;
-  border-radius: 3px;
-  white-space: nowrap;
-  z-index: 1;
-}
-
-.wireframe-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: #fff;
-  border: 1px solid #888;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font: 600 11px/1 ui-sans-serif, system-ui;
-  color: #555;
-  z-index: 20;
-}
-
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
