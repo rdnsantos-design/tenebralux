@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Download, Printer } from "lucide-react";
+import { useState } from "react";
 import { UnitCard } from "@/types/UnitCard";
 import { CardRenderer } from "@/components/CardRenderer";
 import { CardTemplate, CardData } from "@/types/CardTemplate";
@@ -13,11 +15,18 @@ interface CardPreviewProps {
 }
 
 export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
+  const [cardsPerPage, setCardsPerPage] = useState(1);
+
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       const cardElement = document.getElementById('printable-card');
       if (cardElement) {
+        // Criar múltiplas cópias do card baseado na seleção
+        const cardsHtml = Array(cardsPerPage).fill(0).map((_, index) => 
+          `<div class="card-container">${cardElement.innerHTML}</div>`
+        ).join('');
+
         printWindow.document.write(`
           <html>
             <head>
@@ -26,38 +35,67 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                 * { box-sizing: border-box; margin: 0; padding: 0; }
                 body { 
                   margin: 0; 
-                  padding: 20px; 
+                  padding: 10mm; 
                   font-family: 'Cinzel', serif; 
                   background: white;
+                  font-size: 12px;
+                }
+                .print-container {
                   display: flex;
-                  justify-content: center;
-                  align-items: center;
-                  min-height: 100vh;
+                  flex-wrap: wrap;
+                  gap: 5mm;
+                  justify-content: flex-start;
+                  align-items: flex-start;
                 }
                 .card-container {
                   display: inline-block !important;
-                  width: 10cm !important;
-                  height: 6.5cm !important;
-                  max-width: none !important;
-                  max-height: none !important;
-                  position: relative;
+                  width: 100mm !important;
+                  height: 65mm !important;
+                  position: relative !important;
+                  background: white;
+                  border: 1px solid #ddd;
+                  flex-shrink: 0;
+                }
+                .card-container > div {
+                  width: 100% !important;
+                  height: 100% !important;
+                  position: relative !important;
                 }
                 .card-container img {
+                  width: 100% !important;
+                  height: 100% !important;
+                  object-fit: cover !important;
                   display: block !important;
-                  width: 10cm !important;
-                  height: 6.5cm !important;
-                  max-width: none !important;
-                  max-height: none !important;
-                  object-fit: contain !important;
+                }
+                .card-container > div > div {
+                  position: absolute !important;
+                  color: inherit !important;
+                  font-family: inherit !important;
+                  font-size: inherit !important;
+                  font-weight: inherit !important;
+                  text-align: inherit !important;
                 }
                 @media print {
-                  body { margin: 0; padding: 0; }
-                  .card-container { page-break-after: always; }
+                  body { 
+                    margin: 0; 
+                    padding: 5mm; 
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                  }
+                  .print-container {
+                    gap: 3mm;
+                  }
+                  .card-container { 
+                    page-break-inside: avoid;
+                    border: 0.5pt solid #999;
+                  }
                 }
               </style>
             </head>
             <body>
-              ${cardElement.outerHTML}
+              <div class="print-container">
+                ${cardsHtml}
+              </div>
             </body>
           </html>
         `);
@@ -84,7 +122,19 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
             </Button>
             <h1 className="text-3xl font-bold">Preview do Card</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <Select value={cardsPerPage.toString()} onValueChange={(value) => setCardsPerPage(parseInt(value))}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 card</SelectItem>
+                <SelectItem value="2">2 cards</SelectItem>
+                <SelectItem value="3">3 cards</SelectItem>
+                <SelectItem value="4">4 cards</SelectItem>
+                <SelectItem value="6">6 cards</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" onClick={handleDownload}>
               <Download className="w-4 h-4 mr-2" />
               Download
