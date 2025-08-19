@@ -156,13 +156,20 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
         link.href = canvas.toDataURL('image/png');
         link.click();
       } else {
-        // Card único
+        // Card único - adicionar flag de exportação
+        cardElement.setAttribute('data-export', 'true');
+        
         const canvas = await html2canvas(cardElement, {
           backgroundColor: 'white',
           scale: 2,
           useCORS: true,
-          allowTaint: true
+          allowTaint: true,
+          width: 1181,
+          height: 768
         });
+        
+        // Remover flag após exportação
+        cardElement.removeAttribute('data-export');
 
         const link = document.createElement('a');
         link.download = `${card.name}.png`;
