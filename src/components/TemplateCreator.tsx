@@ -115,9 +115,16 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({ onTemplateCrea
                 <div className="text-sm text-muted-foreground">
                   <p>Dimensões originais: {imageDimensions.width} x {imageDimensions.height} pixels</p>
                   <p>Dimensões do template: {STANDARD_WIDTH} x {STANDARD_HEIGHT} pixels</p>
-                  <p className="text-xs mt-1 text-amber-600">
-                    ⚠️ A imagem será redimensionada para as dimensões padrão do sistema
-                  </p>
+                  {(imageDimensions.width !== STANDARD_WIDTH || imageDimensions.height !== STANDARD_HEIGHT) && (
+                    <p className="text-xs mt-1 text-amber-600">
+                      ⚠️ A imagem será redimensionada para as dimensões padrão do sistema
+                    </p>
+                  )}
+                  {(imageDimensions.width === STANDARD_WIDTH && imageDimensions.height === STANDARD_HEIGHT) && (
+                    <p className="text-xs mt-1 text-green-600">
+                      ✅ A imagem já possui as dimensões corretas do sistema
+                    </p>
+                  )}
                 </div>
               )}
 
