@@ -36,18 +36,19 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                 }
                 .card-container {
                   display: inline-block !important;
-                  width: auto !important;
-                  height: auto !important;
+                  width: 9cm !important;
+                  height: 6.5cm !important;
                   max-width: none !important;
                   max-height: none !important;
                   position: relative;
                 }
                 .card-container img {
                   display: block !important;
-                  width: auto !important;
-                  height: auto !important;
+                  width: 9cm !important;
+                  height: 6.5cm !important;
                   max-width: none !important;
                   max-height: none !important;
+                  object-fit: contain !important;
                 }
                 @media print {
                   body { margin: 0; padding: 0; }
