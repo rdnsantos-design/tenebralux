@@ -64,8 +64,8 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     const toPxW = (w: number) => Math.round(w * scaleX);
     const toPxH = (h: number) => Math.round(h * scaleY);
 
-    const L = clamp(toPxX(spec.x), 0, W - toPxW(spec.w));
-    const T = clamp(toPxY(spec.y) - 8, 0, H - toPxH(spec.h)); // Move 8px up
+    const L = toPxX(spec.x); // Mantém posição exata mapeada
+    const T = toPxY(spec.y) - 8; // Move 8px up, mantém posição exata
 
     return {
       left: L,
