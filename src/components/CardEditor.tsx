@@ -55,11 +55,6 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     totalForce: card?.totalForce || 0,
     maintenanceCost: card?.maintenanceCost || 0,
     specialAbilities: card?.specialAbilities || [],
-    currentPosture: card?.currentPosture || 'Ofensiva',
-    normalPressure: card?.normalPressure || 0,
-    permanentPressure: card?.permanentPressure || 0,
-    hits: card?.hits || 0,
-    disbanded: card?.disbanded || false,
     backgroundImage: card?.backgroundImage || ''
   });
 
@@ -132,10 +127,10 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     totalForce: unit.totalForce,
     maintenanceCost: unit.maintenanceCost,
     specialAbilities: unit.specialAbilities.map(a => a.name),
-    currentPosture: unit.currentPosture || 'Ofensiva',
-    normalPressure: unit.normalPressure || 0,
-    permanentPressure: unit.permanentPressure || 0,
-    hits: unit.hits || 0
+    currentPosture: 'Ofensiva',
+    normalPressure: 0,
+    permanentPressure: 0,
+    hits: 0
   });
 
   return (
@@ -268,6 +263,67 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                     />
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+
+            {/* Habilidades Especiais */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Habilidades Especiais (máx 5)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Habilidades Selecionadas ({unitData.specialAbilities.length}/5)</Label>
+                  {unitData.specialAbilities.length > 0 ? (
+                    <div className="space-y-2">
+                      {unitData.specialAbilities.map((ability) => (
+                        <div key={ability.id} className="flex items-center justify-between p-2 border rounded">
+                          <div>
+                            <span className="font-medium">{ability.name}</span>
+                            <span className="text-sm text-muted-foreground ml-2">
+                              (Nível {ability.level}, Custo: {ability.cost})
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeSpecialAbility(ability.name)}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhuma habilidade selecionada</p>
+                  )}
+                </div>
+                
+                <div>
+                  <Label>Adicionar Habilidade</Label>
+                  <Select 
+                    onValueChange={(abilityId) => {
+                      const ability = specialAbilitiesDatabase.find(a => a.id === abilityId);
+                      if (ability && unitData.specialAbilities.length < 5) {
+                        addSpecialAbility(ability);
+                      }
+                    }}
+                    disabled={unitData.specialAbilities.length >= 5}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma habilidade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {specialAbilitiesDatabase
+                        .filter(ability => !unitData.specialAbilities.find(a => a.name === ability.name))
+                        .map(ability => (
+                          <SelectItem key={ability.id} value={ability.id}>
+                            {ability.name} (Nível {ability.level}) - {ability.description}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardContent>
             </Card>
 

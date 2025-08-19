@@ -143,9 +143,9 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
         }}
       />
       
-      {/* Campos de texto simples */}
+      {/* Campos mapeados */}
       {renderField('name', data.name)}
-      {renderField('number', `# ${data.number}`)}
+      {renderField('number', data.number)}
       {renderField('attack', data.attack)}
       {renderField('defense', data.defense)}
       {renderField('ranged', data.ranged)}
@@ -154,12 +154,9 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
       {renderField('experience', data.experience)}
       {renderField('total-force', data.totalForce)}
       {renderField('maintenance-cost', data.maintenanceCost)}
-      {renderField('posture', data.currentPosture)}
       
-      {/* Campos especiais */}
+      {/* Habilidades especiais */}
       {renderSpecialAbilities()}
-      {renderPressureBoxes()}
-      {renderLifeBoxes()}
     </div>
   );
 };
