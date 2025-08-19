@@ -120,7 +120,7 @@ const Index = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="cards" className="w-full">
+        <Tabs defaultValue="templates" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="cards">Cards</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
