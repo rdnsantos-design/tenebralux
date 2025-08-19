@@ -62,15 +62,19 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
     if (!clickMode || !selectedField) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    // Converter para coordenadas proporcionais (0-1)
+    const x = clickX / rect.width;
+    const y = clickY / rect.height;
 
     const newField: TextFieldMapping = {
       id: selectedField,
-      x: Math.round(x),
-      y: Math.round(y),
-      width: 100,
-      height: 20,
+      x: Number(x.toFixed(4)),
+      y: Number(y.toFixed(4)),
+      width: 0.1, // 10% da largura
+      height: 0.05, // 5% da altura
       fontSize: 16,
       fontFamily: 'Arial, sans-serif',
       color: '#000000',
@@ -139,13 +143,21 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
     if (!field) return;
 
     if (dragData.mode === 'move') {
-      const newX = Math.max(0, dragData.startX + deltaX);
-      const newY = Math.max(0, dragData.startY + deltaY);
-      updateField(dragData.field, { x: newX, y: newY });
+      // Converter delta para proporções
+      const deltaXProp = deltaX / rect.width;
+      const deltaYProp = deltaY / rect.height;
+      
+      const newX = Math.max(0, Math.min(1, dragData.startX + deltaXProp));
+      const newY = Math.max(0, Math.min(1, dragData.startY + deltaYProp));
+      updateField(dragData.field, { x: Number(newX.toFixed(4)), y: Number(newY.toFixed(4)) });
     } else if (dragData.mode === 'resize') {
-      const newWidth = Math.max(20, (field.width || 100) + deltaX);
-      const newHeight = Math.max(10, (field.height || 20) + deltaY);
-      updateField(dragData.field, { width: newWidth, height: newHeight });
+      // Converter delta para proporções
+      const deltaWidthProp = deltaX / rect.width;
+      const deltaHeightProp = deltaY / rect.height;
+      
+      const newWidth = Math.max(0.02, Math.min(1, (field.width || 0.1) + deltaWidthProp));
+      const newHeight = Math.max(0.02, Math.min(1, (field.height || 0.05) + deltaHeightProp));
+      updateField(dragData.field, { width: Number(newWidth.toFixed(4)), height: Number(newHeight.toFixed(4)) });
     }
   };
 
@@ -245,32 +257,43 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
             )}
 
             {/* Visualizar campos mapeados com controles visuais */}
-            {template.fields.map(field => (
-              <div key={field.id}>
-                {/* Campo principal */}
-                <div
-                  className="absolute border-2 border-blue-500 bg-blue-500/10 cursor-move"
-                  style={{
-                    left: `${field.x}px`,
-                    top: `${field.y}px`,
-                    width: `${field.width || 100}px`,
-                    height: `${field.height || 20}px`,
-                  }}
-                  onMouseDown={(e) => handleMouseDown(e, field.id, 'move')}
-                >
-                  {/* Label do campo */}
-                  <div className="absolute -top-6 left-0 bg-blue-500 text-white px-1 text-xs whitespace-nowrap">
-                    {FIELD_OPTIONS.find(opt => opt.id === field.id)?.label}
-                  </div>
-                  
-                  {/* Alça de redimensionamento */}
+            {template.fields.map(field => {
+              // Calcular posições e tamanhos baseados nas proporções
+              const imgRect = imageRef.current?.getBoundingClientRect();
+              if (!imgRect) return null;
+              
+              const leftPx = field.x * imgRect.width;
+              const topPx = field.y * imgRect.height;
+              const widthPx = (field.width || 0.1) * imgRect.width;
+              const heightPx = (field.height || 0.05) * imgRect.height;
+              
+              return (
+                <div key={field.id}>
+                  {/* Campo principal */}
                   <div
-                    className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 cursor-se-resize"
-                    onMouseDown={(e) => handleMouseDown(e, field.id, 'resize')}
-                  />
+                    className="absolute border-2 border-blue-500 bg-blue-500/10 cursor-move"
+                    style={{
+                      left: `${leftPx}px`,
+                      top: `${topPx}px`,
+                      width: `${widthPx}px`,
+                      height: `${heightPx}px`,
+                    }}
+                    onMouseDown={(e) => handleMouseDown(e, field.id, 'move')}
+                  >
+                    {/* Label do campo */}
+                    <div className="absolute -top-6 left-0 bg-blue-500 text-white px-1 text-xs whitespace-nowrap">
+                      {FIELD_OPTIONS.find(opt => opt.id === field.id)?.label}
+                    </div>
+                    
+                    {/* Alça de redimensionamento */}
+                    <div
+                      className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 cursor-se-resize"
+                      onMouseDown={(e) => handleMouseDown(e, field.id, 'resize')}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -299,35 +322,39 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                 
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                   <div>
-                    <Label>X</Label>
+                    <Label>X (%)</Label>
                     <Input
                       type="number"
-                      value={field.x}
-                      onChange={e => updateField(field.id, { x: parseInt(e.target.value) || 0 })}
+                      step="0.1"
+                      value={(field.x * 100).toFixed(1)}
+                      onChange={e => updateField(field.id, { x: Number((parseFloat(e.target.value) / 100).toFixed(4)) })}
                     />
                   </div>
                   <div>
-                    <Label>Y</Label>
+                    <Label>Y (%)</Label>
                     <Input
                       type="number"
-                      value={field.y}
-                      onChange={e => updateField(field.id, { y: parseInt(e.target.value) || 0 })}
+                      step="0.1"
+                      value={(field.y * 100).toFixed(1)}
+                      onChange={e => updateField(field.id, { y: Number((parseFloat(e.target.value) / 100).toFixed(4)) })}
                     />
                   </div>
                   <div>
-                    <Label>Largura</Label>
+                    <Label>Largura (%)</Label>
                     <Input
                       type="number"
-                      value={field.width || 100}
-                      onChange={e => updateField(field.id, { width: parseInt(e.target.value) || 100 })}
+                      step="0.1"
+                      value={((field.width || 0.1) * 100).toFixed(1)}
+                      onChange={e => updateField(field.id, { width: Number((parseFloat(e.target.value) / 100).toFixed(4)) })}
                     />
                   </div>
                   <div>
-                    <Label>Altura</Label>
+                    <Label>Altura (%)</Label>
                     <Input
                       type="number"
-                      value={field.height || 20}
-                      onChange={e => updateField(field.id, { height: parseInt(e.target.value) || 20 })}
+                      step="0.1"
+                      value={((field.height || 0.05) * 100).toFixed(1)}
+                      onChange={e => updateField(field.id, { height: Number((parseFloat(e.target.value) / 100).toFixed(4)) })}
                     />
                   </div>
                   <div>

@@ -1,10 +1,10 @@
 export interface TextFieldMapping {
   id: string;
-  x: number; // posição X em pixels
-  y: number; // posição Y em pixels
-  width?: number; // largura máxima do texto
-  height?: number; // altura máxima do texto
-  fontSize: number;
+  x: number; // posição X proporcional (0-1)
+  y: number; // posição Y proporcional (0-1)
+  width?: number; // largura proporcional (0-1)
+  height?: number; // altura proporcional (0-1)
+  fontSize: number; // tamanho base da fonte
   fontFamily: string;
   fontWeight?: 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900';
   color: string;
