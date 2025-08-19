@@ -7,6 +7,7 @@ import { useState } from "react";
 import { UnitCard } from "@/types/UnitCard";
 import { CardRenderer } from "@/components/CardRenderer";
 import { CardTemplate, CardData } from "@/types/CardTemplate";
+import html2canvas from "html2canvas";
 
 interface CardPreviewProps {
   card: UnitCard;
@@ -114,10 +115,62 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
     }
   };
 
-  const handleDownload = () => {
-    // Para implementar download como imagem, seria necessário usar canvas
-    // Por enquanto, vamos usar o print
-    handlePrint();
+  const handleDownload = async () => {
+    const cardElement = document.getElementById('printable-card');
+    if (!cardElement) return;
+
+    try {
+      // Se for múltiplos cards, criar um container temporário
+      if (cardsPerPage > 1) {
+        const tempContainer = document.createElement('div');
+        tempContainer.style.display = 'flex';
+        tempContainer.style.flexWrap = 'wrap';
+        tempContainer.style.gap = '10px';
+        tempContainer.style.padding = '20px';
+        tempContainer.style.backgroundColor = 'white';
+        tempContainer.style.width = 'fit-content';
+
+        // Adicionar múltiplas cópias do card
+        for (let i = 0; i < cardsPerPage; i++) {
+          const cardClone = cardElement.cloneNode(true) as HTMLElement;
+          cardClone.id = `printable-card-${i}`;
+          tempContainer.appendChild(cardClone);
+        }
+
+        document.body.appendChild(tempContainer);
+
+        // Capturar o container com múltiplos cards
+        const canvas = await html2canvas(tempContainer, {
+          backgroundColor: 'white',
+          scale: 2,
+          useCORS: true,
+          allowTaint: true
+        });
+
+        document.body.removeChild(tempContainer);
+
+        // Fazer o download
+        const link = document.createElement('a');
+        link.download = `${card.name}_${cardsPerPage}cards.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } else {
+        // Card único
+        const canvas = await html2canvas(cardElement, {
+          backgroundColor: 'white',
+          scale: 2,
+          useCORS: true,
+          allowTaint: true
+        });
+
+        const link = document.createElement('a');
+        link.download = `${card.name}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
+    } catch (error) {
+      console.error('Erro ao gerar PNG:', error);
+    }
   };
 
   return (
