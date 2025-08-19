@@ -29,6 +29,25 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                   padding: 20px; 
                   font-family: 'Cinzel', serif; 
                   background: white;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  min-height: 100vh;
+                }
+                .card-container {
+                  display: inline-block !important;
+                  width: auto !important;
+                  height: auto !important;
+                  max-width: none !important;
+                  max-height: none !important;
+                  position: relative;
+                }
+                .card-container img {
+                  display: block !important;
+                  width: auto !important;
+                  height: auto !important;
+                  max-width: none !important;
+                  max-height: none !important;
                 }
                 @media print {
                   body { margin: 0; padding: 0; }
@@ -78,7 +97,18 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
 
         <div className="flex justify-center">
           {template ? (
-            <div id="printable-card">
+            <div 
+              id="printable-card" 
+              className="card-container"
+              style={{
+                width: `${template.width}px`,
+                height: `${template.height}px`,
+                maxWidth: 'none',
+                maxHeight: 'none',
+                margin: '0 auto',
+                display: 'inline-block'
+              }}
+            >
               <CardRenderer 
                 template={template} 
                 data={{
