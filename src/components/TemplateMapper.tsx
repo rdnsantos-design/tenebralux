@@ -299,11 +299,13 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                     
                     {/* Texto de demonstração */}
                     <div 
-                      className="text-xs font-medium pointer-events-none"
+                      className="text-xs font-medium pointer-events-none w-full h-full flex items-center"
                       style={{
                         fontSize: `${Math.max(8, field.fontSize * Math.min(scaleX, scaleY) * 0.6)}px`,
                         color: field.color,
-                        fontFamily: field.fontFamily
+                        fontFamily: field.fontFamily,
+                        textAlign: field.textAlign || 'left',
+                        justifyContent: field.textAlign === 'center' ? 'center' : field.textAlign === 'right' ? 'flex-end' : 'flex-start'
                       }}
                     >
                       {field.id === 'name' ? 'Nome da Unidade' : 

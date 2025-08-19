@@ -46,10 +46,12 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
       overflow: 'hidden',
       lineHeight: '1.2',
       maxHeight: field.maxLines ? `${field.fontSize * fontScale * 1.2 * field.maxLines}px` : undefined,
-      display: field.maxLines ? '-webkit-box' : 'block',
+      display: field.maxLines ? '-webkit-box' : 'flex',
       WebkitLineClamp: field.maxLines,
       WebkitBoxOrient: field.maxLines ? 'vertical' as const : undefined,
       textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.3)' : undefined,
+      alignItems: 'center',
+      justifyContent: field.textAlign === 'center' ? 'center' : field.textAlign === 'right' ? 'flex-end' : 'flex-start',
     };
 
     return (
