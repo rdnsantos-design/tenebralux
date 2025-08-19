@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Download, Printer } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UnitCard } from "@/types/UnitCard";
 import { CardRenderer } from "@/components/CardRenderer";
 import { CardTemplate, CardData } from "@/types/CardTemplate";
@@ -17,6 +17,21 @@ interface CardPreviewProps {
 
 export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
   const [cardsPerPage, setCardsPerPage] = useState(1);
+
+  // Remove padding do root para alinhamento correto dos campos
+  useEffect(() => {
+    const root = document.getElementById('root');
+    if (root) {
+      root.classList.add('card-preview-mode');
+    }
+    
+    return () => {
+      const root = document.getElementById('root');
+      if (root) {
+        root.classList.remove('card-preview-mode');
+      }
+    };
+  }, []);
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
