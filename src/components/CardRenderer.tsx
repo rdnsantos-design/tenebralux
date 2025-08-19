@@ -144,14 +144,15 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
   };
 
   return (
-    <div className={className} style={{ position: 'relative', display: 'inline-block' }}>
+    <div className={className} style={{ position: 'relative', display: 'inline-block', width: '100%', height: '100%' }}>
       <img 
         src={template.templateImage} 
         alt="Card Template"
         style={{ 
-          width: `${template.width}px`, 
-          height: `${template.height}px`,
-          display: 'block'
+          width: '100%', 
+          height: '100%',
+          display: 'block',
+          objectFit: 'cover'
         }}
       />
       
