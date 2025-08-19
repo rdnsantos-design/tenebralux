@@ -80,6 +80,7 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                   font-size: inherit !important;
                   font-weight: inherit !important;
                   text-align: inherit !important;
+                  transform-origin: top left !important;
                 }
                 @media print {
                   body { 
