@@ -20,32 +20,35 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     const containerWidth = containerRect.width || container.offsetWidth;
     const containerHeight = containerRect.height || container.offsetHeight;
     
+    // Calcular escala baseada nas dimensões originais do template
+    const scaleX = containerWidth / template.width;
+    const scaleY = containerHeight / template.height;
+    
     // Detectar contexto de impressão
     const isPrintContext = window.matchMedia('print').matches || 
                           document.documentElement.classList.contains('print-mode');
     
-    // Calcular escala da fonte baseada no tamanho do container
-    const baseScale = Math.min(containerWidth / 600, containerHeight / 390);
-    const fontScale = isPrintContext ? Math.min(containerWidth / 600, containerHeight / 390) : baseScale;
+    // Escala da fonte baseada no menor fator de escala
+    const fontScale = Math.min(scaleX, scaleY);
 
     const style: React.CSSProperties = {
       position: 'absolute',
-      left: `${field.x * containerWidth}px`,
-      top: `${field.y * containerHeight}px`,
+      left: `${(field.x as number) * scaleX}px`,
+      top: `${(field.y as number) * scaleY}px`,
       fontSize: `${Math.max(8, field.fontSize * fontScale)}px`,
       fontFamily: field.fontFamily,
       fontWeight: field.fontWeight || 'normal',
       color: field.color,
       textAlign: field.textAlign || 'left',
       transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
-      width: field.width ? `${field.width * containerWidth}px` : 'auto',
-      height: field.height ? `${field.height * containerHeight}px` : 'auto',
+      width: field.width ? `${(field.width as number) * scaleX}px` : 'auto',
+      height: field.height ? `${(field.height as number) * scaleY}px` : 'auto',
       overflow: 'hidden',
       lineHeight: '1.2',
       maxHeight: field.maxLines ? `${field.fontSize * fontScale * 1.2 * field.maxLines}px` : undefined,
-      display: '-webkit-box',
+      display: field.maxLines ? '-webkit-box' : 'block',
       WebkitLineClamp: field.maxLines,
-      WebkitBoxOrient: 'vertical' as const,
+      WebkitBoxOrient: field.maxLines ? 'vertical' as const : undefined,
       textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.3)' : undefined,
     };
 
