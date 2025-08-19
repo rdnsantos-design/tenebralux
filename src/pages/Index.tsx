@@ -82,6 +82,7 @@ const Index = () => {
   };
 
   const handleTemplateUpdate = (template: CardTemplate) => {
+    console.log('Atualizando template:', template);
     setTemplates(templates.map(t => t.id === template.id ? template : t));
     setEditingTemplate(template);
   };

@@ -205,22 +205,11 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                 Template salvo automaticamente conforme você mapeia os campos
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => {
-                  // Template já está sendo salvo automaticamente
-                  alert('Template salvo com sucesso!');
-                }}
-                variant="default"
-              >
-                Salvar Template
+            {onFinish && (
+              <Button onClick={onFinish} variant="default">
+                Finalizar Mapeamento
               </Button>
-              {onFinish && (
-                <Button onClick={onFinish} variant="outline">
-                  Finalizar Mapeamento
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -39,7 +39,10 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({ onTemplateCrea
   };
 
   const handleCreateTemplate = () => {
-    if (!templateName || !templateImage) return;
+    if (!templateName || !templateImage) {
+      console.log('Campos obrigatórios não preenchidos:', { templateName, templateImage: !!templateImage });
+      return;
+    }
 
     const newTemplate: CardTemplate = {
       id: Date.now().toString(),
@@ -50,6 +53,7 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({ onTemplateCrea
       fields: []
     };
 
+    console.log('Criando template:', newTemplate);
     onTemplateCreated(newTemplate);
   };
 
