@@ -79,6 +79,7 @@ const Index = () => {
           <TemplateMapper
             template={editingTemplate}
             onTemplateUpdate={handleTemplateUpdate}
+            onFinish={() => setEditingTemplate(null)}
           />
         </div>
       </div>

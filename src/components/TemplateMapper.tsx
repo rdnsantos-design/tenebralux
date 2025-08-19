@@ -39,9 +39,10 @@ const FIELD_OPTIONS = [
 interface TemplateMapperProps {
   template: CardTemplate;
   onTemplateUpdate: (template: CardTemplate) => void;
+  onFinish?: () => void;
 }
 
-export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemplateUpdate }) => {
+export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemplateUpdate, onFinish }) => {
   const [selectedField, setSelectedField] = useState<string>('');
   const [clickMode, setClickMode] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -100,7 +101,19 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Mapeamento de Template</CardTitle>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Mapeamento de Template</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Template salvo automaticamente conforme você mapeia os campos
+              </p>
+            </div>
+            {onFinish && (
+              <Button onClick={onFinish} variant="outline">
+                Finalizar Mapeamento
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4 items-end">
