@@ -12,10 +12,10 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     const field = template.fields.find(f => f.id === fieldId);
     if (!field) return null;
 
-    // Usar as dimensões reais do template armazenado
+    // Dimensões corretas do template: 1181 × 767
     // Container atual: 600x390
-    const scaleX = 600 / template.width;
-    const scaleY = 390 / template.height;
+    const scaleX = 600 / 1181;
+    const scaleY = 390 / 767;
 
     const style: React.CSSProperties = {
       position: 'absolute',
