@@ -157,8 +157,8 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
       const deltaXPx = deltaX * scaleX;
       const deltaYPx = deltaY * scaleY;
       
-      const newX = Math.max(0, Math.min(BASE_W - (field.width || 100), dragData.startX + deltaXPx));
-      const newY = Math.max(0, Math.min(BASE_H - (field.height || 30), dragData.startY + deltaYPx));
+      const newX = Math.max(0, Math.min(BASE_W, dragData.startX + deltaXPx));
+      const newY = Math.max(0, Math.min(BASE_H, dragData.startY + deltaYPx));
       
       // 🔍 DEBUG: Log detalhado do arraste
       console.log('🐛 DRAG DEBUG:', {
@@ -166,7 +166,7 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
         scales: { scaleX, scaleY },
         deltas: { deltaX, deltaY, deltaXPx, deltaYPx },
         field: { width: field.width || 100, height: field.height || 30 },
-        limits: { maxX: BASE_W - (field.width || 100), maxY: BASE_H - (field.height || 30) },
+        limits: { maxX: BASE_W, maxY: BASE_H }, // Removeu limitação artificial
         calculated: { newX, newY },
         constants: { BASE_W, BASE_H }
       });
@@ -180,8 +180,8 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
       const deltaWidthPx = deltaX * scaleX;
       const deltaHeightPx = deltaY * scaleY;
       
-      const newWidth = Math.max(20, Math.min(BASE_W - field.x, (field.width || 100) + deltaWidthPx));
-      const newHeight = Math.max(15, Math.min(BASE_H - field.y, (field.height || 30) + deltaHeightPx));
+      const newWidth = Math.max(20, (field.width || 100) + deltaWidthPx);
+      const newHeight = Math.max(15, (field.height || 30) + deltaHeightPx);
       updateField(dragData.field, { width: Math.round(newWidth), height: Math.round(newHeight) });
     }
   };
