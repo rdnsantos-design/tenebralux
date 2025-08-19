@@ -61,14 +61,14 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                   flex-shrink: 0;
                   writing-mode: horizontal-tb !important;
                 }
-                .card-field {
-                  position: absolute !important;
-                  transform: none !important;
-                  white-space: nowrap !important;
-                  line-height: 1 !important;
-                  letter-spacing: 0 !important;
-                  box-sizing: border-box !important;
-                }
+                 .field {
+                   position: absolute !important;
+                   transform: none !important;
+                   white-space: nowrap !important;
+                   line-height: 1 !important;
+                   letter-spacing: 0 !important;
+                   box-sizing: border-box !important;
+                 }
                 @media print {
                   body { 
                     margin: 0; 
@@ -103,34 +103,39 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
 
   const handleDownload = async () => {
     const cardElement = document.querySelector('.card-frame') as HTMLElement;
-    if (!cardElement) return;
+    if (!cardElement) {
+      console.error('Card frame element not found');
+      return;
+    }
 
     try {
+      // Aguardar fontes carregarem
+      await (document.fonts?.ready || Promise.resolve());
+
       if (cardsPerPage > 1) {
         // Múltiplos cards - criar container temporário
         const tempContainer = document.createElement('div');
         tempContainer.className = 'export-wrapper';
-        tempContainer.style.display = 'flex';
-        tempContainer.style.flexWrap = 'wrap';
-        tempContainer.style.backgroundColor = 'white';
-        tempContainer.style.width = 'fit-content';
-        tempContainer.style.padding = '0';
-        tempContainer.style.margin = '0';
-        tempContainer.style.border = 'none';
-        tempContainer.style.transform = 'none';
+        tempContainer.style.cssText = `
+          display: flex;
+          flex-wrap: wrap;
+          background-color: white;
+          width: fit-content;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: 0 !important;
+          transform: none !important;
+          zoom: 1 !important;
+        `;
 
         // Adicionar múltiplas cópias do card
         for (let i = 0; i < cardsPerPage; i++) {
           const cardClone = cardElement.cloneNode(true) as HTMLElement;
-          cardClone.id = `printable-card-${i}`;
           cardClone.className = 'card-frame';
           tempContainer.appendChild(cardClone);
         }
 
         document.body.appendChild(tempContainer);
-
-        // Aguardar fontes carregarem
-        await (document.fonts?.ready || Promise.resolve());
 
         // Capturar o container com múltiplos cards
         const canvas = await html2canvas(tempContainer, {
@@ -138,10 +143,24 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
           scale: window.devicePixelRatio || 1,
           useCORS: true,
           allowTaint: true,
-          removeContainer: true
+          removeContainer: true,
+          onclone: (doc) => {
+            const frames = doc.querySelectorAll('.card-frame');
+            frames.forEach((el) => {
+              const frame = el as HTMLElement;
+              frame.style.transform = 'none';
+              frame.style.zoom = '1';
+              frame.style.overflow = 'hidden';
+              frame.style.width = '1181px';
+              frame.style.height = '768px';
+            });
+          }
         });
 
         document.body.removeChild(tempContainer);
+
+        // Log de diagnóstico
+        console.log('FRAME canvas (multiple):', canvas.width, 'x', canvas.height);
 
         // Fazer o download
         const link = document.createElement('a');
@@ -149,9 +168,7 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
         link.href = canvas.toDataURL('image/png');
         link.click();
       } else {
-        // Card único - aguardar fontes carregarem
-        await (document.fonts?.ready || Promise.resolve());
-        
+        // Card único - usar o MESMO DOM do preview
         const canvas = await html2canvas(cardElement, {
           width: 1181,
           height: 768,
@@ -166,11 +183,30 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
           onclone: (doc) => {
             const el = doc.querySelector('.card-frame');
             if (el) {
-              (el as HTMLElement).style.transform = 'none';
-              (el as HTMLElement).style.zoom = '1';
+              const frame = el as HTMLElement;
+              frame.style.transform = 'none';
+              frame.style.zoom = '1';
+              frame.style.overflow = 'hidden';
+              frame.style.width = '1181px';
+              frame.style.height = '768px';
+              
+              // Validar todos os campos dentro do frame
+              const fields = frame.querySelectorAll('.field');
+              fields.forEach((field, i) => {
+                const cs = getComputedStyle(field);
+                console.log('export field', i, { 
+                  left: cs.left, 
+                  top: cs.top, 
+                  width: cs.width, 
+                  height: cs.height 
+                });
+              });
             }
           }
         });
+        
+        // Log de diagnóstico
+        console.log('FRAME canvas (single):', canvas.width, 'x', canvas.height);
         
         // Fazer o download
         const link = document.createElement('a');
