@@ -196,7 +196,7 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
               </Button>
               {onFinish && (
                 <Button onClick={onFinish} variant="outline">
-                  Voltar
+                  Finalizar Mapeamento
                 </Button>
               )}
             </div>

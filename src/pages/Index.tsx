@@ -47,11 +47,14 @@ const Index = () => {
 
   const handleTemplateUpdate = (template: CardTemplate) => {
     setTemplates(templates.map(t => t.id === template.id ? template : t));
-    setEditingTemplate(null);
+    setEditingTemplate(template);
   };
 
   const handleDeleteTemplate = (templateId: string) => {
     setTemplates(templates.filter(t => t.id !== templateId));
+    if (editingTemplate?.id === templateId) {
+      setEditingTemplate(null);
+    }
   };
 
   if (showTemplateCreator) {
@@ -65,11 +68,21 @@ const Index = () => {
 
   if (editingTemplate) {
     return (
-      <TemplateMapper
-        template={editingTemplate}
-        onTemplateUpdate={handleTemplateUpdate}
-        onFinish={() => setEditingTemplate(null)}
-      />
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">Mapeando: {editingTemplate.name}</h1>
+            <Button onClick={() => setEditingTemplate(null)}>
+              Voltar aos Templates
+            </Button>
+          </div>
+          <TemplateMapper
+            template={editingTemplate}
+            onTemplateUpdate={handleTemplateUpdate}
+            onFinish={() => setEditingTemplate(null)}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -79,89 +92,110 @@ const Index = () => {
         card={editingCard}
         templates={templates}
         onSave={handleSaveCard}
-        onCancel={() => {
-          setEditingCard(null);
-          setShowEditor(false);
-        }}
+        onCancel={() => setShowEditor(false)}
       />
     );
   }
 
   if (previewCard) {
-    const cardTemplate = templates.find(t => t.id === 'default');
     return (
       <CardPreview
         card={previewCard}
-        template={cardTemplate}
+        template={templates[0]} // Usando o primeiro template disponível
         onClose={() => setPreviewCard(null)}
       />
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-6" style={{ width: '100%', minHeight: '100vh' }}>
-      <div className="max-w-6xl mx-auto">
-        <header className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-bold">Birthright Forge</h1>
-          <Button onClick={handleNewCard}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Card
-          </Button>
-        </header>
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Sistema de Cards Birthright</h1>
+            <p className="text-xl text-muted-foreground">Gerencie suas unidades militares e templates</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleNewCard} size="lg" className="flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              Novo Card
+            </Button>
+          </div>
+        </div>
 
-        <Tabs defaultValue="cards" className="w-full">
+        <Tabs defaultValue="templates" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="cards">Cards</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="cards" className="space-y-6">
+          <TabsContent value="cards" className="mt-6">
+
             {cards.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  Você ainda não criou nenhum card.
-                </p>
-                <Button onClick={handleNewCard}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar Primeiro Card
-                </Button>
-              </div>
+              <Card className="text-center py-12">
+                <CardContent className="pt-6">
+                  <h3 className="text-2xl font-semibold mb-4">Nenhum card criado ainda</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Comece criando seu primeiro card de unidade militar
+                  </p>
+                  <Button onClick={handleNewCard} size="lg">
+                    <Plus className="w-5 h-5 mr-2" />
+                    Criar Primeiro Card
+                  </Button>
+                </CardContent>
+              </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {cards.map((card) => (
                   <Card key={card.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <span>{card.name}</span>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPreviewCard(card)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditCard(card)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </CardTitle>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg truncate">{card.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        {card.experience} • Força Total: {card.totalForce}
+                      </p>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <strong>Experiência:</strong> {card.experience}
+                    <CardContent className="pt-0">
+                      <div className="grid grid-cols-5 gap-2 text-xs mb-4">
+                        <div className="text-center">
+                          <div className="font-semibold">AT</div>
+                          <div>{card.attack}</div>
                         </div>
-                        <div>
-                          <strong>Força Total:</strong> {card.totalForce}
+                        <div className="text-center">
+                          <div className="font-semibold">DEF</div>
+                          <div>{card.defense}</div>
                         </div>
-                        <div>
-                          <strong>Custo:</strong> {card.maintenanceCost}
+                        <div className="text-center">
+                          <div className="font-semibold">TIR</div>
+                          <div>{card.ranged}</div>
                         </div>
+                        <div className="text-center">
+                          <div className="font-semibold">MOV</div>
+                          <div>{card.movement}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-semibold">MOR</div>
+                          <div>{card.morale}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPreviewCard(card)}
+                          className="flex-1"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Ver
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditCard(card)}
+                          className="flex-1"
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Editar
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -170,70 +204,68 @@ const Index = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="templates" className="space-y-6">
+          <TabsContent value="templates" className="mt-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Templates de Cards</h2>
+              <Button onClick={() => setShowTemplateCreator(true)}>
+                <Image className="w-4 h-4 mr-2" />
+                Novo Template
+              </Button>
+            </div>
+
             {templates.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  Você ainda não criou nenhum template.
-                </p>
-                <Button onClick={() => setShowTemplateCreator(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar Primeiro Template
-                </Button>
-              </div>
+              <Card className="text-center py-12">
+                <CardContent className="pt-6">
+                  <h3 className="text-2xl font-semibold mb-4">Nenhum template criado ainda</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Crie um template fazendo upload da sua imagem do Canva
+                  </p>
+                  <Button onClick={() => setShowTemplateCreator(true)} size="lg">
+                    <Image className="w-5 h-5 mr-2" />
+                    Criar Primeiro Template
+                  </Button>
+                </CardContent>
+              </Card>
             ) : (
-              <div className="space-y-4">
-                <Button onClick={() => setShowTemplateCreator(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Template
-                </Button>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {templates.map((template) => (
-                    <Card key={template.id} className="hover:shadow-lg transition-shadow">
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                          <span>{template.name}</span>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setEditingTemplate(template)}
-                            >
-                              <Settings className="w-4 h-4" />
-                              Mapear
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteTemplate(template.id)}
-                            >
-                              Excluir
-                            </Button>
-                          </div>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2 text-sm">
-                          <div>
-                            <strong>Campos mapeados:</strong> {template.fields.length}
-                          </div>
-                          <div>
-                            <strong>Dimensões:</strong> {template.width}x{template.height}px
-                          </div>
-                        </div>
-                        {template.templateImage && (
-                          <div className="mt-4">
-                            <img
-                              src={template.templateImage}
-                              alt="Template preview"
-                              className="w-full h-32 object-cover rounded border"
-                            />
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {templates.map((template) => (
+                  <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg truncate">{template.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        {template.fields.length} campos mapeados • {template.width}x{template.height}px
+                      </p>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="mb-4">
+                        <img
+                          src={template.templateImage}
+                          alt={template.name}
+                          className="w-full h-32 object-contain border rounded"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingTemplate(template)}
+                          className="flex-1"
+                        >
+                          <Settings className="w-4 h-4 mr-1" />
+                          Mapear
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="flex-1"
+                        >
+                          Excluir
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </TabsContent>
