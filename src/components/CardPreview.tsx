@@ -156,19 +156,38 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
         link.href = canvas.toDataURL('image/png');
         link.click();
       } else {
-        // Card único - adicionar flag de exportação
+        // Card único - configurar para exportação
         cardElement.setAttribute('data-export', 'true');
+        
+        // Definir dimensões exatas do template para exportação
+        const originalStyles = {
+          width: cardElement.style.width,
+          height: cardElement.style.height,
+          maxWidth: cardElement.style.maxWidth,
+          maxHeight: cardElement.style.maxHeight
+        };
+        
+        cardElement.style.width = '1181px';
+        cardElement.style.height = '768px';
+        cardElement.style.maxWidth = '1181px';
+        cardElement.style.maxHeight = '768px';
         
         const canvas = await html2canvas(cardElement, {
           backgroundColor: 'white',
-          scale: 2,
+          scale: 1,
           useCORS: true,
           allowTaint: true,
           width: 1181,
-          height: 768
+          height: 768,
+          x: 0,
+          y: 0
         });
         
-        // Remover flag após exportação
+        // Restaurar estilos originais
+        cardElement.style.width = originalStyles.width;
+        cardElement.style.height = originalStyles.height;
+        cardElement.style.maxWidth = originalStyles.maxWidth;
+        cardElement.style.maxHeight = originalStyles.maxHeight;
         cardElement.removeAttribute('data-export');
 
         const link = document.createElement('a');
