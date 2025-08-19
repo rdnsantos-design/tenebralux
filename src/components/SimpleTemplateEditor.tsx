@@ -135,53 +135,112 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
       {/* Preview da Imagem com Campos */}
       <Card className="p-6">
         <h3 className="text-xl font-semibold mb-4">2. Preview em Tempo Real</h3>
-        <div className="relative border rounded-lg overflow-hidden bg-gray-50">
+        <p className="text-sm text-muted-foreground mb-4">
+          ⚡ Os campos aparecem <strong>instantaneamente</strong> conforme você digita as coordenadas abaixo
+        </p>
+        <div 
+          className="relative border-2 border-blue-500 rounded-lg overflow-hidden bg-gray-50"
+          style={{ maxWidth: '800px', margin: '0 auto' }}
+        >
           <img
             src={template.templateImage}
             alt="Template"
-            className="w-full h-auto"
-            style={{ maxHeight: '500px', objectFit: 'contain' }}
+            className="w-full h-auto block"
+            style={{ maxHeight: '600px', objectFit: 'contain' }}
+            onLoad={() => {
+              // Força re-render quando a imagem carrega
+              setTimeout(() => {
+                setTestValues(prev => ({ ...prev }));
+              }, 100);
+            }}
           />
           
-          {/* Visualizar campos mapeados */}
+          {/* Visualizar campos mapeados EM TEMPO REAL */}
           {template.fields.map(field => {
-            const img = document.querySelector('.relative img') as HTMLImageElement;
-            if (!img) return null;
+            const container = document.querySelector('.relative') as HTMLElement;
+            const img = container?.querySelector('img') as HTMLImageElement;
+            if (!img || !container) return null;
             
-            // Calcular posições baseadas na imagem exibida
+            // Usar as dimensões reais da imagem exibida
             const imgRect = img.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
             const scaleX = img.offsetWidth / imageDimensions.width;
             const scaleY = img.offsetHeight / imageDimensions.height;
             
+            // Calcular posição baseada nas coordenadas do Canva
+            const leftPx = (field.x as number) * scaleX;
+            const topPx = (field.y as number) * scaleY;
+            
             // Obter o valor de teste para este campo
-            const testValue = testValues[field.id as keyof typeof testValues] || 'Texto';
+            const testValue = testValues[field.id as keyof typeof testValues] || fieldLabels[field.id as keyof typeof fieldLabels] || 'Texto';
+            
+            // Calcular tamanho do texto baseado na escala
+            const scaledFontSize = Math.max(10, field.fontSize * Math.min(scaleX, scaleY) * 0.7);
             
             return (
               <div
                 key={field.id}
-                className="absolute border-2 border-red-500 bg-red-500/20 pointer-events-none flex items-center justify-center"
+                className="absolute pointer-events-none select-none"
                 style={{
-                  left: `${(field.x as number) * scaleX}px`,
-                  top: `${(field.y as number) * scaleY}px`,
-                  width: `${Math.max(60, field.fontSize * scaleX * 3)}px`,
-                  height: `${Math.max(20, field.fontSize * scaleY * 1.2)}px`,
-                  fontSize: `${Math.max(8, field.fontSize * Math.min(scaleX, scaleY) * 0.8)}px`,
-                  fontFamily: field.fontFamily,
-                  fontWeight: field.fontWeight || 'normal',
-                  color: field.color,
-                  textAlign: field.textAlign || 'center',
-                  textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.3)' : undefined,
+                  left: `${leftPx}px`,
+                  top: `${topPx}px`,
                   transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
-                  transformOrigin: 'center',
+                  transformOrigin: 'top left',
+                  zIndex: 10,
                 }}
               >
-                {testValue}
-                <div className="absolute -top-6 left-0 bg-red-500 text-white px-1 text-xs whitespace-nowrap">
+                {/* Fundo semi-transparente para melhor legibilidade */}
+                <div
+                  className="absolute inset-0 bg-white/80 border border-red-500 rounded"
+                  style={{
+                    width: field.width ? `${(field.width as number) * scaleX}px` : 'auto',
+                    minWidth: '40px',
+                    height: 'auto',
+                    minHeight: '20px',
+                  }}
+                />
+                
+                {/* Texto do campo */}
+                <div
+                  className="relative px-1 py-0.5 font-medium"
+                  style={{
+                    fontSize: `${scaledFontSize}px`,
+                    fontFamily: field.fontFamily,
+                    fontWeight: field.fontWeight || 'normal',
+                    color: field.color,
+                    textAlign: field.textAlign || 'center',
+                    textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.5)' : undefined,
+                    width: field.width ? `${(field.width as number) * scaleX}px` : 'auto',
+                    lineHeight: '1.1',
+                  }}
+                >
+                  {testValue}
+                </div>
+                
+                {/* Label identificador */}
+                <div className="absolute -top-5 left-0 bg-red-600 text-white px-1 text-xs whitespace-nowrap rounded text-center min-w-max">
                   {fieldLabels[field.id as keyof typeof fieldLabels]}
                 </div>
+                
+                {/* Indicador de posição (cruz) */}
+                <div className="absolute top-0 left-0 w-2 h-2 bg-red-600 border border-white rounded-full transform -translate-x-1 -translate-y-1"></div>
               </div>
             );
           })}
+          
+          {/* Grid de referência (opcional) */}
+          <div className="absolute inset-0 pointer-events-none" style={{ 
+            backgroundImage: 'linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)',
+            backgroundSize: '50px 50px',
+            opacity: 0.3
+          }}></div>
+        </div>
+        
+        <div className="mt-3 text-center">
+          <p className="text-sm text-muted-foreground">
+            🎯 <strong>Vermelho</strong> = Posição exata • <strong>Fundo branco</strong> = Área do texto
+          </p>
         </div>
       </Card>
 
@@ -219,10 +278,16 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
 
       {/* Campos para Mapear */}
       <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-4">3. Coordenadas dos Campos (pixels do Canva)</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          💡 No Canva: clique no campo → veja X e Y na barra lateral direita → insira aqui
-        </p>
+        <h3 className="text-xl font-semibold mb-4">3. Configure os Campos (Veja o resultado em tempo real acima ⬆️)</h3>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h4 className="font-semibold text-blue-800 mb-2">💡 Como usar:</h4>
+          <ul className="text-sm text-blue-700 space-y-1">
+            <li>1. Digite <strong>X,Y</strong> → Veja o campo aparecer na imagem instantaneamente</li>
+            <li>2. Ajuste as coordenadas até ficar no lugar certo</li>
+            <li>3. Configure formatação (fonte, cor, tamanho)</li>
+            <li>4. Use os <strong>valores de teste</strong> abaixo para ver o texto real</li>
+          </ul>
+        </div>
         
         <div className="space-y-6">
           {Object.entries(fieldLabels).map(([fieldId, label]) => {
