@@ -9,38 +9,57 @@ interface CardRendererProps {
 
 export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = React.useState({ width: 0, height: 0 });
   
-  console.log('CardRenderer renderizado:', { 
-    template: template.name, 
-    fieldsCount: template.fields.length,
-    fields: template.fields,
-    data: data
-  });
+  React.useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerSize({ width: rect.width, height: rect.height });
+      }
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
   
   const renderField = (fieldId: string, value: string | number) => {
     const field = template.fields.find(f => f.id === fieldId);
-    if (!field) return null;
+    if (!field || containerSize.width === 0) return null;
 
-    // Para cálculos básicos, usar escala 1:1 como fallback
-    const scaleX = 1;
-    const scaleY = 1;
-    const fontScale = 1;
+    // Calcular escala baseada nas dimensões do template vs container atual
+    const scaleX = containerSize.width / template.width;
+    const scaleY = containerSize.height / template.height;
+    const scale = Math.min(scaleX, scaleY); // Manter proporção
+
+    console.log('Renderizando campo:', {
+      fieldId,
+      originalPos: { x: field.x, y: field.y },
+      templateSize: { width: template.width, height: template.height },
+      containerSize,
+      scale,
+      finalPos: { 
+        x: (field.x as number) * scaleX, 
+        y: (field.y as number) * scaleY 
+      }
+    });
 
     const style: React.CSSProperties = {
       position: 'absolute',
-      left: `${(field.x as number)}px`,
-      top: `${(field.y as number)}px`,
-      fontSize: `${Math.max(12, field.fontSize)}px`,
+      left: `${(field.x as number) * scaleX}px`,
+      top: `${(field.y as number) * scaleY}px`,
+      fontSize: `${Math.max(8, field.fontSize * scale)}px`,
       fontFamily: field.fontFamily,
       fontWeight: field.fontWeight || 'normal',
       color: field.color,
       textAlign: field.textAlign || 'left',
       transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
-      width: field.width ? `${(field.width as number)}px` : 'auto',
-      height: field.height ? `${(field.height as number)}px` : 'auto',
+      width: field.width ? `${(field.width as number) * scaleX}px` : 'auto',
+      height: field.height ? `${(field.height as number) * scaleY}px` : 'auto',
       overflow: 'hidden',
       lineHeight: '1.2',
-      maxHeight: field.maxLines ? `${field.fontSize * 1.2 * field.maxLines}px` : undefined,
+      maxHeight: field.maxLines ? `${field.fontSize * scale * 1.2 * field.maxLines}px` : undefined,
       display: field.maxLines ? '-webkit-box' : 'flex',
       WebkitLineClamp: field.maxLines,
       WebkitBoxOrient: field.maxLines ? 'vertical' as const : undefined,
@@ -157,7 +176,11 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
   };
 
   return (
-    <div className={className} style={{ position: 'relative', display: 'inline-block', width: '100%', height: '100%' }}>
+    <div 
+      ref={containerRef}
+      className={className} 
+      style={{ position: 'relative', display: 'inline-block', width: '100%', height: '100%' }}
+    >
       <img 
         src={template.templateImage} 
         alt="Card Template"
@@ -166,6 +189,13 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
           height: '100%',
           display: 'block',
           objectFit: 'contain'
+        }}
+        onLoad={() => {
+          // Atualizar tamanho quando a imagem carregar
+          if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            setContainerSize({ width: rect.width, height: rect.height });
+          }
         }}
       />
       
