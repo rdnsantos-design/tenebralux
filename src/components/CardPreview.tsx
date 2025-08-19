@@ -158,14 +158,15 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
               id="printable-card" 
               className="card-container"
               style={{
-                width: '500px',
-                height: '325px',
+                width: '600px',
+                height: '390px',
                 maxWidth: 'none',
                 maxHeight: 'none',
                 margin: '0 auto',
                 display: 'inline-block',
                 aspectRatio: '100/65',
-                border: '1px solid #ddd'
+                border: '1px solid #ddd',
+                backgroundColor: 'white'
               }}
             >
               <CardRenderer 
