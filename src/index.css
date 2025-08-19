@@ -47,6 +47,14 @@ html, body {
   z-index: 10;
 }
 
+/* Card preview styling for creation screen */
+.card-preview {
+  object-fit: contain !important;
+  background-size: contain !important;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
