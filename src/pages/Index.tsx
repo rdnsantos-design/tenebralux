@@ -22,6 +22,14 @@ const Index = () => {
   // Carregar dados do localStorage na inicialização
   useEffect(() => {
     console.log('Carregando dados do localStorage...');
+    
+    // Limpar backups antigos que podem estar causando problema de quota
+    try {
+      localStorage.removeItem('cardTemplates_backup');
+    } catch (error) {
+      console.log('Erro ao limpar backup (normal se não existir)');
+    }
+    
     const savedTemplates = localStorage.getItem('cardTemplates');
     const savedCards = localStorage.getItem('unitCards');
     
@@ -55,10 +63,19 @@ const Index = () => {
   // Salvar templates no localStorage sempre que mudarem
   useEffect(() => {
     if (templates.length > 0) {
-      console.log('Salvando templates no localStorage:', templates);
-      localStorage.setItem('cardTemplates', JSON.stringify(templates));
-      // Backup adicional para proteger os dados
-      localStorage.setItem('cardTemplates_backup', JSON.stringify(templates));
+      try {
+        console.log('Salvando templates no localStorage:', templates);
+        localStorage.setItem('cardTemplates', JSON.stringify(templates));
+      } catch (error) {
+        console.error('Erro ao salvar no localStorage (possivelmente por tamanho):', error);
+        // Se der erro de quota, tentar limpar dados antigos
+        try {
+          localStorage.removeItem('cardTemplates_backup');
+          localStorage.setItem('cardTemplates', JSON.stringify(templates));
+        } catch (secondError) {
+          console.error('Erro crítico de armazenamento:', secondError);
+        }
+      }
     }
   }, [templates]);
 
