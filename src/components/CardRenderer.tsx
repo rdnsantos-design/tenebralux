@@ -12,13 +12,16 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     const field = template.fields.find(f => f.id === fieldId);
     if (!field) return null;
 
-    // Detectar se estamos em contexto de impressão
-    const isPrintContext = window.location !== window.parent.location || document.body.offsetWidth < 400;
+    // Detectar se estamos em contexto de impressão baseado na URL ou CSS print media
+    const isPrintContext = window.matchMedia('print').matches || 
+                          window.location !== window.parent.location ||
+                          document.documentElement.classList.contains('print-mode');
     
-    // Para impressão: converter mm para px (1mm ≈ 3.78px a 96dpi)
-    // Para preview: usar dimensões do container
-    const scaleX = isPrintContext ? (100 * 3.78) / 1181 : 600 / 1181;
-    const scaleY = isPrintContext ? (65 * 3.78) / 767 : 390 / 767;
+    // Dimensões do template original: 1181 × 767
+    // Para impressão real: 10cm x 6.5cm = 378px x 245px (96dpi)
+    // Para preview: 600px x 390px
+    const scaleX = isPrintContext ? 378 / 1181 : 600 / 1181;
+    const scaleY = isPrintContext ? 245 / 767 : 390 / 767;
 
     const style: React.CSSProperties = {
       position: 'absolute',

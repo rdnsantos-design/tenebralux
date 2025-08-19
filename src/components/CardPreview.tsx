@@ -28,7 +28,7 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
         ).join('');
 
         printWindow.document.write(`
-          <html>
+          <html class="print-mode">
             <head>
               <title>Card ${card.name}</title>
               <style>
@@ -68,7 +68,7 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                 .card-container img {
                   width: 100% !important;
                   height: 100% !important;
-                  object-fit: cover !important;
+                  object-fit: contain !important;
                   display: block !important;
                   -webkit-print-color-adjust: exact !important;
                   print-color-adjust: exact !important;
@@ -95,6 +95,8 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                   .card-container { 
                     page-break-inside: avoid;
                     border: 0.5pt solid #999;
+                    width: 100mm !important;
+                    height: 65mm !important;
                   }
                 }
               </style>
