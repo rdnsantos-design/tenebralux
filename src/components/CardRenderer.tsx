@@ -65,7 +65,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     const toPxH = (h: number) => Math.round(h * scaleY);
 
     const L = clamp(toPxX(spec.x), 0, W - toPxW(spec.w));
-    const T = clamp(toPxY(spec.y), 0, H - toPxH(spec.h));
+    const T = clamp(toPxY(spec.y) - 8, 0, H - toPxH(spec.h)); // Move 8px up
 
     return {
       left: L,
