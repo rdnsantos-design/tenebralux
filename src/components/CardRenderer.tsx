@@ -237,16 +237,23 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     return elements.length > 0 ? <>{elements}</> : null;
   };
 
-  // Log de diagnóstico
+  // Log de diagnóstico expandido
   useEffect(() => {
     if (isFrameReady && frameRef.current) {
       const rect = frameRef.current.getBoundingClientRect();
-      console.log('FRAME rect:', rect, 'template dimensions:', BASE_W, 'x', BASE_H);
+      console.log('🔍 DIAGNÓSTICO COMPLETO:');
+      console.log('FRAME rect:', { width: rect.width, height: rect.height, left: rect.left, top: rect.top });
+      console.log('BASE dimensions:', BASE_W, 'x', BASE_H);
+      console.log('Scale factors:', rect.width / BASE_W, 'x', rect.height / BASE_H);
+      
+      // Log da imagem de fundo
+      const bgImage = frameRef.current.style.backgroundImage;
+      console.log('Background image:', bgImage);
       
       const fields = frameRef.current.querySelectorAll('.field');
       fields.forEach((el, i) => {
         const cs = getComputedStyle(el);
-        console.log('field', i, { 
+        console.log(`field ${i}:`, { 
           left: cs.left, 
           top: cs.top, 
           width: cs.width, 
