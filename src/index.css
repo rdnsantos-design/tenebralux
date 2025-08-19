@@ -2,6 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Card Frame - Sistema de renderização preciso */
+.card-frame {
+  width: 1181px;
+  height: 768px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: content-box;
+  transform: none !important;
+  background-size: 1181px 768px;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  writing-mode: horizontal-tb;
+}
+
+/* Resetar margens globais para preview/export */
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+#root, .preview-root, .export-root {
+  margin: 0;
+  padding: 0;
+}
+
+.preview-wrapper, .export-wrapper {
+  padding: 0 !important;
+  border: 0 !important;
+  transform: none !important;
+  zoom: 1 !important;
+}
+
+/* Campos de texto precisos */
+.card-field {
+  position: absolute;
+  transform: none !important;
+  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: 0;
+  box-sizing: border-box;
+}
+
+/* Box model consistente */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Exceção para card-frame */
+.card-frame {
+  box-sizing: content-box !important;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

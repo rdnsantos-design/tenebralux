@@ -21,11 +21,11 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
-      const cardElement = document.getElementById('printable-card');
+      const cardElement = document.querySelector('.card-frame');
       if (cardElement) {
         // Criar múltiplas cópias do card baseado na seleção
         const cardsHtml = Array(cardsPerPage).fill(0).map((_, index) => 
-          `<div class="card-container">${cardElement.innerHTML}</div>`
+          `<div class="card-frame" style="background-image: url(${template?.templateImage})">${cardElement.innerHTML}</div>`
         ).join('');
 
         printWindow.document.write(`
@@ -48,40 +48,26 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                   justify-content: flex-start;
                   align-items: flex-start;
                 }
-                .card-container {
-                  display: inline-block !important;
+                .card-frame {
                   width: 100mm !important;
                   height: 65mm !important;
                   position: relative !important;
-                  background: white;
+                  overflow: hidden !important;
+                  box-sizing: content-box !important;
+                  background-size: 100mm 65mm !important;
+                  background-repeat: no-repeat !important;
+                  background-position: 0 0 !important;
                   border: 1px solid #ddd;
                   flex-shrink: 0;
-                  overflow: hidden;
+                  writing-mode: horizontal-tb !important;
                 }
-                .card-container > div {
-                  width: 100% !important;
-                  height: 100% !important;
-                  position: relative !important;
-                  background-size: cover !important;
-                  background-position: center !important;
-                  background-repeat: no-repeat !important;
-                }
-                .card-container img {
-                  width: 100% !important;
-                  height: 100% !important;
-                  object-fit: contain !important;
-                  display: block !important;
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                }
-                .card-container > div > div {
+                .card-field {
                   position: absolute !important;
-                  color: inherit !important;
-                  font-family: inherit !important;
-                  font-size: inherit !important;
-                  font-weight: inherit !important;
-                  text-align: inherit !important;
-                  transform-origin: top left !important;
+                  transform: none !important;
+                  white-space: nowrap !important;
+                  line-height: 1 !important;
+                  letter-spacing: 0 !important;
+                  box-sizing: border-box !important;
                 }
                 @media print {
                   body { 
@@ -93,7 +79,7 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                   .print-container {
                     gap: 3mm;
                   }
-                  .card-container { 
+                  .card-frame { 
                     page-break-inside: avoid;
                     border: 0.5pt solid #999;
                     width: 100mm !important;
@@ -116,36 +102,43 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
   };
 
   const handleDownload = async () => {
-    const cardElement = document.getElementById('printable-card');
+    const cardElement = document.querySelector('.card-frame') as HTMLElement;
     if (!cardElement) return;
 
     try {
-      // Se for múltiplos cards, criar um container temporário
       if (cardsPerPage > 1) {
+        // Múltiplos cards - criar container temporário
         const tempContainer = document.createElement('div');
+        tempContainer.className = 'export-wrapper';
         tempContainer.style.display = 'flex';
         tempContainer.style.flexWrap = 'wrap';
-        tempContainer.style.gap = '10px';
-        tempContainer.style.padding = '20px';
         tempContainer.style.backgroundColor = 'white';
         tempContainer.style.width = 'fit-content';
+        tempContainer.style.padding = '0';
+        tempContainer.style.margin = '0';
+        tempContainer.style.border = 'none';
+        tempContainer.style.transform = 'none';
 
-        // Adicionar múltiplas cópias do card com flag de exportação
+        // Adicionar múltiplas cópias do card
         for (let i = 0; i < cardsPerPage; i++) {
           const cardClone = cardElement.cloneNode(true) as HTMLElement;
           cardClone.id = `printable-card-${i}`;
-          cardClone.setAttribute('data-export', 'true');
+          cardClone.className = 'card-frame';
           tempContainer.appendChild(cardClone);
         }
 
         document.body.appendChild(tempContainer);
 
+        // Aguardar fontes carregarem
+        await (document.fonts?.ready || Promise.resolve());
+
         // Capturar o container com múltiplos cards
         const canvas = await html2canvas(tempContainer, {
           backgroundColor: 'white',
-          scale: 2,
+          scale: window.devicePixelRatio || 1,
           useCORS: true,
-          allowTaint: true
+          allowTaint: true,
+          removeContainer: true
         });
 
         document.body.removeChild(tempContainer);
@@ -156,47 +149,37 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
         link.href = canvas.toDataURL('image/png');
         link.click();
       } else {
-        // Card único - configurar para exportação
-        cardElement.setAttribute('data-export', 'true');
-        
-        // Definir dimensões exatas do template para exportação
-        const originalStyles = {
-          width: cardElement.style.width,
-          height: cardElement.style.height,
-          maxWidth: cardElement.style.maxWidth,
-          maxHeight: cardElement.style.maxHeight
-        };
-        
-        cardElement.style.width = '1181px';
-        cardElement.style.height = '768px';
-        cardElement.style.maxWidth = '1181px';
-        cardElement.style.maxHeight = '768px';
+        // Card único - aguardar fontes carregarem
+        await (document.fonts?.ready || Promise.resolve());
         
         const canvas = await html2canvas(cardElement, {
-          backgroundColor: 'white',
-          scale: 1,
-          useCORS: true,
-          allowTaint: true,
           width: 1181,
           height: 768,
           x: 0,
-          y: 0
+          y: 0,
+          scrollX: 0,
+          scrollY: 0,
+          backgroundColor: null,
+          useCORS: true,
+          scale: window.devicePixelRatio || 1,
+          removeContainer: true,
+          onclone: (doc) => {
+            const el = doc.querySelector('.card-frame');
+            if (el) {
+              (el as HTMLElement).style.transform = 'none';
+              (el as HTMLElement).style.zoom = '1';
+            }
+          }
         });
         
-        // Restaurar estilos originais
-        cardElement.style.width = originalStyles.width;
-        cardElement.style.height = originalStyles.height;
-        cardElement.style.maxWidth = originalStyles.maxWidth;
-        cardElement.style.maxHeight = originalStyles.maxHeight;
-        cardElement.removeAttribute('data-export');
-
+        // Fazer o download
         const link = document.createElement('a');
         link.download = `${card.name}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
       }
     } catch (error) {
-      console.error('Erro ao gerar PNG:', error);
+      console.error('Erro ao fazer download:', error);
     }
   };
 
@@ -235,44 +218,29 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
           </div>
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex justify-center preview-wrapper">
           {template ? (
-            <div 
-              id="printable-card" 
-              className="card-container"
-              style={{
-                width: '600px',
-                height: '390px',
-                maxWidth: 'none',
-                maxHeight: 'none',
-                margin: '0 auto',
-                display: 'inline-block',
-                aspectRatio: '100/65',
-                border: '1px solid #ddd',
-                backgroundColor: 'white'
-              }}
-            >
-              <CardRenderer 
-                template={template} 
-                data={{
-                  name: card.name,
-                  number: card.id,
-                  attack: card.attack,
-                  defense: card.defense,
-                  ranged: card.ranged,
-                  movement: card.movement,
-                  morale: card.morale,
-                  experience: card.experience,
-                  totalForce: card.totalForce,
-                  maintenanceCost: card.maintenanceCost,
-                  specialAbilities: card.specialAbilities.map(a => a.name),
-                  currentPosture: 'Ofensiva',
-                  normalPressure: 0,
-                  permanentPressure: 0,
-                  hits: 0
-                }} 
-              />
-            </div>
+            <CardRenderer 
+              template={template} 
+              data={{
+                name: card.name,
+                number: card.id,
+                attack: card.attack,
+                defense: card.defense,
+                ranged: card.ranged,
+                movement: card.movement,
+                morale: card.morale,
+                experience: card.experience,
+                totalForce: card.totalForce,
+                maintenanceCost: card.maintenanceCost,
+                specialAbilities: card.specialAbilities.map(a => a.name),
+                currentPosture: 'Ofensiva',
+                normalPressure: 0,
+                permanentPressure: 0,
+                hits: 0
+              }} 
+              className="border border-gray-300"
+            />
           ) : (
             <div className="text-center p-8">
               <p className="text-muted-foreground">Nenhum template selecionado para este card.</p>

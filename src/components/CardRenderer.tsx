@@ -9,65 +9,38 @@ interface CardRendererProps {
 }
 
 export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className, isExport = false }) => {
-  const imageRef = React.useRef<HTMLImageElement>(null);
-  const [imageLoaded, setImageLoaded] = React.useState(false);
   
   const renderField = (fieldId: string, value: string | number) => {
     const field = template.fields.find(f => f.id === fieldId);
-    if (!field || !imageRef.current || !imageLoaded) return null;
+    if (!field) return null;
 
-    // USAR A MESMA LÓGICA DO TEMPLATEMAPPER
-    const imgRect = imageRef.current.getBoundingClientRect();
-    if (!imgRect) return null;
-    
-    const scaleX = imgRect.width / template.width;
-    const scaleY = imgRect.height / template.height;
-    
-    const leftPx = (field.x as number) * scaleX;
-    
     // Detectar se está sendo usado para exportação pelo contexto
-    const containerElement = imageRef.current.closest('[data-export="true"]');
-    const isExportContext = isExport || containerElement !== null;
+    const isExportContext = isExport;
     
     // Aplicar ajuste para compensar diferença no html2canvas
-    const topPx = (field.y as number) * scaleY - (isExportContext ? 8 : 0);
-    const widthPx = (field.width || 100) * scaleX;
-    const heightPx = (field.height || 30) * scaleY;
-    
-    console.log('CardRenderer - Cálculo de escala:', {
-      fieldId,
-      templateSize: { width: template.width, height: template.height },
-      imageSize: { width: imgRect.width, height: imgRect.height },
-      scale: { x: scaleX, y: scaleY },
-      originalPos: { x: field.x, y: field.y },
-      finalPos: { x: leftPx, y: topPx },
-      isExportContext
-    });
+    const topPx = field.y - (isExportContext ? 8 : 0);
 
     const style: React.CSSProperties = {
-      position: 'absolute',
-      left: `${leftPx}px`,
+      left: `${field.x}px`,
       top: `${topPx}px`,
-      width: `${widthPx}px`,
-      height: `${heightPx}px`,
-      fontSize: `${Math.max(8, field.fontSize * Math.min(scaleX, scaleY))}px`,
+      width: field.width ? `${field.width}px` : 'auto',
+      height: field.height ? `${field.height}px` : 'auto',
+      fontSize: `${field.fontSize}px`,
       fontFamily: field.fontFamily,
       fontWeight: field.fontWeight || 'normal',
       color: field.color,
       textAlign: field.textAlign || 'left',
-      transform: field.rotation ? `rotate(${field.rotation}deg)` : undefined,
-      overflow: 'hidden',
-      lineHeight: '1.2',
+      transform: field.rotation ? `rotate(${field.rotation}deg)` : 'none',
+      textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.3)' : undefined,
+      zIndex: 10,
+      pointerEvents: 'none',
       display: 'flex',
       alignItems: 'center',
       justifyContent: field.textAlign === 'center' ? 'center' : field.textAlign === 'right' ? 'flex-end' : 'flex-start',
-      textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.3)' : undefined,
-      zIndex: 10,
-      pointerEvents: 'none'
     };
 
     return (
-      <div key={fieldId} style={style}>
+      <div key={fieldId} className="card-field" style={style}>
         {value}
       </div>
     );
@@ -89,8 +62,8 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
       boxes.push(
         <div
           key={`pressure-${i}`}
+          className="card-field"
           style={{
-            position: 'absolute',
             left: `${x}px`,
             top: `${y}px`,
             width: `${boxSize}px`,
@@ -121,8 +94,8 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
       boxes.push(
         <div
           key={`life-${i}`}
+          className="card-field"
           style={{
-            position: 'absolute',
             left: `${x}px`,
             top: `${y}px`,
             width: `${boxSize}px`,
@@ -143,13 +116,19 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     for (let i = 1; i <= 5; i++) {
       const abilityField = template.fields.find(f => f.id === `special-ability-${i}`);
       if (abilityField && data.specialAbilities[i - 1]) {
+        // Detectar se está sendo usado para exportação pelo contexto
+        const isExportContext = isExport;
+        
+        // Aplicar ajuste para compensar diferença no html2canvas
+        const topPx = abilityField.y - (isExportContext ? 8 : 0);
+        
         elements.push(
           <div
             key={`ability-${i}`}
+            className="card-field"
             style={{
-              position: 'absolute',
               left: `${abilityField.x}px`,
-              top: `${abilityField.y}px`,
+              top: `${topPx}px`,
               width: abilityField.width ? `${abilityField.width}px` : 'auto',
               height: abilityField.height ? `${abilityField.height}px` : 'auto',
               fontSize: `${abilityField.fontSize}px`,
@@ -157,9 +136,11 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
               fontWeight: abilityField.fontWeight || 'normal',
               color: abilityField.color,
               textAlign: abilityField.textAlign || 'left',
-              transform: abilityField.rotation ? `rotate(${abilityField.rotation}deg)` : undefined,
+              transform: abilityField.rotation ? `rotate(${abilityField.rotation}deg)` : 'none',
               textShadow: abilityField.textShadow ? '1px 1px 2px rgba(0,0,0,0.5)' : undefined,
               overflow: 'hidden',
+              zIndex: 10,
+              pointerEvents: 'none'
             }}
           >
             {data.specialAbilities[i - 1]}
@@ -173,28 +154,11 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
 
   return (
     <div 
-      className={className} 
+      className={`card-frame ${className || ''}`}
       style={{ 
-        position: 'relative', 
-        display: 'inline-block', 
-        width: '1181px', 
-        height: '768px',
-        overflow: 'hidden'
+        backgroundImage: `url(${template.templateImage})`
       }}
     >
-      <img 
-        ref={imageRef}
-        src={template.templateImage} 
-        alt="Card Template"
-        style={{ 
-          width: '1181px', 
-          height: '768px',
-          display: 'block',
-          objectFit: 'fill'
-        }}
-        onLoad={() => setImageLoaded(true)}
-      />
-      
       {/* Campos mapeados */}
       {renderField('name', data.name)}
       {renderField('number', data.number)}
@@ -206,6 +170,10 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
       {renderField('experience', data.experience)}
       {renderField('total-force', data.totalForce)}
       {renderField('maintenance-cost', data.maintenanceCost)}
+      
+      {/* Boxes de pressão e vida */}
+      {renderPressureBoxes()}
+      {renderLifeBoxes()}
       
       {/* Habilidades especiais */}
       {renderSpecialAbilities()}
