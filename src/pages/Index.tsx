@@ -99,7 +99,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-6" style={{ width: '100%', minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto">
         <header className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">Birthright Forge</h1>
