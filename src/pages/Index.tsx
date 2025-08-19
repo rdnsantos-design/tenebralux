@@ -23,7 +23,8 @@ const Index = () => {
     if (editingCard) {
       setCards(cards.map(c => c.id === card.id ? card : c));
     } else {
-      setCards([...cards, { ...card, id: Date.now().toString() }]);
+      const nextId = (cards.length + 1).toString();
+      setCards([...cards, { ...card, id: nextId }]);
     }
     setEditingCard(null);
     setShowEditor(false);
