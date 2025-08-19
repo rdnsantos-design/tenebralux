@@ -34,7 +34,7 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
     height: template.height || 767
   });
 
-  // Estado para os valores de teste
+  // IMPORTANTE: Valores de teste APENAS para preview visual - NÃO são salvos no card
   const [testValues, setTestValues] = useState({
     name: 'Cavaleiros de Ferro',
     number: '#001',
@@ -244,9 +244,16 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
 
       {/* Valores de Teste */}
       <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-4">📝 Valores de Teste (Para Visualizar)</h3>
+        <h3 className="text-xl font-semibold mb-4">📝 Valores de Referência (Para Mapeamento Visual)</h3>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+          <h4 className="font-medium text-yellow-800 mb-2">⚠️ IMPORTANTE</h4>
+          <p className="text-sm text-yellow-700">
+            Estes valores são apenas para <strong>posicionar os campos visualmente</strong>. 
+            Os dados reais serão inseridos na criação do card.
+          </p>
+        </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Digite os valores que você quer testar no preview acima:
+          Digite valores de exemplo para ver como ficam posicionados:
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {Object.entries(fieldLabels).map(([fieldId, label]) => (
