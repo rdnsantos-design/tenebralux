@@ -194,8 +194,8 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
                 <div
                   className="absolute inset-0 bg-white/80 border border-red-500 rounded"
                   style={{
-                    width: field.width ? `${(field.width as number) * scaleX}px` : 'auto',
-                    minWidth: '40px',
+                    width: field.width ? `${(field.width as number) * scaleX}px` : field.id === 'name' ? 'max-content' : 'auto',
+                    minWidth: field.id === 'name' ? 'max-content' : '40px',
                     height: 'auto',
                     minHeight: '20px',
                   }}
@@ -213,15 +213,13 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
                     textShadow: field.textShadow ? '1px 1px 2px rgba(0,0,0,0.5)' : undefined,
                     width: field.width ? `${(field.width as number) * scaleX}px` : 'auto',
                     lineHeight: '1.1',
+                    whiteSpace: field.id === 'name' ? 'nowrap' : 'normal',
+                    overflow: field.id === 'name' ? 'visible' : 'hidden',
                   }}
                 >
                   {testValue}
                 </div>
                 
-                {/* Label identificador */}
-                <div className="absolute -top-5 left-0 bg-red-600 text-white px-1 text-xs whitespace-nowrap rounded text-center min-w-max">
-                  {fieldLabels[field.id as keyof typeof fieldLabels]}
-                </div>
                 
                 {/* Indicador de posição (cruz) */}
                 <div className="absolute top-0 left-0 w-2 h-2 bg-red-600 border border-white rounded-full transform -translate-x-1 -translate-y-1"></div>
