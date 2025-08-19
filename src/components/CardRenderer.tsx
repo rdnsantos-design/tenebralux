@@ -12,16 +12,16 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     const field = template.fields.find(f => f.id === fieldId);
     if (!field) return null;
 
-    // Calcular escala baseada no container atual vs template original
-    const containerElement = document.querySelector('.card-container');
-    const scaleX = containerElement ? containerElement.clientWidth / template.width : 1;
-    const scaleY = containerElement ? containerElement.clientHeight / template.height : 1;
+    // Template original: assumindo 1062x768 (conforme discutido)
+    // Container atual: 600x390
+    const scaleX = 600 / 1062;
+    const scaleY = 390 / 768;
 
     const style: React.CSSProperties = {
       position: 'absolute',
       left: `${field.x * scaleX}px`,
       top: `${field.y * scaleY}px`,
-      fontSize: `${field.fontSize * Math.min(scaleX, scaleY)}px`,
+      fontSize: `${Math.max(8, field.fontSize * Math.min(scaleX, scaleY))}px`,
       fontFamily: field.fontFamily,
       fontWeight: field.fontWeight || 'normal',
       color: field.color,
