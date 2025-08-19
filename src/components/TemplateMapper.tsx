@@ -6,10 +6,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CardTemplate, TextFieldMapping } from '@/types/CardTemplate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-interface TemplateMapperProps {
-  template: CardTemplate;
-  onTemplateUpdate: (template: CardTemplate) => void;
-}
+const FONT_OPTIONS = [
+  'Arial, sans-serif',
+  'Georgia, serif',
+  'Times New Roman, serif',
+  'Helvetica, sans-serif',
+  'Verdana, sans-serif',
+  'Courier New, monospace',
+  'Impact, sans-serif',
+  'Trebuchet MS, sans-serif',
+  'Comic Sans MS, cursive',
+  'Palatino, serif'
+];
 
 const FIELD_OPTIONS = [
   { id: 'name', label: 'Nome da Unidade' },
@@ -28,11 +36,15 @@ const FIELD_OPTIONS = [
   { id: 'life-boxes', label: 'Caixas de Vida' },
 ];
 
+interface TemplateMapperProps {
+  template: CardTemplate;
+  onTemplateUpdate: (template: CardTemplate) => void;
+}
+
 export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemplateUpdate }) => {
   const [selectedField, setSelectedField] = useState<string>('');
   const [clickMode, setClickMode] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     if (!clickMode || !selectedField) return;
@@ -59,14 +71,6 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
     onTemplateUpdate(updatedTemplate);
     setClickMode(false);
     setSelectedField('');
-  };
-
-  const handleImageMouseMove = (e: React.MouseEvent<HTMLImageElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMousePos({
-      x: Math.round(e.clientX - rect.left),
-      y: Math.round(e.clientY - rect.top)
-    });
   };
 
   const updateField = (fieldId: string, updates: Partial<TextFieldMapping>) => {
@@ -131,12 +135,12 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
               alt="Template"
               className={`max-w-full h-auto ${clickMode ? 'cursor-crosshair' : 'cursor-default'}`}
               onClick={handleImageClick}
-              onMouseMove={handleImageMouseMove}
             />
             
+            {/* Só mostra aviso quando está em modo de mapeamento */}
             {clickMode && (
-              <div className="absolute top-2 left-2 bg-black text-white px-2 py-1 rounded text-sm">
-                Posição: {mousePos.x}, {mousePos.y}
+              <div className="absolute top-2 right-2 bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium shadow-lg">
+                Clique para mapear: {FIELD_OPTIONS.find(opt => opt.id === selectedField)?.label}
               </div>
             )}
 
@@ -183,7 +187,7 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                   <div>
                     <Label>X</Label>
                     <Input
@@ -207,6 +211,24 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                       value={field.fontSize}
                       onChange={e => updateField(field.id, { fontSize: parseInt(e.target.value) || 16 })}
                     />
+                  </div>
+                  <div>
+                    <Label>Fonte</Label>
+                    <Select 
+                      value={field.fontFamily} 
+                      onValueChange={value => updateField(field.id, { fontFamily: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FONT_OPTIONS.map(font => (
+                          <SelectItem key={font} value={font}>
+                            <span style={{ fontFamily: font }}>{font.split(',')[0]}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label>Cor</Label>
