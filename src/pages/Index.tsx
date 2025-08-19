@@ -101,6 +101,7 @@ const Index = () => {
     return (
       <CardPreview
         card={previewCard}
+        template={templates[0]} // Usando o primeiro template disponível
         onClose={() => setPreviewCard(null)}
       />
     );
