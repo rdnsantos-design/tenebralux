@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,10 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
   onTemplateUpdate,
   onFinish
 }) => {
+  const imageRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
   const [imageDimensions, setImageDimensions] = useState({
     width: template.width || 1181,
     height: template.height || 767
@@ -139,32 +143,26 @@ export const SimpleTemplateEditor: React.FC<SimpleTemplateEditorProps> = ({
           ⚡ Os campos aparecem <strong>instantaneamente</strong> conforme você digita as coordenadas abaixo
         </p>
         <div 
+          ref={containerRef}
           className="relative border-2 border-blue-500 rounded-lg overflow-hidden bg-gray-50"
           style={{ maxWidth: '800px', margin: '0 auto' }}
         >
           <img
+            ref={imageRef}
             src={template.templateImage}
             alt="Template"
             className="w-full h-auto block"
             style={{ maxHeight: '600px', objectFit: 'contain' }}
             onLoad={() => {
-              // Força re-render quando a imagem carrega
-              setTimeout(() => {
-                setTestValues(prev => ({ ...prev }));
-              }, 100);
+              setImageLoaded(true);
             }}
           />
           
           {/* Visualizar campos mapeados EM TEMPO REAL */}
-          {template.fields.map(field => {
-            const container = document.querySelector('.relative') as HTMLElement;
-            const img = container?.querySelector('img') as HTMLImageElement;
-            if (!img || !container) return null;
+          {imageLoaded && template.fields.map(field => {
+            if (!imageRef.current || !containerRef.current) return null;
             
-            // Usar as dimensões reais da imagem exibida
-            const imgRect = img.getBoundingClientRect();
-            const containerRect = container.getBoundingClientRect();
-            
+            const img = imageRef.current;
             const scaleX = img.offsetWidth / imageDimensions.width;
             const scaleY = img.offsetHeight / imageDimensions.height;
             
