@@ -30,6 +30,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
       display: '-webkit-box',
       WebkitLineClamp: field.maxLines,
       WebkitBoxOrient: 'vertical' as const,
+      textShadow: field.textShadow ? '2px 2px 4px rgba(0,0,0,0.5)' : undefined,
     };
 
     return (

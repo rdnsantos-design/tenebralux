@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const FONT_OPTIONS = [
   'Arial, sans-serif',
+  'Cinzel, serif',
   'Georgia, serif',
   'Times New Roman, serif',
   'Helvetica, sans-serif',
@@ -46,6 +47,15 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
   const [selectedField, setSelectedField] = useState<string>('');
   const [clickMode, setClickMode] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [dragData, setDragData] = useState<{ 
+    field: string; 
+    startX: number; 
+    startY: number; 
+    startMouseX: number; 
+    startMouseY: number;
+    mode: 'move' | 'resize';
+  } | null>(null);
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     if (!clickMode || !selectedField) return;
@@ -58,10 +68,13 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
       id: selectedField,
       x: Math.round(x),
       y: Math.round(y),
+      width: 100,
+      height: 20,
       fontSize: 16,
       fontFamily: 'Arial, sans-serif',
       color: '#000000',
       textAlign: 'left',
+      textShadow: false,
     };
 
     const updatedTemplate = {
@@ -96,6 +109,68 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
     if (!selectedField) return;
     setClickMode(true);
   };
+
+  const handleMouseDown = (e: React.MouseEvent, fieldId: string, mode: 'move' | 'resize') => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const field = template.fields.find(f => f.id === fieldId);
+    if (!field) return;
+
+    setDragData({
+      field: fieldId,
+      startX: field.x,
+      startY: field.y,
+      startMouseX: e.clientX,
+      startMouseY: e.clientY,
+      mode
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragData || !imageRef.current) return;
+
+    const rect = imageRef.current.getBoundingClientRect();
+    const deltaX = e.clientX - dragData.startMouseX;
+    const deltaY = e.clientY - dragData.startMouseY;
+
+    const field = template.fields.find(f => f.id === dragData.field);
+    if (!field) return;
+
+    if (dragData.mode === 'move') {
+      const newX = Math.max(0, dragData.startX + deltaX);
+      const newY = Math.max(0, dragData.startY + deltaY);
+      updateField(dragData.field, { x: newX, y: newY });
+    } else if (dragData.mode === 'resize') {
+      const newWidth = Math.max(20, (field.width || 100) + deltaX);
+      const newHeight = Math.max(10, (field.height || 20) + deltaY);
+      updateField(dragData.field, { width: newWidth, height: newHeight });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDragData(null);
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (dragData) {
+        handleMouseMove(e as any);
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      handleMouseUp();
+    };
+
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [dragData]);
 
   return (
     <div className="space-y-6">
@@ -157,20 +232,30 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
               </div>
             )}
 
-            {/* Visualizar campos mapeados */}
+            {/* Visualizar campos mapeados com controles visuais */}
             {template.fields.map(field => (
-              <div
-                key={field.id}
-                className="absolute border-2 border-red-500 bg-red-500/20 pointer-events-none"
-                style={{
-                  left: `${field.x}px`,
-                  top: `${field.y}px`,
-                  width: field.width ? `${field.width}px` : '100px',
-                  height: field.height ? `${field.height}px` : '20px',
-                }}
-              >
-                <div className="absolute -top-6 left-0 bg-red-500 text-white px-1 text-xs">
-                  {FIELD_OPTIONS.find(opt => opt.id === field.id)?.label}
+              <div key={field.id}>
+                {/* Campo principal */}
+                <div
+                  className="absolute border-2 border-blue-500 bg-blue-500/10 cursor-move"
+                  style={{
+                    left: `${field.x}px`,
+                    top: `${field.y}px`,
+                    width: `${field.width || 100}px`,
+                    height: `${field.height || 20}px`,
+                  }}
+                  onMouseDown={(e) => handleMouseDown(e, field.id, 'move')}
+                >
+                  {/* Label do campo */}
+                  <div className="absolute -top-6 left-0 bg-blue-500 text-white px-1 text-xs whitespace-nowrap">
+                    {FIELD_OPTIONS.find(opt => opt.id === field.id)?.label}
+                  </div>
+                  
+                  {/* Alça de redimensionamento */}
+                  <div
+                    className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 cursor-se-resize"
+                    onMouseDown={(e) => handleMouseDown(e, field.id, 'resize')}
+                  />
                 </div>
               </div>
             ))}
@@ -200,7 +285,7 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                   <div>
                     <Label>X</Label>
                     <Input
@@ -218,6 +303,22 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                     />
                   </div>
                   <div>
+                    <Label>Largura</Label>
+                    <Input
+                      type="number"
+                      value={field.width || 100}
+                      onChange={e => updateField(field.id, { width: parseInt(e.target.value) || 100 })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Altura</Label>
+                    <Input
+                      type="number"
+                      value={field.height || 20}
+                      onChange={e => updateField(field.id, { height: parseInt(e.target.value) || 20 })}
+                    />
+                  </div>
+                  <div>
                     <Label>Tamanho da Fonte</Label>
                     <Input
                       type="number"
@@ -225,6 +326,17 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                       onChange={e => updateField(field.id, { fontSize: parseInt(e.target.value) || 16 })}
                     />
                   </div>
+                  <div>
+                    <Label>Cor</Label>
+                    <Input
+                      type="color"
+                      value={field.color}
+                      onChange={e => updateField(field.id, { color: e.target.value })}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
                   <div>
                     <Label>Fonte</Label>
                     <Select 
@@ -244,12 +356,47 @@ export const TemplateMapper: React.FC<TemplateMapperProps> = ({ template, onTemp
                     </Select>
                   </div>
                   <div>
-                    <Label>Cor</Label>
-                    <Input
-                      type="color"
-                      value={field.color}
-                      onChange={e => updateField(field.id, { color: e.target.value })}
+                    <Label>Peso da Fonte</Label>
+                    <Select 
+                      value={field.fontWeight || 'normal'} 
+                      onValueChange={value => updateField(field.id, { fontWeight: value as any })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="bold">Negrito</SelectItem>
+                        <SelectItem value="500">Médio</SelectItem>
+                        <SelectItem value="600">Semi-Bold</SelectItem>
+                        <SelectItem value="700">Bold</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Alinhamento</Label>
+                    <Select 
+                      value={field.textAlign || 'left'} 
+                      onValueChange={value => updateField(field.id, { textAlign: value as any })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">Esquerda</SelectItem>
+                        <SelectItem value="center">Centro</SelectItem>
+                        <SelectItem value="right">Direita</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`shadow-${field.id}`}
+                      checked={field.textShadow || false}
+                      onChange={e => updateField(field.id, { textShadow: e.target.checked })}
                     />
+                    <Label htmlFor={`shadow-${field.id}`}>Sombra</Label>
                   </div>
                 </div>
               </div>

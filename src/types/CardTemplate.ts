@@ -11,6 +11,7 @@ export interface TextFieldMapping {
   textAlign?: 'left' | 'center' | 'right';
   rotation?: number; // rotação em graus
   maxLines?: number; // máximo de linhas para texto longo
+  textShadow?: boolean; // sombra no texto
 }
 
 export interface CardTemplate {
