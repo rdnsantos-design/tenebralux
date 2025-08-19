@@ -23,7 +23,8 @@ const Index = () => {
     if (editingCard) {
       setCards(cards.map(c => c.id === card.id ? card : c));
     } else {
-      const nextId = (cards.length + 1).toString();
+      const nextNumber = cards.length + 1;
+      const nextId = `#${nextNumber.toString().padStart(3, '0')}`;
       setCards([...cards, { ...card, id: nextId }]);
     }
     setEditingCard(null);
