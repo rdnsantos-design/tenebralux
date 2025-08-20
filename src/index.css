@@ -32,7 +32,7 @@ html, body {
   writing-mode: horizontal-tb;
   background-repeat: no-repeat;
   background-position: 0 0;
-  background-size: 100% 100%;
+  background-size: contain;
   background-origin: content-box;
 }
 
