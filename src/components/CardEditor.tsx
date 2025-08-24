@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UnitCard, ExperienceLevel, SpecialAbility } from "@/types/UnitCard";
-
+import { SpecialAbilitiesManager } from "@/components/SpecialAbilitiesManager";
 import { CardRenderer } from '@/components/CardRenderer';
 import { CardTemplate, CardData } from '@/types/CardTemplate';
 
@@ -15,19 +15,6 @@ interface CardEditorProps {
   onSave: (card: UnitCard) => void;
   onCancel: () => void;
 }
-
-const specialAbilitiesDatabase: SpecialAbility[] = [
-  { id: '1', name: 'Batedor', level: 1, cost: 1, description: 'Ignora penalidade de terreno difícil' },
-  { id: '2', name: 'Murada', level: 1, cost: 1, description: '+1 Defesa contra ataque à distância' },
-  { id: '3', name: 'Disciplinada', level: 1, cost: 1, description: 'Ignora 1 ponto de pressão por rodada' },
-  { id: '4', name: 'Emboscada', level: 1, cost: 1, description: 'Causa +1 hit se atacar de floresta ou colina' },
-  { id: '5', name: 'Firme', level: 1, cost: 1, description: 'Nunca sofre dano extra de flanco' },
-  { id: '6', name: 'Atiradores Precisos', level: 1, cost: 1, description: 'Alcance +6 hexágonos com tiro' },
-  { id: '7', name: 'Carga Devastadora', level: 2, cost: 2, description: 'Ao se mover 12+ hexágonos, +1 hit no impacto' },
-  { id: '8', name: 'Formação Impecável', level: 2, cost: 2, description: 'Remove até 2 pontos de pressão ao reorganizar' },
-  { id: '9', name: 'Moral de Ferro', level: 2, cost: 2, description: 'Dificuldade de moral reduzida para 12' },
-  { id: '10', name: 'Comando Avançado', level: 2, cost: 2, description: 'Reorganiza unidade desbandada a 2 hex de distância' },
-];
 
 const experienceLimits = {
   'Green': 3,
@@ -63,8 +50,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   const calculateTotalForce = useCallback(() => {
     const baseForce = unitData.attack + unitData.defense + unitData.ranged + unitData.movement + unitData.morale;
     const abilitiesBonus = unitData.specialAbilities.reduce((acc, ability) => {
-      const foundAbility = specialAbilitiesDatabase.find(db => db.name === ability.name);
-      return acc + (foundAbility?.cost || 0);
+      return acc + ability.cost;
     }, 0);
     return Math.round(baseForce + abilitiesBonus);
   }, [unitData.attack, unitData.defense, unitData.ranged, unitData.movement, unitData.morale, unitData.specialAbilities]);
@@ -89,18 +75,10 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     setUnitData(prev => ({ ...prev, [attribute]: value }));
   };
 
-  const addSpecialAbility = (ability: SpecialAbility) => {
-    if (unitData.specialAbilities.find(a => a.name === ability.name)) return;
+  const handleSpecialAbilitiesChange = (abilities: SpecialAbility[]) => {
     setUnitData(prev => ({
       ...prev,
-      specialAbilities: [...prev.specialAbilities, ability]
-    }));
-  };
-
-  const removeSpecialAbility = (abilityName: string) => {
-    setUnitData(prev => ({
-      ...prev,
-      specialAbilities: prev.specialAbilities.filter(a => a.name !== abilityName)
+      specialAbilities: abilities
     }));
   };
 
@@ -268,65 +246,11 @@ export const CardEditor: React.FC<CardEditorProps> = ({
             </Card>
 
             {/* Habilidades Especiais */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Habilidades Especiais (máx 5)</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Habilidades Selecionadas ({unitData.specialAbilities.length}/5)</Label>
-                  {unitData.specialAbilities.length > 0 ? (
-                    <div className="space-y-2">
-                      {unitData.specialAbilities.map((ability) => (
-                        <div key={ability.id} className="flex items-center justify-between p-2 border rounded">
-                          <div>
-                            <span className="font-medium">{ability.name}</span>
-                            <span className="text-sm text-muted-foreground ml-2">
-                              (Nível {ability.level}, Custo: {ability.cost})
-                            </span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeSpecialAbility(ability.name)}
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Nenhuma habilidade selecionada</p>
-                  )}
-                </div>
-                
-                <div>
-                  <Label>Adicionar Habilidade</Label>
-                  <Select 
-                    onValueChange={(abilityId) => {
-                      const ability = specialAbilitiesDatabase.find(a => a.id === abilityId);
-                      if (ability && unitData.specialAbilities.length < 5) {
-                        addSpecialAbility(ability);
-                      }
-                    }}
-                    disabled={unitData.specialAbilities.length >= 5}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma habilidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {specialAbilitiesDatabase
-                        .filter(ability => !unitData.specialAbilities.find(a => a.name === ability.name))
-                        .map(ability => (
-                          <SelectItem key={ability.id} value={ability.id}>
-                            {ability.name} (Nível {ability.level}) - {ability.description}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+            <SpecialAbilitiesManager
+              selectedAbilities={unitData.specialAbilities}
+              onAbilitiesChange={handleSpecialAbilitiesChange}
+              maxAbilities={5}
+            />
 
             {/* Força Total e Manutenção */}
             <Card>
