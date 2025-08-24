@@ -14,6 +14,16 @@ export interface TextFieldMapping {
   textShadow?: boolean; // sombra no texto
 }
 
+export interface ImageFieldMapping {
+  id: string;
+  x: number; // posição X em pixels
+  y: number; // posição Y em pixels
+  width: number; // largura em pixels
+  height: number; // altura em pixels
+  borderRadius?: number; // raio da borda em pixels
+  opacity?: number; // opacidade (0-1)
+}
+
 export interface CardTemplate {
   id: string;
   name: string;
@@ -21,6 +31,7 @@ export interface CardTemplate {
   width: number; // largura do template em pixels
   height: number; // altura do template em pixels
   fields: TextFieldMapping[];
+  imageFields?: ImageFieldMapping[]; // campos de imagem (opcional para compatibilidade)
 }
 
 export interface CardData {

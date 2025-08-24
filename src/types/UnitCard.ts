@@ -32,6 +32,7 @@ export interface UnitCard {
   // Visual
   backgroundImage?: string;
   templateId?: string; // ID do template usado para criar este card
+  images?: { [fieldId: string]: string }; // mapeamento de campo de imagem para caminho da imagem
   
   // Estado atual (para uso em jogo)
   currentPosture?: Posture;
