@@ -170,10 +170,14 @@ const Index = () => {
   }
 
   if (previewCard) {
+    const cardTemplate = previewCard.templateId 
+      ? templates.find(t => t.id === previewCard.templateId)
+      : templates[0];
+      
     return (
       <CardPreview
         card={previewCard}
-        template={templates[0]} // Usando o primeiro template disponível
+        template={cardTemplate}
         onClose={() => setPreviewCard(null)}
       />
     );

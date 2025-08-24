@@ -109,7 +109,8 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     
     const cardToSave = {
       ...unitData,
-      id: card?.id || Date.now().toString()
+      id: card?.id || Date.now().toString(),
+      templateId: selectedTemplate?.id
     };
     
     onSave(cardToSave);

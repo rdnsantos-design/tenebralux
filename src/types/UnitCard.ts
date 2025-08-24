@@ -31,6 +31,7 @@ export interface UnitCard {
   
   // Visual
   backgroundImage?: string;
+  templateId?: string; // ID do template usado para criar este card
   
   // Estado atual (para uso em jogo)
   currentPosture?: Posture;
