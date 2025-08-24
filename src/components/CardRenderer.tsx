@@ -267,6 +267,7 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     <div 
       ref={frameRef}
       className={`card-frame ${className || ''}`}
+      key={template.id}
       style={{ 
         backgroundImage: `url(${template.templateImage})`
       }}
