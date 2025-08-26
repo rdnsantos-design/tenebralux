@@ -299,11 +299,11 @@ export const CardEditor: React.FC<CardEditorProps> = ({
             {!card && availableUnits.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Unidades Importadas</CardTitle>
+                  <CardTitle>1. Selecionar Unidade Base</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="importedUnit">Selecionar Unidade da Planilha</Label>
+                    <Label htmlFor="importedUnit">Escolher Unidade da Planilha</Label>
                     <Select 
                       value=""
                       onValueChange={(value) => {
@@ -336,12 +336,12 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                         }
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background">
                         <SelectValue placeholder="Escolher unidade..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-background border z-50">
                         {availableUnits.map(unit => (
-                          <SelectItem key={unit.id} value={unit.id}>
+                          <SelectItem key={unit.id} value={unit.id} className="hover:bg-accent">
                             {unit.name} ({unit.importName} - Força: {unit.totalForce})
                           </SelectItem>
                         ))}
@@ -349,7 +349,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                     </Select>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Ou preencha manualmente os campos abaixo
+                    Selecione uma unidade como base e depois ajuste a experiência e distribua pontos
                   </p>
                 </CardContent>
               </Card>
@@ -358,7 +358,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
             {/* Informações Básicas */}
             <Card>
               <CardHeader>
-                <CardTitle>Informações Básicas</CardTitle>
+                <CardTitle>2. Informações Básicas</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -377,13 +377,13 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                     value={unitData.experience} 
                     onValueChange={(value: ExperienceLevel) => handleAttributeChange('experience', value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border z-50">
                       {Object.keys(experienceLimits).map(level => (
-                        <SelectItem key={level} value={level}>
-                          {level} (máx: {experienceLimits[level as ExperienceLevel]})
+                        <SelectItem key={level} value={level} className="hover:bg-accent">
+                          {level} (máx: {experienceLimits[level as ExperienceLevel]}) - Moral: {experienceModifiers[level as ExperienceLevel].moral >= 0 ? '+' : ''}{experienceModifiers[level as ExperienceLevel].moral}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -395,7 +395,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
             {/* Pontos para Distribuir */}
             <Card>
               <CardHeader>
-                <CardTitle>Pontos para Distribuir</CardTitle>
+                <CardTitle>3. Pontos para Distribuir</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
@@ -457,11 +457,14 @@ export const CardEditor: React.FC<CardEditorProps> = ({
             </Card>
 
             {/* Habilidades Especiais */}
-            <SpecialAbilitiesManager
-              selectedAbilities={unitData.specialAbilities}
-              onAbilitiesChange={handleSpecialAbilitiesChange}
-              maxAbilities={5}
-            />
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">4. Habilidades Especiais</h3>
+              <SpecialAbilitiesManager
+                selectedAbilities={unitData.specialAbilities}
+                onAbilitiesChange={handleSpecialAbilitiesChange}
+                maxAbilities={5}
+              />
+            </div>
 
             {/* Seleção de Skin */}
             {selectedTemplate && (
