@@ -1,4 +1,4 @@
-export type ExperienceLevel = 'Green' | 'Profissional' | 'Veterano' | 'Elite';
+export type ExperienceLevel = 'Amador' | 'Recruta' | 'Profissional' | 'Veterano' | 'Elite' | 'Lendário';
 
 export type Posture = 'Ofensiva' | 'Defensiva' | 'Carga' | 'Reorganização';
 

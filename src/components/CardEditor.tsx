@@ -19,10 +19,21 @@ interface CardEditorProps {
 }
 
 const experienceLimits = {
-  'Green': 3,
+  'Amador': 2,
+  'Recruta': 3,
   'Profissional': 4,
   'Veterano': 5,
-  'Elite': 6
+  'Elite': 6,
+  'Lendário': 7
+};
+
+const experienceModifiers = {
+  'Amador': { moral: -2, points: 0 },
+  'Recruta': { moral: -1, points: -1 }, // Remove 1 ponto
+  'Profissional': { moral: 0, points: 2 },
+  'Veterano': { moral: 1, points: 4 },
+  'Elite': { moral: 2, points: 6 },
+  'Lendário': { moral: 3, points: 8 }
 };
 
 export const CardEditor: React.FC<CardEditorProps> = ({ 
@@ -35,6 +46,14 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<CardTemplate | null>(null);
   const [selectedSkin, setSelectedSkin] = useState<string>('');
   const [availableUnits, setAvailableUnits] = useState<Array<{id: string, name: string, importName: string} & UnitCard>>([]);
+  const [baseAttributes, setBaseAttributes] = useState({
+    attack: card?.attack || 1,
+    defense: card?.defense || 1,
+    ranged: card?.ranged || 1,
+    movement: card?.movement || 1,
+    morale: card?.morale || 1
+  });
+  const [availablePoints, setAvailablePoints] = useState(0);
   const [unitData, setUnitData] = useState<UnitCard>({
     id: card?.id || '',
     name: card?.name || '',
@@ -43,7 +62,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     ranged: card?.ranged || 1,
     movement: card?.movement || 1,
     morale: card?.morale || 1,
-    experience: card?.experience || 'Green',
+    experience: card?.experience || 'Profissional',
     totalForce: card?.totalForce || 0,
     maintenanceCost: card?.maintenanceCost || 0,
     specialAbilities: card?.specialAbilities || [],
@@ -111,13 +130,50 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     }));
   }, [calculateTotalForce]);
 
+  // Aplicar modificadores de experiência
+  useEffect(() => {
+    const modifier = experienceModifiers[unitData.experience as ExperienceLevel];
+    const adjustedMorale = Math.max(1, baseAttributes.morale + modifier.moral);
+    
+    setUnitData(prev => ({
+      ...prev,
+      morale: adjustedMorale
+    }));
+    
+    setAvailablePoints(modifier.points);
+  }, [unitData.experience, baseAttributes.morale]);
+
   const handleAttributeChange = (attribute: keyof UnitCard, value: number | string) => {
-    if (typeof value === 'number' && ['attack', 'defense', 'ranged', 'movement', 'morale'].includes(attribute)) {
-      const maxValue = experienceLimits[unitData.experience as ExperienceLevel];
-      value = Math.min(Math.max(value, 1), maxValue);
+    if (attribute === 'experience') {
+      setUnitData(prev => ({ ...prev, [attribute]: value as ExperienceLevel }));
+      return;
     }
     
-    setUnitData(prev => ({ ...prev, [attribute]: value }));
+    if (typeof value === 'number' && ['attack', 'defense', 'ranged', 'movement'].includes(attribute)) {
+      const maxValue = experienceLimits[unitData.experience as ExperienceLevel];
+      value = Math.min(Math.max(value, 1), maxValue);
+      
+      // Calcular pontos usados
+      const currentTotal = unitData.attack + unitData.defense + unitData.ranged + unitData.movement;
+      const baseTotal = baseAttributes.attack + baseAttributes.defense + baseAttributes.ranged + baseAttributes.movement;
+      const newTotal = currentTotal - (unitData[attribute as keyof UnitCard] as number) + value;
+      const pointsUsed = newTotal - baseTotal;
+      
+      // Verificar se há pontos suficientes
+      if (pointsUsed > availablePoints) {
+        return; // Não permite gastar mais pontos do que disponível
+      }
+      
+      setUnitData(prev => ({ ...prev, [attribute]: value }));
+    } else if (attribute === 'name') {
+      setUnitData(prev => ({ ...prev, [attribute]: value as string }));
+    }
+  };
+
+  const getUsedPoints = () => {
+    const currentTotal = unitData.attack + unitData.defense + unitData.ranged + unitData.movement;
+    const baseTotal = baseAttributes.attack + baseAttributes.defense + baseAttributes.ranged + baseAttributes.movement;
+    return currentTotal - baseTotal;
   };
 
   const handleSpecialAbilitiesChange = (abilities: SpecialAbility[]) => {
@@ -253,6 +309,14 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                       onValueChange={(value) => {
                         const selectedUnit = availableUnits.find(unit => unit.id === value);
                         if (selectedUnit) {
+                          const newBaseAttributes = {
+                            attack: selectedUnit.attack,
+                            defense: selectedUnit.defense,
+                            ranged: selectedUnit.ranged,
+                            movement: selectedUnit.movement,
+                            morale: selectedUnit.morale
+                          };
+                          setBaseAttributes(newBaseAttributes);
                           setUnitData({
                             id: card?.id || '',
                             name: selectedUnit.name,
@@ -261,13 +325,14 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                             ranged: selectedUnit.ranged,
                             movement: selectedUnit.movement,
                             morale: selectedUnit.morale,
-                            experience: selectedUnit.experience,
+                            experience: 'Profissional',
                             totalForce: selectedUnit.totalForce,
                             maintenanceCost: selectedUnit.maintenanceCost,
                             specialAbilities: selectedUnit.specialAbilities || [],
                             backgroundImage: selectedUnit.backgroundImage || '',
                             customBackgroundImage: selectedUnit.customBackgroundImage || ''
                           });
+                          setAvailablePoints(experienceModifiers['Profissional'].points);
                         }
                       }}
                     >
@@ -327,6 +392,28 @@ export const CardEditor: React.FC<CardEditorProps> = ({
               </CardContent>
             </Card>
 
+            {/* Pontos para Distribuir */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Pontos para Distribuir</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Pontos Disponíveis</Label>
+                    <div className="text-2xl font-bold text-primary">{availablePoints}</div>
+                  </div>
+                  <div>
+                    <Label>Pontos Usados</Label>
+                    <div className="text-2xl font-bold text-secondary">{getUsedPoints()}</div>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Distribua os pontos nos atributos (exceto moral, que é determinado pela experiência)
+                </p>
+              </CardContent>
+            </Card>
+
             {/* Atributos */}
             <Card>
               <CardHeader>
@@ -337,8 +424,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                   { key: 'attack', label: 'Ataque', icon: '⚔️' },
                   { key: 'defense', label: 'Defesa', icon: '🛡️' },
                   { key: 'ranged', label: 'Tiro', icon: '🏹' },
-                  { key: 'movement', label: 'Movimento', icon: '👟' },
-                  { key: 'morale', label: 'Moral', icon: '💪' }
+                  { key: 'movement', label: 'Movimento', icon: '👟' }
                 ].map(({ key, label, icon }) => (
                   <div key={key}>
                     <Label htmlFor={key}>{icon} {label}</Label>
@@ -352,6 +438,21 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                     />
                   </div>
                 ))}
+                
+                {/* Moral - apenas exibição, calculado automaticamente */}
+                <div className="col-span-2">
+                  <Label htmlFor="morale">💪 Moral (automático)</Label>
+                  <Input
+                    id="morale"
+                    type="number"
+                    value={unitData.morale}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Base: {baseAttributes.morale} + Experiência: {experienceModifiers[unitData.experience as ExperienceLevel].moral} = {unitData.morale}
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
