@@ -12,6 +12,7 @@ import { CardTemplate, CardData } from '@/types/CardTemplate';
 interface CardEditorProps {
   card?: UnitCard | null;
   templates?: CardTemplate[];
+  importedUnits?: UnitCard[];
   onSave: (card: UnitCard) => void;
   onCancel: () => void;
 }
@@ -25,7 +26,8 @@ const experienceLimits = {
 
 export const CardEditor: React.FC<CardEditorProps> = ({ 
   card, 
-  templates = [], 
+  templates = [],
+  importedUnits = [],
   onSave, 
   onCancel 
 }) => {
@@ -180,6 +182,47 @@ export const CardEditor: React.FC<CardEditorProps> = ({
               </Card>
             )}
             
+            {/* Selecionar Unidade Importada */}
+            {!card && importedUnits.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Unidades Importadas</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="importedUnit">Selecionar Unidade da Planilha</Label>
+                    <Select 
+                      value=""
+                      onValueChange={(value) => {
+                        const selectedUnit = importedUnits.find(unit => unit.id === value);
+                        if (selectedUnit) {
+                          setUnitData({
+                            ...selectedUnit,
+                            id: card?.id || '',
+                            specialAbilities: selectedUnit.specialAbilities || []
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Escolher unidade..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {importedUnits.map(unit => (
+                          <SelectItem key={unit.id} value={unit.id}>
+                            {unit.name} ({unit.experience} - Força: {unit.totalForce})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Ou preencha manualmente os campos abaixo
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Informações Básicas */}
             <Card>
               <CardHeader>

@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Download, Eye, Settings, Image, Trash2 } from "lucide-react";
+import { Plus, Edit, Download, Eye, Settings, Image, Trash2, FileSpreadsheet } from "lucide-react";
 import { CardEditor } from "@/components/CardEditor";
 import { CardPreview } from "@/components/CardPreview";
 import { TemplateCreator } from "@/components/TemplateCreator";
 import { TemplateMapper } from "@/components/TemplateMapper";
+import { ExcelImporter } from "@/components/ExcelImporter";
 import { UnitCard } from "@/types/UnitCard";
 import { CardTemplate } from "@/types/CardTemplate";
 
@@ -18,6 +19,8 @@ const Index = () => {
   const [templates, setTemplates] = useState<CardTemplate[]>([]);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<CardTemplate | null>(null);
+  const [showExcelImporter, setShowExcelImporter] = useState(false);
+  const [importedUnits, setImportedUnits] = useState<UnitCard[]>([]);
 
   // Carregar dados do localStorage na inicialização
   useEffect(() => {
@@ -129,6 +132,21 @@ const Index = () => {
     setCards(cards.filter(c => c.id !== cardId));
   };
 
+  const handleExcelImport = (units: UnitCard[]) => {
+    setImportedUnits(units);
+    setShowExcelImporter(false);
+    setShowEditor(true);
+  };
+
+  if (showExcelImporter) {
+    return (
+      <ExcelImporter
+        onImport={handleExcelImport}
+        onCancel={() => setShowExcelImporter(false)}
+      />
+    );
+  }
+
   if (showTemplateCreator) {
     return (
       <TemplateCreator
@@ -163,8 +181,12 @@ const Index = () => {
       <CardEditor
         card={editingCard}
         templates={templates}
+        importedUnits={importedUnits}
         onSave={handleSaveCard}
-        onCancel={() => setShowEditor(false)}
+        onCancel={() => {
+          setShowEditor(false);
+          setImportedUnits([]);
+        }}
       />
     );
   }
@@ -192,6 +214,10 @@ const Index = () => {
             <p className="text-xl text-muted-foreground">Gerencie suas unidades militares e templates</p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={() => setShowExcelImporter(true)} variant="outline" size="lg" className="flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5" />
+              Importar Excel
+            </Button>
             <Button onClick={handleNewCard} size="lg" className="flex items-center gap-2">
               <Plus className="w-5 h-5" />
               Novo Card
