@@ -45,6 +45,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<CardTemplate | null>(null);
   const [selectedSkin, setSelectedSkin] = useState<string>('');
+  const [selectedUnitId, setSelectedUnitId] = useState<string>('');
   const [availableUnits, setAvailableUnits] = useState<Array<{id: string, name: string, importName: string} & UnitCard>>([]);
   const [baseAttributes, setBaseAttributes] = useState({
     attack: card?.attack || 1,
@@ -346,37 +347,38 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                     <>
                       <div>
                         <Label htmlFor="importedUnit">Escolher Unidade da Planilha</Label>
-                        <Select 
-                          value=""
-                          onValueChange={(value) => {
-                            const selectedUnit = availableUnits.find(unit => unit.id === value);
-                            if (selectedUnit) {
-                              const newBaseAttributes = {
-                                attack: selectedUnit.attack,
-                                defense: selectedUnit.defense,
-                                ranged: selectedUnit.ranged,
-                                movement: selectedUnit.movement,
-                                morale: selectedUnit.morale
-                              };
-                              setBaseAttributes(newBaseAttributes);
-                              setUnitData({
-                                id: card?.id || '',
-                                name: selectedUnit.name,
-                                attack: selectedUnit.attack,
-                                defense: selectedUnit.defense,
-                                ranged: selectedUnit.ranged,
-                                movement: selectedUnit.movement,
-                                morale: selectedUnit.morale,
-                                experience: 'Profissional',
-                                totalForce: selectedUnit.totalForce,
-                                maintenanceCost: selectedUnit.maintenanceCost,
-                                specialAbilities: selectedUnit.specialAbilities || [],
-                                backgroundImage: selectedUnit.backgroundImage || '',
-                                customBackgroundImage: selectedUnit.customBackgroundImage || ''
-                              });
-                              setAvailablePoints(experienceModifiers['Profissional'].points);
-                            }
-                          }}
+                         <Select 
+                           value={selectedUnitId}
+                           onValueChange={(value) => {
+                             const selectedUnit = availableUnits.find(unit => unit.id === value);
+                             if (selectedUnit) {
+                               setSelectedUnitId(value);
+                               const newBaseAttributes = {
+                                 attack: selectedUnit.attack,
+                                 defense: selectedUnit.defense,
+                                 ranged: selectedUnit.ranged,
+                                 movement: selectedUnit.movement,
+                                 morale: selectedUnit.morale
+                               };
+                               setBaseAttributes(newBaseAttributes);
+                               setUnitData({
+                                 id: card?.id || '',
+                                 name: selectedUnit.name,
+                                 attack: selectedUnit.attack,
+                                 defense: selectedUnit.defense,
+                                 ranged: selectedUnit.ranged,
+                                 movement: selectedUnit.movement,
+                                 morale: selectedUnit.morale,
+                                 experience: 'Profissional',
+                                 totalForce: selectedUnit.totalForce,
+                                 maintenanceCost: selectedUnit.maintenanceCost,
+                                 specialAbilities: selectedUnit.specialAbilities || [],
+                                 backgroundImage: selectedUnit.backgroundImage || '',
+                                 customBackgroundImage: selectedUnit.customBackgroundImage || ''
+                               });
+                               setAvailablePoints(experienceModifiers['Profissional'].points);
+                             }
+                           }}
                         >
                           <SelectTrigger className="bg-background border">
                             <SelectValue placeholder="Escolher unidade..." />
