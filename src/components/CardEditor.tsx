@@ -296,61 +296,72 @@ export const CardEditor: React.FC<CardEditorProps> = ({
             )}
             
             {/* Selecionar Unidade Importada */}
-            {!card && availableUnits.length > 0 && (
+            {!card && (
               <Card>
                 <CardHeader>
                   <CardTitle>1. Selecionar Unidade Base</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="importedUnit">Escolher Unidade da Planilha</Label>
-                    <Select 
-                      value=""
-                      onValueChange={(value) => {
-                        const selectedUnit = availableUnits.find(unit => unit.id === value);
-                        if (selectedUnit) {
-                          const newBaseAttributes = {
-                            attack: selectedUnit.attack,
-                            defense: selectedUnit.defense,
-                            ranged: selectedUnit.ranged,
-                            movement: selectedUnit.movement,
-                            morale: selectedUnit.morale
-                          };
-                          setBaseAttributes(newBaseAttributes);
-                          setUnitData({
-                            id: card?.id || '',
-                            name: selectedUnit.name,
-                            attack: selectedUnit.attack,
-                            defense: selectedUnit.defense,
-                            ranged: selectedUnit.ranged,
-                            movement: selectedUnit.movement,
-                            morale: selectedUnit.morale,
-                            experience: 'Profissional',
-                            totalForce: selectedUnit.totalForce,
-                            maintenanceCost: selectedUnit.maintenanceCost,
-                            specialAbilities: selectedUnit.specialAbilities || [],
-                            backgroundImage: selectedUnit.backgroundImage || '',
-                            customBackgroundImage: selectedUnit.customBackgroundImage || ''
-                          });
-                          setAvailablePoints(experienceModifiers['Profissional'].points);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="bg-background">
-                        <SelectValue placeholder="Escolher unidade..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border z-50">
-                        {availableUnits.map(unit => (
-                          <SelectItem key={unit.id} value={unit.id} className="hover:bg-accent">
-                            {unit.name} ({unit.importName} - Força: {unit.totalForce})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Selecione uma unidade como base e depois ajuste a experiência e distribua pontos
-                  </p>
+                  {availableUnits.length > 0 ? (
+                    <>
+                      <div>
+                        <Label htmlFor="importedUnit">Escolher Unidade da Planilha</Label>
+                        <Select 
+                          value=""
+                          onValueChange={(value) => {
+                            const selectedUnit = availableUnits.find(unit => unit.id === value);
+                            if (selectedUnit) {
+                              const newBaseAttributes = {
+                                attack: selectedUnit.attack,
+                                defense: selectedUnit.defense,
+                                ranged: selectedUnit.ranged,
+                                movement: selectedUnit.movement,
+                                morale: selectedUnit.morale
+                              };
+                              setBaseAttributes(newBaseAttributes);
+                              setUnitData({
+                                id: card?.id || '',
+                                name: selectedUnit.name,
+                                attack: selectedUnit.attack,
+                                defense: selectedUnit.defense,
+                                ranged: selectedUnit.ranged,
+                                movement: selectedUnit.movement,
+                                morale: selectedUnit.morale,
+                                experience: 'Profissional',
+                                totalForce: selectedUnit.totalForce,
+                                maintenanceCost: selectedUnit.maintenanceCost,
+                                specialAbilities: selectedUnit.specialAbilities || [],
+                                backgroundImage: selectedUnit.backgroundImage || '',
+                                customBackgroundImage: selectedUnit.customBackgroundImage || ''
+                              });
+                              setAvailablePoints(experienceModifiers['Profissional'].points);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="bg-background border">
+                            <SelectValue placeholder="Escolher unidade..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border z-50 shadow-lg">
+                            {availableUnits.map(unit => (
+                              <SelectItem key={unit.id} value={unit.id} className="hover:bg-accent cursor-pointer">
+                                {unit.name} ({unit.importName} - Força: {unit.totalForce})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Selecione uma unidade como base e depois ajuste a experiência e distribua pontos
+                      </p>
+                    </>
+                  ) : (
+                    <div className="text-center py-8 border-2 border-dashed border-muted rounded-lg">
+                      <p className="text-muted-foreground mb-2">Nenhuma unidade importada encontrada</p>
+                      <p className="text-sm text-muted-foreground">
+                        Vá para "Gerenciar Excel" para importar planilhas com unidades, ou preencha manualmente os campos abaixo
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
