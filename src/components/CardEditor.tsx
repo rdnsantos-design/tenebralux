@@ -149,18 +149,30 @@ export const CardEditor: React.FC<CardEditorProps> = ({
       return;
     }
     
-    if (typeof value === 'number' && ['attack', 'defense', 'ranged', 'movement'].includes(attribute)) {
+    if (typeof value === 'number' && ['attack', 'defense', 'ranged', 'movement', 'morale'].includes(attribute)) {
       const maxValue = experienceLimits[unitData.experience as ExperienceLevel];
       value = Math.min(Math.max(value, 1), maxValue);
       
-      // Calcular pontos usados
-      const currentTotal = unitData.attack + unitData.defense + unitData.ranged + unitData.movement;
+      // Criar nova versão temporária dos dados para calcular pontos
+      const tempUnitData = { ...unitData, [attribute]: value };
+      
+      // Calcular pontos totais que seriam usados
+      const currentTotal = tempUnitData.attack + tempUnitData.defense + tempUnitData.ranged + tempUnitData.movement;
       const baseTotal = baseAttributes.attack + baseAttributes.defense + baseAttributes.ranged + baseAttributes.movement;
-      const newTotal = currentTotal - (unitData[attribute as keyof UnitCard] as number) + value;
-      const pointsUsed = newTotal - baseTotal;
+      const attributePoints = currentTotal - baseTotal;
+      
+      // Pontos gastos em moral (além do bônus de experiência)
+      const modifier = experienceModifiers[unitData.experience as ExperienceLevel];
+      const baseMoraleWithBonus = Math.max(1, baseAttributes.morale + modifier.moral);
+      const moralePoints = Math.max(0, tempUnitData.morale - baseMoraleWithBonus);
+      
+      // Pontos gastos em habilidades especiais
+      const abilityPoints = unitData.specialAbilities.reduce((total, ability) => total + ability.level, 0);
+      
+      const totalPointsUsed = attributePoints + moralePoints + abilityPoints;
       
       // Verificar se há pontos suficientes
-      if (pointsUsed > availablePoints) {
+      if (totalPointsUsed > availablePoints) {
         return; // Não permite gastar mais pontos do que disponível
       }
       
@@ -173,14 +185,42 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   const getUsedPoints = () => {
     const currentTotal = unitData.attack + unitData.defense + unitData.ranged + unitData.movement;
     const baseTotal = baseAttributes.attack + baseAttributes.defense + baseAttributes.ranged + baseAttributes.movement;
-    return currentTotal - baseTotal;
+    
+    // Pontos gastos em atributos
+    const attributePoints = currentTotal - baseTotal;
+    
+    // Pontos gastos em moral (além do bônus de experiência)
+    const modifier = experienceModifiers[unitData.experience as ExperienceLevel];
+    const baseMoraleWithBonus = Math.max(1, baseAttributes.morale + modifier.moral);
+    const moralePoints = Math.max(0, unitData.morale - baseMoraleWithBonus);
+    
+    // Pontos gastos em habilidades especiais
+    const abilityPoints = unitData.specialAbilities.reduce((total, ability) => total + ability.level, 0);
+    
+    return attributePoints + moralePoints + abilityPoints;
   };
 
   const handleSpecialAbilitiesChange = (abilities: SpecialAbility[]) => {
-    setUnitData(prev => ({
-      ...prev,
-      specialAbilities: abilities
-    }));
+    // Verificar se há pontos suficientes para as habilidades
+    const abilityPoints = abilities.reduce((total, ability) => total + ability.level, 0);
+    
+    // Calcular pontos já usados em outros atributos
+    const currentTotal = unitData.attack + unitData.defense + unitData.ranged + unitData.movement;
+    const baseTotal = baseAttributes.attack + baseAttributes.defense + baseAttributes.ranged + baseAttributes.movement;
+    const attributePoints = currentTotal - baseTotal;
+    
+    const modifier = experienceModifiers[unitData.experience as ExperienceLevel];
+    const baseMoraleWithBonus = Math.max(1, baseAttributes.morale + modifier.moral);
+    const moralePoints = Math.max(0, unitData.morale - baseMoraleWithBonus);
+    
+    const totalPointsUsed = attributePoints + moralePoints + abilityPoints;
+    
+    if (totalPointsUsed <= availablePoints) {
+      setUnitData(prev => ({
+        ...prev,
+        specialAbilities: abilities
+      }));
+    }
   };
 
   const handleSkinUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -420,7 +460,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Distribua os pontos nos atributos (exceto moral, que é determinado pela experiência)
+                  Distribua os pontos nos atributos, moral e habilidades especiais
                 </p>
               </CardContent>
             </Card>
@@ -450,18 +490,19 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                   </div>
                 ))}
                 
-                {/* Moral - apenas exibição, calculado automaticamente */}
+                {/* Moral - editável com pontos */}
                 <div className="col-span-2">
-                  <Label htmlFor="morale">💪 Moral (automático)</Label>
+                  <Label htmlFor="morale">💪 Moral</Label>
                   <Input
                     id="morale"
                     type="number"
+                    min="1"
+                    max={experienceLimits[unitData.experience]}
                     value={unitData.morale}
-                    disabled
-                    className="bg-muted"
+                    onChange={(e) => handleAttributeChange('morale', parseInt(e.target.value) || 1)}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Base: {baseAttributes.morale} + Experiência: {experienceModifiers[unitData.experience as ExperienceLevel].moral} = {unitData.morale}
+                    Base: {baseAttributes.morale} + Experiência: {experienceModifiers[unitData.experience as ExperienceLevel].moral} + Pontos extras: {Math.max(0, unitData.morale - Math.max(1, baseAttributes.morale + experienceModifiers[unitData.experience as ExperienceLevel].moral))}
                   </p>
                 </div>
               </CardContent>
@@ -470,6 +511,9 @@ export const CardEditor: React.FC<CardEditorProps> = ({
             {/* Habilidades Especiais */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">4. Habilidades Especiais</h3>
+              <p className="text-sm text-muted-foreground">
+                Habilidade Nível 1 = 1 ponto | Habilidade Nível 2 = 2 pontos
+              </p>
               <SpecialAbilitiesManager
                 selectedAbilities={unitData.specialAbilities}
                 onAbilitiesChange={handleSpecialAbilitiesChange}
