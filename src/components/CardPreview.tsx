@@ -290,6 +290,7 @@ export const CardPreview = ({ card, template, onClose }: CardPreviewProps) => {
                 permanentPressure: 0,
                 hits: 0
               }} 
+              customBackgroundImage={card.customBackgroundImage}
               className="border border-gray-300"
             />
           ) : (

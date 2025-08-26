@@ -32,6 +32,7 @@ export interface CardTemplate {
   height: number; // altura do template em pixels
   fields: TextFieldMapping[];
   imageFields?: ImageFieldMapping[]; // campos de imagem (opcional para compatibilidade)
+  availableSkins?: string[]; // URLs de skins disponíveis para este template
 }
 
 export interface CardData {

@@ -6,6 +6,7 @@ interface CardRendererProps {
   data: CardData;
   className?: string;
   isExport?: boolean;
+  customBackgroundImage?: string; // skin personalizada
 }
 
 // Constantes do sistema de coordenadas
@@ -22,7 +23,7 @@ interface FieldSpec {
   h: number;
 }
 
-export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className, isExport = false }) => {
+export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className, isExport = false, customBackgroundImage }) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [isFrameReady, setIsFrameReady] = useState(false);
 
@@ -269,7 +270,10 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
       className={`card-frame ${className || ''}`}
       key={template.id}
       style={{ 
-        backgroundImage: `url(${template.templateImage})`
+        backgroundImage: `url(${customBackgroundImage || template.templateImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
       }}
     >
       {/* Campos mapeados */}

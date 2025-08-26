@@ -31,6 +31,7 @@ export interface UnitCard {
   
   // Visual
   backgroundImage?: string;
+  customBackgroundImage?: string; // skin personalizada para o card
   templateId?: string; // ID do template usado para criar este card
   images?: { [fieldId: string]: string }; // mapeamento de campo de imagem para caminho da imagem
   

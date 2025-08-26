@@ -32,6 +32,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   onCancel 
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<CardTemplate | null>(null);
+  const [selectedSkin, setSelectedSkin] = useState<string>('');
   const [unitData, setUnitData] = useState<UnitCard>({
     id: card?.id || '',
     name: card?.name || '',
@@ -44,7 +45,8 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     totalForce: card?.totalForce || 0,
     maintenanceCost: card?.maintenanceCost || 0,
     specialAbilities: card?.specialAbilities || [],
-    backgroundImage: card?.backgroundImage || ''
+    backgroundImage: card?.backgroundImage || '',
+    customBackgroundImage: card?.customBackgroundImage || ''
   });
 
   const [imageProcessing, setImageProcessing] = useState(false);
@@ -84,13 +86,27 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     }));
   };
 
+  const handleSkinUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const skinUrl = e.target?.result as string;
+        setSelectedSkin(skinUrl);
+        setUnitData(prev => ({ ...prev, customBackgroundImage: skinUrl }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = () => {
     if (!unitData.name.trim()) return;
     
     const cardToSave = {
       ...unitData,
       id: card?.id || Date.now().toString(),
-      templateId: selectedTemplate?.id
+      templateId: selectedTemplate?.id,
+      customBackgroundImage: selectedSkin || unitData.customBackgroundImage
     };
     
     onSave(cardToSave);
@@ -295,6 +311,77 @@ export const CardEditor: React.FC<CardEditorProps> = ({
               maxAbilities={5}
             />
 
+            {/* Seleção de Skin */}
+            {selectedTemplate && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>🎨 Personalizar Visual</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="customSkin">Imagem de Fundo Personalizada</Label>
+                    <Input
+                      id="customSkin"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleSkinUpload}
+                      className="cursor-pointer"
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Carregue uma imagem com as mesmas proporções do template ({selectedTemplate.width}x{selectedTemplate.height}px)
+                    </p>
+                  </div>
+                  
+                  {/* Skins Predefinidas */}
+                  {selectedTemplate.availableSkins && selectedTemplate.availableSkins.length > 0 && (
+                    <div>
+                      <Label>Skins Predefinidas</Label>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <button
+                          type="button"
+                          className={`p-2 border rounded-lg hover:border-primary transition-colors ${
+                            !selectedSkin ? 'border-primary bg-primary/5' : 'border-border'
+                          }`}
+                          onClick={() => {
+                            setSelectedSkin('');
+                            setUnitData(prev => ({ ...prev, customBackgroundImage: '' }));
+                          }}
+                        >
+                          <img
+                            src={selectedTemplate.templateImage}
+                            alt="Original"
+                            className="w-full h-16 object-cover rounded"
+                          />
+                          <p className="text-xs mt-1">Original</p>
+                        </button>
+                        
+                        {selectedTemplate.availableSkins.map((skinUrl, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            className={`p-2 border rounded-lg hover:border-primary transition-colors ${
+                              selectedSkin === skinUrl ? 'border-primary bg-primary/5' : 'border-border'
+                            }`}
+                            onClick={() => {
+                              setSelectedSkin(skinUrl);
+                              setUnitData(prev => ({ ...prev, customBackgroundImage: skinUrl }));
+                            }}
+                          >
+                            <img
+                              src={skinUrl}
+                              alt={`Skin ${index + 1}`}
+                              className="w-full h-16 object-cover rounded"
+                            />
+                            <p className="text-xs mt-1">Skin {index + 1}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Força Total e Manutenção */}
             <Card>
               <CardHeader>
@@ -327,6 +414,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                     <CardRenderer
                       template={selectedTemplate}
                       data={convertToCardData(unitData)}
+                      customBackgroundImage={selectedSkin || unitData.customBackgroundImage}
                       className="max-w-full"
                     />
                   </div>
