@@ -97,7 +97,7 @@ export const TemplateCreator: React.FC<TemplateCreatorProps> = ({ onTemplateCrea
                     type="file"
                     ref={fileInputRef}
                     onChange={handleImageUpload}
-                    accept="image/png,image/jpg,image/jpeg,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                    accept="image/png,image/jpg,image/jpeg,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     className="hidden"
                   />
                   <Button
