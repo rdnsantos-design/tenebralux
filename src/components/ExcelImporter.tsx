@@ -58,21 +58,8 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ onImport, onCancel
     const movement = parseInt(row['Movimento'] || row['Movement'] || row['movimento'] || row['MOVIMENTO']) || 1;
     const morale = parseInt(row['Moral'] || row['Morale'] || row['moral'] || row['MORAL']) || 1;
     
-    // Mapear experiência com padrão correto
-    let experience: ExperienceLevel = 'Green';
-    const expVariations = ['Experiencia', 'Experience', 'experiencia', 'EXPERIENCIA', 'Exp', 'exp'];
-    let expValue = '';
-    for (const variation of expVariations) {
-      if (row[variation]) {
-        expValue = row[variation].toString().toLowerCase();
-        break;
-      }
-    }
-    
-    if (expValue.includes('prof')) experience = 'Profissional';
-    else if (expValue.includes('vet')) experience = 'Veterano';
-    else if (expValue.includes('elit')) experience = 'Elite';
-    else if (expValue.includes('green') || expValue.includes('verde')) experience = 'Green';
+    // Usar experiência padrão (será configurado posteriormente)
+    const experience: ExperienceLevel = 'Profissional';
 
     // Calcular força total e custo de manutenção
     const baseForce = attack + defense + ranged + movement + morale;
@@ -163,7 +150,6 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ onImport, onCancel
                     <li>• <strong>Tiro:</strong> Valor de tiro/alcance (1-6)</li>
                     <li>• <strong>Movimento:</strong> Valor de movimento (1-6)</li>
                     <li>• <strong>Moral:</strong> Valor de moral (1-6)</li>
-                    <li>• <strong>Experiencia:</strong> Green, Profissional, Veterano ou Elite</li>
                   </ul>
                 </div>
               </div>
