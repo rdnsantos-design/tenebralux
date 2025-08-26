@@ -37,21 +37,42 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ onImport, onCancel
   };
 
   const mapExcelToUnitCard = (row: any, index: number): UnitCard => {
-    // Mapear colunas do Excel para propriedades do UnitCard
-    // Assumindo colunas: Nome, Ataque, Defesa, Tiro, Movimento, Moral, Experiencia
-    const name = row['Nome'] || row['Name'] || row['nome'] || `Unidade ${index + 1}`;
-    const attack = parseInt(row['Ataque'] || row['Attack'] || row['ataque']) || 1;
-    const defense = parseInt(row['Defesa'] || row['Defense'] || row['defesa']) || 1;
-    const ranged = parseInt(row['Tiro'] || row['Ranged'] || row['tiro'] || row['Alcance']) || 1;
-    const movement = parseInt(row['Movimento'] || row['Movement'] || row['movimento']) || 1;
-    const morale = parseInt(row['Moral'] || row['Morale'] || row['moral']) || 1;
+    // Debug: mostrar todas as chaves disponíveis
+    console.log('Chaves disponíveis na linha:', Object.keys(row));
+    console.log('Dados da linha:', row);
     
-    // Mapear experiência
+    // Mapear nome com mais variações possíveis
+    const nameVariations = ['Nome', 'Name', 'nome', 'NOME', 'name', 'NAME', 'Unidade', 'unidade', 'Unit', 'unit'];
+    let name = '';
+    for (const variation of nameVariations) {
+      if (row[variation] && row[variation].toString().trim()) {
+        name = row[variation].toString().trim();
+        break;
+      }
+    }
+    if (!name) name = `Unidade ${index + 1}`;
+    
+    const attack = parseInt(row['Ataque'] || row['Attack'] || row['ataque'] || row['ATAQUE']) || 1;
+    const defense = parseInt(row['Defesa'] || row['Defense'] || row['defesa'] || row['DEFESA']) || 1;
+    const ranged = parseInt(row['Tiro'] || row['Ranged'] || row['tiro'] || row['TIRO'] || row['Alcance'] || row['alcance']) || 1;
+    const movement = parseInt(row['Movimento'] || row['Movement'] || row['movimento'] || row['MOVIMENTO']) || 1;
+    const morale = parseInt(row['Moral'] || row['Morale'] || row['moral'] || row['MORAL']) || 1;
+    
+    // Mapear experiência com padrão correto
     let experience: ExperienceLevel = 'Green';
-    const expValue = row['Experiencia'] || row['Experience'] || row['experiencia'] || '';
-    if (expValue.toString().toLowerCase().includes('prof')) experience = 'Profissional';
-    else if (expValue.toString().toLowerCase().includes('vet')) experience = 'Veterano';
-    else if (expValue.toString().toLowerCase().includes('elit')) experience = 'Elite';
+    const expVariations = ['Experiencia', 'Experience', 'experiencia', 'EXPERIENCIA', 'Exp', 'exp'];
+    let expValue = '';
+    for (const variation of expVariations) {
+      if (row[variation]) {
+        expValue = row[variation].toString().toLowerCase();
+        break;
+      }
+    }
+    
+    if (expValue.includes('prof')) experience = 'Profissional';
+    else if (expValue.includes('vet')) experience = 'Veterano';
+    else if (expValue.includes('elit')) experience = 'Elite';
+    else if (expValue.includes('green') || expValue.includes('verde')) experience = 'Green';
 
     // Calcular força total e custo de manutenção
     const baseForce = attack + defense + ranged + movement + morale;
