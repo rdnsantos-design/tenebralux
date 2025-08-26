@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Download, Eye, Settings, Image, Trash2, FileSpreadsheet } from "lucide-react";
+import { Plus, Edit, Eye, Settings, Image, Trash2, FileSpreadsheet, RotateCcw } from "lucide-react";
 import { CardEditor } from "@/components/CardEditor";
 import { CardPreview } from "@/components/CardPreview";
 import { TemplateCreator } from "@/components/TemplateCreator";
 import { TemplateMapper } from "@/components/TemplateMapper";
-import { ExcelImporter } from "@/components/ExcelImporter";
+import { ExcelImportManager } from "@/components/ExcelImportManager";
 import { UnitCard } from "@/types/UnitCard";
 import { CardTemplate } from "@/types/CardTemplate";
 
@@ -19,73 +19,18 @@ const Index = () => {
   const [templates, setTemplates] = useState<CardTemplate[]>([]);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<CardTemplate | null>(null);
-  const [showExcelImporter, setShowExcelImporter] = useState(false);
-  const [importedUnits, setImportedUnits] = useState<UnitCard[]>([]);
+  const [showExcelManager, setShowExcelManager] = useState(false);
 
-  // Carregar dados do localStorage na inicialização
+  // LIMPAR TODOS OS DADOS E COMEÇAR DO ZERO
   useEffect(() => {
-    console.log('Carregando dados do localStorage...');
-    
-    // Limpar backups antigos que podem estar causando problema de quota
-    try {
-      localStorage.removeItem('cardTemplates_backup');
-    } catch (error) {
-      console.log('Erro ao limpar backup (normal se não existir)');
-    }
-    
-    const savedTemplates = localStorage.getItem('cardTemplates');
-    const savedCards = localStorage.getItem('unitCards');
-    
-    console.log('Templates salvos:', savedTemplates);
-    console.log('Cards salvos:', savedCards);
-    
-    if (savedTemplates) {
-      try {
-        const parsedTemplates = JSON.parse(savedTemplates);
-        console.log('Templates parseados:', parsedTemplates);
-        console.log('Definindo templates no estado:', parsedTemplates);
-        setTemplates(parsedTemplates);
-      } catch (error) {
-        console.error('Erro ao carregar templates:', error);
-      }
-    } else {
-      console.log('Nenhum template encontrado no localStorage');
-    }
-    
-    if (savedCards) {
-      try {
-        const parsedCards = JSON.parse(savedCards);
-        console.log('Cards parseados:', parsedCards);
-        setCards(parsedCards);
-      } catch (error) {
-        console.error('Erro ao carregar cards:', error);
-      }
-    }
+    console.log('Limpando todos os dados existentes...');
+    localStorage.removeItem('unitCards');
+    localStorage.removeItem('cardTemplates');
+    localStorage.removeItem('cardTemplates_backup');
+    localStorage.removeItem('excelImports');
+    setCards([]);
+    setTemplates([]);
   }, []);
-
-  // Salvar templates no localStorage sempre que mudarem
-  useEffect(() => {
-    if (templates.length > 0) {
-      try {
-        console.log('Salvando templates no localStorage:', templates);
-        localStorage.setItem('cardTemplates', JSON.stringify(templates));
-      } catch (error) {
-        console.error('Erro ao salvar no localStorage (possivelmente por tamanho):', error);
-        // Se der erro de quota, tentar limpar dados antigos
-        try {
-          localStorage.removeItem('cardTemplates_backup');
-          localStorage.setItem('cardTemplates', JSON.stringify(templates));
-        } catch (secondError) {
-          console.error('Erro crítico de armazenamento:', secondError);
-        }
-      }
-    }
-  }, [templates]);
-
-  // Salvar cards no localStorage sempre que mudarem
-  useEffect(() => {
-    localStorage.setItem('unitCards', JSON.stringify(cards));
-  }, [cards]);
 
   const handleSaveCard = (card: UnitCard) => {
     if (editingCard) {
@@ -116,7 +61,6 @@ const Index = () => {
   };
 
   const handleTemplateUpdate = (template: CardTemplate) => {
-    console.log('Atualizando template:', template);
     setTemplates(templates.map(t => t.id === template.id ? template : t));
     setEditingTemplate(template);
   };
@@ -132,17 +76,29 @@ const Index = () => {
     setCards(cards.filter(c => c.id !== cardId));
   };
 
-  const handleExcelImport = (units: UnitCard[]) => {
-    setImportedUnits(units);
-    setShowExcelImporter(false);
-    setShowEditor(true);
+  const handleCreateCardsFromImport = (units: UnitCard[]) => {
+    setCards([...cards, ...units]);
+    setShowExcelManager(false);
   };
 
-  if (showExcelImporter) {
+  // Salvar dados quando mudarem
+  useEffect(() => {
+    if (cards.length > 0) {
+      localStorage.setItem('unitCards', JSON.stringify(cards));
+    }
+  }, [cards]);
+
+  useEffect(() => {
+    if (templates.length > 0) {
+      localStorage.setItem('cardTemplates', JSON.stringify(templates));
+    }
+  }, [templates]);
+
+  if (showExcelManager) {
     return (
-      <ExcelImporter
-        onImport={handleExcelImport}
-        onCancel={() => setShowExcelImporter(false)}
+      <ExcelImportManager
+        onCreateCards={handleCreateCardsFromImport}
+        onCancel={() => setShowExcelManager(false)}
       />
     );
   }
@@ -181,11 +137,10 @@ const Index = () => {
       <CardEditor
         card={editingCard}
         templates={templates}
-        importedUnits={importedUnits}
+        importedUnits={[]}
         onSave={handleSaveCard}
         onCancel={() => {
           setShowEditor(false);
-          setImportedUnits([]);
         }}
       />
     );
@@ -214,9 +169,9 @@ const Index = () => {
             <p className="text-xl text-muted-foreground">Gerencie suas unidades militares e templates</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setShowExcelImporter(true)} variant="outline" size="lg" className="flex items-center gap-2">
+            <Button onClick={() => setShowExcelManager(true)} variant="outline" size="lg" className="flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5" />
-              Importar Excel
+              Gerenciar Excel
             </Button>
             <Button onClick={handleNewCard} size="lg" className="flex items-center gap-2">
               <Plus className="w-5 h-5" />
