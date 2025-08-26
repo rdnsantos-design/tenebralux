@@ -8,6 +8,7 @@ import { UnitCard, ExperienceLevel, SpecialAbility } from "@/types/UnitCard";
 import { SpecialAbilitiesManager } from "@/components/SpecialAbilitiesManager";
 import { CardRenderer } from '@/components/CardRenderer';
 import { CardTemplate, CardData } from '@/types/CardTemplate';
+import { ExcelImport } from '@/types/ExcelImport';
 
 interface CardEditorProps {
   card?: UnitCard | null;
@@ -33,6 +34,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<CardTemplate | null>(null);
   const [selectedSkin, setSelectedSkin] = useState<string>('');
+  const [availableUnits, setAvailableUnits] = useState<Array<{id: string, name: string, importName: string} & UnitCard>>([]);
   const [unitData, setUnitData] = useState<UnitCard>({
     id: card?.id || '',
     name: card?.name || '',
@@ -50,6 +52,45 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   });
 
   const [imageProcessing, setImageProcessing] = useState(false);
+
+  // Carregar unidades das importações salvas
+  useEffect(() => {
+    const savedImports = localStorage.getItem('excelImports');
+    if (savedImports) {
+      try {
+        const imports: ExcelImport[] = JSON.parse(savedImports);
+        const allUnits: Array<{id: string, name: string, importName: string} & UnitCard> = [];
+        
+        imports.forEach(importData => {
+          importData.units.forEach((unit, index) => {
+            const unitCard: UnitCard = {
+              id: `${importData.id}-${index}`,
+              name: unit.name,
+              attack: unit.attack,
+              defense: unit.defense,
+              ranged: unit.ranged,
+              movement: unit.movement,
+              morale: unit.morale,
+              experience: 'Profissional',
+              totalForce: unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale,
+              maintenanceCost: Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.1),
+              specialAbilities: [],
+              backgroundImage: ''
+            };
+            
+            allUnits.push({
+              ...unitCard,
+              importName: importData.fileName
+            });
+          });
+        });
+        
+        setAvailableUnits(allUnits);
+      } catch (error) {
+        console.error('Erro ao carregar importações:', error);
+      }
+    }
+  }, []);
 
   const calculateTotalForce = useCallback(() => {
     const baseForce = unitData.attack + unitData.defense + unitData.ranged + unitData.movement + unitData.morale;
@@ -199,7 +240,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
             )}
             
             {/* Selecionar Unidade Importada */}
-            {!card && importedUnits.length > 0 && (
+            {!card && availableUnits.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle>Unidades Importadas</CardTitle>
@@ -210,12 +251,22 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                     <Select 
                       value=""
                       onValueChange={(value) => {
-                        const selectedUnit = importedUnits.find(unit => unit.id === value);
+                        const selectedUnit = availableUnits.find(unit => unit.id === value);
                         if (selectedUnit) {
                           setUnitData({
-                            ...selectedUnit,
                             id: card?.id || '',
-                            specialAbilities: selectedUnit.specialAbilities || []
+                            name: selectedUnit.name,
+                            attack: selectedUnit.attack,
+                            defense: selectedUnit.defense,
+                            ranged: selectedUnit.ranged,
+                            movement: selectedUnit.movement,
+                            morale: selectedUnit.morale,
+                            experience: selectedUnit.experience,
+                            totalForce: selectedUnit.totalForce,
+                            maintenanceCost: selectedUnit.maintenanceCost,
+                            specialAbilities: selectedUnit.specialAbilities || [],
+                            backgroundImage: selectedUnit.backgroundImage || '',
+                            customBackgroundImage: selectedUnit.customBackgroundImage || ''
                           });
                         }
                       }}
@@ -224,9 +275,9 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                         <SelectValue placeholder="Escolher unidade..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {importedUnits.map(unit => (
+                        {availableUnits.map(unit => (
                           <SelectItem key={unit.id} value={unit.id}>
-                            {unit.name} ({unit.experience} - Força: {unit.totalForce})
+                            {unit.name} ({unit.importName} - Força: {unit.totalForce})
                           </SelectItem>
                         ))}
                       </SelectContent>
