@@ -116,7 +116,7 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
       morale: unit.morale,
       experience: 'Profissional' as const,
       totalForce: unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale,
-      maintenanceCost: Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.1),
+      maintenanceCost: Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
       specialAbilities: [],
       backgroundImage: ''
     }));

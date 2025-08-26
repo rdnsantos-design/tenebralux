@@ -92,7 +92,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
               morale: unit.morale,
               experience: 'Profissional',
               totalForce: unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale,
-              maintenanceCost: Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.1),
+              maintenanceCost: Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
               specialAbilities: [],
               backgroundImage: ''
             };
@@ -121,7 +121,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
 
   useEffect(() => {
     const newTotalForce = calculateTotalForce();
-    const newMaintenanceCost = Math.ceil(newTotalForce * 0.1);
+    const newMaintenanceCost = Math.ceil(newTotalForce * 0.2);
     
     setUnitData(prev => ({
       ...prev,
@@ -606,7 +606,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                 <div>
                   <Label>Custo de Manutenção</Label>
                   <div className="text-2xl font-bold text-secondary">{unitData.maintenanceCost}</div>
-                  <p className="text-sm text-muted-foreground">10% da força total</p>
+                  <p className="text-sm text-muted-foreground">20% da força total</p>
                 </div>
               </CardContent>
             </Card>
