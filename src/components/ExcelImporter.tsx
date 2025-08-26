@@ -42,7 +42,7 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ onImport, onCancel
     console.log('Dados da linha:', row);
     
     // Mapear nome com mais variações possíveis
-    const nameVariations = ['Nome', 'Name', 'nome', 'NOME', 'name', 'NAME', 'Unidade', 'unidade', 'Unit', 'unit'];
+    const nameVariations = ['Nome da unidade', 'Nome', 'Name', 'nome', 'NOME', 'name', 'NAME', 'Unidade', 'unidade', 'Unit', 'unit'];
     let name = '';
     for (const variation of nameVariations) {
       if (row[variation] && row[variation].toString().trim()) {
@@ -51,6 +51,8 @@ export const ExcelImporter: React.FC<ExcelImporterProps> = ({ onImport, onCancel
       }
     }
     if (!name) name = `Unidade ${index + 1}`;
+    
+    console.log('Nome encontrado:', name); // Debug adicional
     
     const attack = parseInt(row['Ataque'] || row['Attack'] || row['ataque'] || row['ATAQUE']) || 1;
     const defense = parseInt(row['Defesa'] || row['Defense'] || row['defesa'] || row['DEFESA']) || 1;
