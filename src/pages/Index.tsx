@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Edit, Eye, Settings, Image, Trash2, FileSpreadsheet, RotateCcw, X } from "lucide-react";
+import { Plus, Edit, Eye, Settings, Image, Trash2, FileSpreadsheet, RotateCcw, X, Home } from "lucide-react";
 import { CardEditor } from "@/components/CardEditor";
 import { CardPreview } from "@/components/CardPreview";
 import { TemplateCreator } from "@/components/TemplateCreator";
@@ -11,8 +11,10 @@ import { TemplateMapper } from "@/components/TemplateMapper";
 import { ExcelImportManager } from "@/components/ExcelImportManager";
 import { UnitCard } from "@/types/UnitCard";
 import { CardTemplate } from "@/types/CardTemplate";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [cards, setCards] = useState<UnitCard[]>([]);
   const [editingCard, setEditingCard] = useState<UnitCard | null>(null);
   const [previewCard, setPreviewCard] = useState<UnitCard | null>(null);
@@ -194,6 +196,17 @@ const Index = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2"
+              >
+                <Home className="w-4 h-4" />
+                Voltar ao Dashboard
+              </Button>
+            </div>
             <h1 className="text-4xl font-bold mb-2">Sistema de Cards Birthright</h1>
             <p className="text-xl text-muted-foreground">Gerencie suas unidades militares e templates</p>
           </div>
