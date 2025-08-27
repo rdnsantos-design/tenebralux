@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Eye, Settings, Image, Trash2, FileSpreadsheet, RotateCcw } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Plus, Edit, Eye, Settings, Image, Trash2, FileSpreadsheet, RotateCcw, X } from "lucide-react";
 import { CardEditor } from "@/components/CardEditor";
 import { CardPreview } from "@/components/CardPreview";
 import { TemplateCreator } from "@/components/TemplateCreator";
@@ -20,6 +21,7 @@ const Index = () => {
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<CardTemplate | null>(null);
   const [showExcelManager, setShowExcelManager] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   // Carregar dados salvos do localStorage quando a página inicializa
   useEffect(() => {
@@ -189,15 +191,38 @@ const Index = () => {
           <div className="flex gap-2">
             <Button 
               onClick={() => {
-                console.log('=== DEBUG INFO ===');
-                console.log('Estado atual - Cards:', cards.length);
-                console.log('Estado atual - Templates:', templates.length);
-                console.log('localStorage - unitCards:', localStorage.getItem('unitCards'));
-                console.log('localStorage - cardTemplates:', localStorage.getItem('cardTemplates'));
+                const debugData = {
+                  cardsCount: cards.length,
+                  templatesCount: templates.length,
+                  localStorageCards: localStorage.getItem('unitCards'),
+                  localStorageTemplates: localStorage.getItem('cardTemplates'),
+                  testLocalStorage: (() => {
+                    localStorage.setItem('test-key', 'test-value');
+                    return localStorage.getItem('test-key');
+                  })()
+                };
                 
-                // Teste de salvamento forçado
-                localStorage.setItem('test-key', 'test-value');
-                console.log('Teste localStorage:', localStorage.getItem('test-key'));
+                const debugText = `🔍 INFORMAÇÕES DE DEBUG:
+📊 Estado atual:
+• Cards em memória: ${debugData.cardsCount}
+• Templates em memória: ${debugData.templatesCount}
+
+💾 LocalStorage:
+• Cards salvos: ${debugData.localStorageCards || 'null'}
+• Templates salvos: ${debugData.localStorageTemplates || 'null'}
+• Teste localStorage: ${debugData.testLocalStorage}
+
+${debugData.cardsCount === 0 && debugData.templatesCount === 0 ? '⚠️ PROBLEMA DETECTADO: Dados estão sendo perdidos!' : '✅ Dados carregados corretamente'}`;
+                
+                setDebugInfo(debugText);
+                
+                // Também logar no console
+                console.log('=== DEBUG INFO ===');
+                console.log('Estado atual - Cards:', debugData.cardsCount);
+                console.log('Estado atual - Templates:', debugData.templatesCount);
+                console.log('localStorage - unitCards:', debugData.localStorageCards);
+                console.log('localStorage - cardTemplates:', debugData.localStorageTemplates);
+                console.log('Teste localStorage:', debugData.testLocalStorage);
               }} 
               variant="outline" 
               size="sm"
@@ -214,6 +239,24 @@ const Index = () => {
             </Button>
           </div>
         </div>
+
+        {debugInfo && (
+          <Alert className="mb-6">
+            <AlertDescription>
+              <div className="flex justify-between items-start">
+                <pre className="whitespace-pre-wrap text-sm font-mono">{debugInfo}</pre>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setDebugInfo(null)}
+                  className="ml-4 flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Tabs defaultValue="templates" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
