@@ -21,15 +21,33 @@ const Index = () => {
   const [editingTemplate, setEditingTemplate] = useState<CardTemplate | null>(null);
   const [showExcelManager, setShowExcelManager] = useState(false);
 
-  // LIMPAR TODOS OS DADOS E COMEÇAR DO ZERO
+  // Carregar dados salvos do localStorage quando a página inicializa
   useEffect(() => {
-    console.log('Limpando todos os dados existentes...');
-    localStorage.removeItem('unitCards');
-    localStorage.removeItem('cardTemplates');
-    localStorage.removeItem('cardTemplates_backup');
-    localStorage.removeItem('excelImports');
-    setCards([]);
-    setTemplates([]);
+    console.log('Carregando dados salvos...');
+    
+    // Carregar cards salvos
+    const savedCards = localStorage.getItem('unitCards');
+    if (savedCards) {
+      try {
+        const parsedCards = JSON.parse(savedCards);
+        setCards(parsedCards);
+        console.log('Cards carregados:', parsedCards.length);
+      } catch (error) {
+        console.error('Erro ao carregar cards:', error);
+      }
+    }
+    
+    // Carregar templates salvos
+    const savedTemplates = localStorage.getItem('cardTemplates');
+    if (savedTemplates) {
+      try {
+        const parsedTemplates = JSON.parse(savedTemplates);
+        setTemplates(parsedTemplates);
+        console.log('Templates carregados:', parsedTemplates.length);
+      } catch (error) {
+        console.error('Erro ao carregar templates:', error);
+      }
+    }
   }, []);
 
   const handleSaveCard = (card: UnitCard) => {
@@ -83,15 +101,11 @@ const Index = () => {
 
   // Salvar dados quando mudarem
   useEffect(() => {
-    if (cards.length > 0) {
-      localStorage.setItem('unitCards', JSON.stringify(cards));
-    }
+    localStorage.setItem('unitCards', JSON.stringify(cards));
   }, [cards]);
 
   useEffect(() => {
-    if (templates.length > 0) {
-      localStorage.setItem('cardTemplates', JSON.stringify(templates));
-    }
+    localStorage.setItem('cardTemplates', JSON.stringify(templates));
   }, [templates]);
 
   if (showExcelManager) {
