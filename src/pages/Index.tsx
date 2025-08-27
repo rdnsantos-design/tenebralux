@@ -101,11 +101,15 @@ const Index = () => {
 
   // Salvar dados quando mudarem
   useEffect(() => {
+    console.log('Tentando salvar cards:', cards.length);
     localStorage.setItem('unitCards', JSON.stringify(cards));
+    console.log('Cards salvos no localStorage');
   }, [cards]);
 
   useEffect(() => {
+    console.log('Tentando salvar templates:', templates.length);
     localStorage.setItem('cardTemplates', JSON.stringify(templates));
+    console.log('Templates salvos no localStorage');
   }, [templates]);
 
   if (showExcelManager) {
@@ -183,6 +187,23 @@ const Index = () => {
             <p className="text-xl text-muted-foreground">Gerencie suas unidades militares e templates</p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              onClick={() => {
+                console.log('=== DEBUG INFO ===');
+                console.log('Estado atual - Cards:', cards.length);
+                console.log('Estado atual - Templates:', templates.length);
+                console.log('localStorage - unitCards:', localStorage.getItem('unitCards'));
+                console.log('localStorage - cardTemplates:', localStorage.getItem('cardTemplates'));
+                
+                // Teste de salvamento forçado
+                localStorage.setItem('test-key', 'test-value');
+                console.log('Teste localStorage:', localStorage.getItem('test-key'));
+              }} 
+              variant="outline" 
+              size="sm"
+            >
+              🐛 Debug
+            </Button>
             <Button onClick={() => setShowExcelManager(true)} variant="outline" size="lg" className="flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5" />
               Gerenciar Excel
