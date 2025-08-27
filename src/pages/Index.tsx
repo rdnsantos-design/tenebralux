@@ -23,17 +23,20 @@ const Index = () => {
   const [showExcelManager, setShowExcelManager] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
+  // Flag para controlar se já foi feito o carregamento inicial
+  const [initialLoaded, setInitialLoaded] = useState(false);
+
   // Carregar dados salvos do localStorage quando a página inicializa
   useEffect(() => {
     console.log('Carregando dados salvos...');
     
     // Carregar cards salvos
     const savedCards = localStorage.getItem('unitCards');
+    let loadedCards = [];
     if (savedCards) {
       try {
-        const parsedCards = JSON.parse(savedCards);
-        setCards(parsedCards);
-        console.log('Cards carregados:', parsedCards.length);
+        loadedCards = JSON.parse(savedCards);
+        console.log('Cards carregados:', loadedCards.length);
       } catch (error) {
         console.error('Erro ao carregar cards:', error);
       }
@@ -41,15 +44,20 @@ const Index = () => {
     
     // Carregar templates salvos
     const savedTemplates = localStorage.getItem('cardTemplates');
+    let loadedTemplates = [];
     if (savedTemplates) {
       try {
-        const parsedTemplates = JSON.parse(savedTemplates);
-        setTemplates(parsedTemplates);
-        console.log('Templates carregados:', parsedTemplates.length);
+        loadedTemplates = JSON.parse(savedTemplates);
+        console.log('Templates carregados:', loadedTemplates.length);
       } catch (error) {
         console.error('Erro ao carregar templates:', error);
       }
     }
+    
+    // Setar os dados carregados
+    setCards(loadedCards);
+    setTemplates(loadedTemplates);
+    setInitialLoaded(true);
   }, []);
 
   const handleSaveCard = (card: UnitCard) => {
@@ -101,18 +109,20 @@ const Index = () => {
     setShowExcelManager(false);
   };
 
-  // Salvar dados quando mudarem
+  // Salvar dados quando mudarem (só após carregamento inicial)
   useEffect(() => {
-    console.log('Tentando salvar cards:', cards.length);
+    if (!initialLoaded) return;
+    console.log('Salvando cards:', cards.length);
     localStorage.setItem('unitCards', JSON.stringify(cards));
     console.log('Cards salvos no localStorage');
-  }, [cards]);
+  }, [cards, initialLoaded]);
 
   useEffect(() => {
-    console.log('Tentando salvar templates:', templates.length);
+    if (!initialLoaded) return;
+    console.log('Salvando templates:', templates.length);
     localStorage.setItem('cardTemplates', JSON.stringify(templates));
     console.log('Templates salvos no localStorage');
-  }, [templates]);
+  }, [templates, initialLoaded]);
 
   if (showExcelManager) {
     return (
