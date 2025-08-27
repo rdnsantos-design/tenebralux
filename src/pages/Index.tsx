@@ -21,7 +21,6 @@ const Index = () => {
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<CardTemplate | null>(null);
   const [showExcelManager, setShowExcelManager] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   // Flag para controlar se já foi feito o carregamento inicial
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -199,46 +198,6 @@ const Index = () => {
             <p className="text-xl text-muted-foreground">Gerencie suas unidades militares e templates</p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              onClick={() => {
-                const debugData = {
-                  cardsCount: cards.length,
-                  templatesCount: templates.length,
-                  localStorageCards: localStorage.getItem('unitCards'),
-                  localStorageTemplates: localStorage.getItem('cardTemplates'),
-                  testLocalStorage: (() => {
-                    localStorage.setItem('test-key', 'test-value');
-                    return localStorage.getItem('test-key');
-                  })()
-                };
-                
-                const debugText = `🔍 INFORMAÇÕES DE DEBUG:
-📊 Estado atual:
-• Cards em memória: ${debugData.cardsCount}
-• Templates em memória: ${debugData.templatesCount}
-
-💾 LocalStorage:
-• Cards salvos: ${debugData.localStorageCards || 'null'}
-• Templates salvos: ${debugData.localStorageTemplates || 'null'}
-• Teste localStorage: ${debugData.testLocalStorage}
-
-${debugData.cardsCount === 0 && debugData.templatesCount === 0 ? '⚠️ PROBLEMA DETECTADO: Dados estão sendo perdidos!' : '✅ Dados carregados corretamente'}`;
-                
-                setDebugInfo(debugText);
-                
-                // Também logar no console
-                console.log('=== DEBUG INFO ===');
-                console.log('Estado atual - Cards:', debugData.cardsCount);
-                console.log('Estado atual - Templates:', debugData.templatesCount);
-                console.log('localStorage - unitCards:', debugData.localStorageCards);
-                console.log('localStorage - cardTemplates:', debugData.localStorageTemplates);
-                console.log('Teste localStorage:', debugData.testLocalStorage);
-              }} 
-              variant="outline" 
-              size="sm"
-            >
-              🐛 Debug
-            </Button>
             <Button onClick={() => setShowExcelManager(true)} variant="outline" size="lg" className="flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5" />
               Gerenciar Excel
@@ -250,23 +209,6 @@ ${debugData.cardsCount === 0 && debugData.templatesCount === 0 ? '⚠️ PROBLEM
           </div>
         </div>
 
-        {debugInfo && (
-          <Alert className="mb-6">
-            <AlertDescription>
-              <div className="flex justify-between items-start">
-                <pre className="whitespace-pre-wrap text-sm font-mono">{debugInfo}</pre>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setDebugInfo(null)}
-                  className="ml-4 flex-shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
 
         <Tabs defaultValue="templates" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
