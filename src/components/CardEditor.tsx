@@ -68,7 +68,8 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     maintenanceCost: card?.maintenanceCost || 0,
     specialAbilities: card?.specialAbilities || [],
     backgroundImage: card?.backgroundImage || '',
-    customBackgroundImage: card?.customBackgroundImage || ''
+    customBackgroundImage: card?.customBackgroundImage || '',
+    images: card?.images || {}
   });
 
   const [imageProcessing, setImageProcessing] = useState(false);
@@ -237,6 +238,24 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     }
   };
 
+  const handleImageFieldUpload = (fieldId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        setUnitData(prev => ({
+          ...prev,
+          images: {
+            ...prev.images,
+            [fieldId]: imageUrl
+          }
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = () => {
     if (!unitData.name.trim()) return;
     
@@ -361,21 +380,22 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                                  morale: selectedUnit.morale
                                };
                                setBaseAttributes(newBaseAttributes);
-                               setUnitData({
-                                 id: card?.id || '',
-                                 name: selectedUnit.name,
-                                 attack: selectedUnit.attack,
-                                 defense: selectedUnit.defense,
-                                 ranged: selectedUnit.ranged,
-                                 movement: selectedUnit.movement,
-                                 morale: selectedUnit.morale,
-                                 experience: 'Profissional',
-                                 totalForce: selectedUnit.totalForce,
-                                 maintenanceCost: selectedUnit.maintenanceCost,
-                                 specialAbilities: selectedUnit.specialAbilities || [],
-                                 backgroundImage: selectedUnit.backgroundImage || '',
-                                 customBackgroundImage: selectedUnit.customBackgroundImage || ''
-                               });
+                                setUnitData({
+                                  id: card?.id || '',
+                                  name: selectedUnit.name,
+                                  attack: selectedUnit.attack,
+                                  defense: selectedUnit.defense,
+                                  ranged: selectedUnit.ranged,
+                                  movement: selectedUnit.movement,
+                                  morale: selectedUnit.morale,
+                                  experience: 'Profissional',
+                                  totalForce: selectedUnit.totalForce,
+                                  maintenanceCost: selectedUnit.maintenanceCost,
+                                  specialAbilities: selectedUnit.specialAbilities || [],
+                                  backgroundImage: selectedUnit.backgroundImage || '',
+                                  customBackgroundImage: selectedUnit.customBackgroundImage || '',
+                                  images: {}
+                                });
                                setAvailablePoints(experienceModifiers['Profissional'].points);
                              }
                            }}
@@ -589,12 +609,70 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                         ))}
                       </div>
                     </div>
-                  )}
+                   )}
+                 </CardContent>
+               </Card>
+             )}
+
+            {/* Campos de Imagem */}
+            {selectedTemplate && selectedTemplate.imageFields && selectedTemplate.imageFields.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>🖼️ Imagens do Card</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Faça upload das imagens para os campos mapeados no template
+                  </p>
+                  {selectedTemplate.imageFields.map(imageField => (
+                    <div key={imageField.id} className="space-y-2">
+                      <Label htmlFor={`image-${imageField.id}`}>
+                        Campo: {imageField.id}
+                      </Label>
+                      <div className="flex items-center gap-4">
+                        <Input
+                          id={`image-${imageField.id}`}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageFieldUpload(imageField.id, e)}
+                          className="cursor-pointer flex-1"
+                        />
+                        {unitData.images?.[imageField.id] && (
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={unitData.images[imageField.id]}
+                              alt={`Campo ${imageField.id}`}
+                              className="w-12 h-12 object-cover border rounded"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setUnitData(prev => ({
+                                  ...prev,
+                                  images: {
+                                    ...prev.images,
+                                    [imageField.id]: ''
+                                  }
+                                }));
+                              }}
+                            >
+                              Remover
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Tamanho recomendado: {imageField.width}x{imageField.height}px
+                      </p>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             )}
 
-            {/* Força Total e Manutenção */}
+             {/* Força Total e Manutenção */}
             <Card>
               <CardHeader>
                 <CardTitle>Força Total e Manutenção</CardTitle>
@@ -627,6 +705,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                       template={selectedTemplate}
                       data={convertToCardData(unitData)}
                       customBackgroundImage={selectedSkin || unitData.customBackgroundImage}
+                      images={unitData.images}
                       className="max-w-full"
                     />
                   </div>

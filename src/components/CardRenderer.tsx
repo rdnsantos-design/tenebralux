@@ -7,6 +7,7 @@ interface CardRendererProps {
   className?: string;
   isExport?: boolean;
   customBackgroundImage?: string; // skin personalizada
+  images?: { [fieldId: string]: string }; // imagens dos campos mapeados
 }
 
 // Constantes do sistema de coordenadas
@@ -23,7 +24,7 @@ interface FieldSpec {
   h: number;
 }
 
-export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className, isExport = false, customBackgroundImage }) => {
+export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, className, isExport = false, customBackgroundImage, images }) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [isFrameReady, setIsFrameReady] = useState(false);
 
@@ -238,6 +239,54 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
     return elements.length > 0 ? <>{elements}</> : null;
   };
 
+  const renderImageFields = () => {
+    if (!template.imageFields || !isFrameReady || !images) return null;
+    
+    const elements = [];
+    
+    for (const imageField of template.imageFields) {
+      const imageUrl = images[imageField.id];
+      if (imageUrl) {
+        const spec: FieldSpec = {
+          x: imageField.x,
+          y: imageField.y,
+          w: imageField.width,
+          h: imageField.height
+        };
+
+        const pos = getScaledPosition(spec);
+        
+        elements.push(
+          <div
+            key={imageField.id}
+            className="field image-field"
+            style={{
+              left: `${pos.left}px`,
+              top: `${pos.top}px`,
+              width: `${pos.width}px`,
+              height: `${pos.height}px`,
+              overflow: 'hidden',
+              borderRadius: imageField.borderRadius ? `${imageField.borderRadius * Math.min(pos.width / spec.w, pos.height / spec.h)}px` : '0px',
+              opacity: imageField.opacity || 1
+            }}
+          >
+            <img
+              src={imageUrl}
+              alt={`Campo ${imageField.id}`}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+          </div>
+        );
+      }
+    }
+    
+    return elements.length > 0 ? <>{elements}</> : null;
+  };
+
   // Log de diagnóstico expandido
   useEffect(() => {
     if (isFrameReady && frameRef.current) {
@@ -294,6 +343,9 @@ export const CardRenderer: React.FC<CardRendererProps> = ({ template, data, clas
       
       {/* Habilidades especiais - MESMO sistema de coordenadas */}
       {renderSpecialAbilities()}
+      
+      {/* Campos de imagem */}
+      {renderImageFields()}
     </div>
   );
 };
