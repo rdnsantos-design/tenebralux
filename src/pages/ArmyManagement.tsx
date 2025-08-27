@@ -2,13 +2,16 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Crown, Users, Home } from "lucide-react";
+import { Plus, Edit, Trash2, Crown, Users, Home, FileSpreadsheet, Settings, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Regent, Army } from "@/types/Army";
+import { UnitCard } from "@/types/UnitCard";
 import { RegentEditor } from "@/components/RegentEditor";
 import { RegentList } from "@/components/RegentList";
 import { ArmyEditor } from "@/components/ArmyEditor";
 import { ArmyList } from "@/components/ArmyList";
+import { ExcelImportManager } from "@/components/ExcelImportManager";
+import { TemplateCreator } from "@/components/TemplateCreator";
 
 const ArmyManagement = () => {
   const navigate = useNavigate();
@@ -18,6 +21,8 @@ const ArmyManagement = () => {
   const [editingArmy, setEditingArmy] = useState<Army | null>(null);
   const [showRegentEditor, setShowRegentEditor] = useState(false);
   const [showArmyEditor, setShowArmyEditor] = useState(false);
+  const [showExcelImport, setShowExcelImport] = useState(false);
+  const [showTemplateCreator, setShowTemplateCreator] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
   // Carregar dados do localStorage
@@ -106,6 +111,39 @@ const ArmyManagement = () => {
     setShowArmyEditor(true);
   };
 
+  const handleExcelImportComplete = (cards: UnitCard[]) => {
+    // Salvar as cartas criadas no localStorage
+    const existingCards = JSON.parse(localStorage.getItem('unitCards') || '[]');
+    const updatedCards = [...existingCards, ...cards];
+    localStorage.setItem('unitCards', JSON.stringify(updatedCards));
+    
+    setShowExcelImport(false);
+    alert(`${cards.length} cartas criadas com sucesso a partir da importação Excel!`);
+  };
+
+  const handleTemplateCreated = () => {
+    setShowTemplateCreator(false);
+    alert('Template criado com sucesso!');
+  };
+
+  if (showExcelImport) {
+    return (
+      <ExcelImportManager
+        onCancel={() => setShowExcelImport(false)}
+        onCreateCards={handleExcelImportComplete}
+      />
+    );
+  }
+
+  if (showTemplateCreator) {
+    return (
+      <TemplateCreator
+        onCancel={() => setShowTemplateCreator(false)}
+        onTemplateCreated={handleTemplateCreated}
+      />
+    );
+  }
+
   if (showRegentEditor) {
     return (
       <RegentEditor
@@ -150,18 +188,46 @@ const ArmyManagement = () => {
               </Button>
             </div>
             <h1 className="text-4xl font-bold mb-2">Gestão de Exército</h1>
-            <p className="text-xl text-muted-foreground">Gerencie regentes e seus exércitos</p>
+            <p className="text-xl text-muted-foreground">Gerencie regentes, exércitos e importe dados via Excel</p>
           </div>
-          <Button onClick={handleNewRegent} size="lg" className="flex items-center gap-2">
-            <Plus className="w-5 h-5" />
-            Novo Regente
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowExcelImport(true)}
+              className="flex items-center gap-2"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Importar Excel
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowTemplateCreator(true)}
+              className="flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              Templates
+            </Button>
+            <Button onClick={handleNewRegent} size="lg" className="flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              Novo Regente
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="regents" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="regents">Regentes</TabsTrigger>
-            <TabsTrigger value="armies">Exércitos</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="regents" className="flex items-center gap-2">
+              <Crown className="w-4 h-4" />
+              Regentes
+            </TabsTrigger>
+            <TabsTrigger value="armies" className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Exércitos
+            </TabsTrigger>
+            <TabsTrigger value="imports" className="flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4" />
+              Importações
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="regents" className="mt-6">
@@ -237,6 +303,81 @@ const ArmyManagement = () => {
                 onDelete={handleDeleteArmy}
               />
             )}
+          </TabsContent>
+
+          <TabsContent value="imports" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Importações e Templates</h2>
+                <p className="text-muted-foreground">
+                  Importe dados do Excel e gerencie templates de cartas
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowExcelImport(true)}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-green-100 rounded-lg">
+                      <FileSpreadsheet className="w-8 h-8 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">Importar Excel</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Importe múltiplas unidades de planilhas Excel
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowTemplateCreator(true)}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-100 rounded-lg">
+                      <Settings className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">Gerenciar Templates</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Crie e edite templates para cartas de unidades
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Como Usar a Fase 3</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <FileSpreadsheet className="w-4 h-4 text-green-600" />
+                      1. Importação Excel
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Prepare uma planilha Excel com colunas: Nome, Ataque, Defesa, Tiro, Movimento, Moral. 
+                      Use a ferramenta de importação para criar múltiplas cartas de unidades automaticamente.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-blue-600" />
+                      2. Templates de Cartas
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Crie templates personalizados para suas cartas de unidades. 
+                      Defina onde cada informação aparece no layout da carta.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
