@@ -209,14 +209,16 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {units.map((unit) => (
-                    <div key={unit.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="font-medium">{unit.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Poder: {unit.power} • Criação: {unit.creationCost} GB • Manutenção: {unit.maintenanceCost} GB
-                        </div>
-                      </div>
+                   {units.map((unit) => (
+                     <div key={unit.id} className="flex items-center justify-between p-3 border rounded-lg">
+                       <div className="flex-1">
+                         <div className="font-medium">
+                           {unit.name} {unit.unitNumber ? `#${unit.unitNumber}` : ''}
+                         </div>
+                         <div className="text-sm text-muted-foreground">
+                           Poder: {unit.power} • Criação: {unit.creationCost} GB • Manutenção: {unit.maintenanceCost} GB
+                         </div>
+                       </div>
                       <Button
                         type="button"
                         variant="outline"

@@ -20,6 +20,7 @@ export interface ArmyUnit {
   id: string;
   cardId: string; // referência ao UnitCard
   name: string;
+  unitNumber?: string; // número da unidade para distinguir
   power: number;
   creationCost: number;
   maintenanceCost: number;
