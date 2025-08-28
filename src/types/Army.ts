@@ -15,8 +15,6 @@ export interface Army {
   regentId: string;
   name: string;
   units: ArmyUnit[];
-  countryId?: string;
-  provinceId?: string;
   createdAt: string;
 }
 
@@ -29,5 +27,7 @@ export interface ArmyUnit {
   creationCost: number;
   maintenanceCost: number;
   location?: string;
+  countryId?: string;
+  provinceId?: string;
   isGarrisoned: boolean;
 }

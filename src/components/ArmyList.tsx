@@ -84,12 +84,6 @@ export const ArmyList = ({ armies, regents, onEdit, onDelete }: ArmyListProps) =
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>💰 Manutenção: {army.units.reduce((total, unit) => total + unit.maintenanceCost, 0)} GB/turno</span>
                   </div>
-                  {getLocationName(army.countryId, army.provinceId) && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{getLocationName(army.countryId, army.provinceId)}</span>
-                    </div>
-                  )}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     <span>Criado em {new Date(army.createdAt).toLocaleDateString('pt-BR')}</span>
@@ -100,11 +94,17 @@ export const ArmyList = ({ armies, regents, onEdit, onDelete }: ArmyListProps) =
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Unidades principais:</div>
                     <div className="space-y-1">
-                       {army.units.slice(0, 3).map((unit) => (
-                         <div key={unit.id} className="text-xs">
-                           • {unit.name} {unit.unitNumber ? `#${unit.unitNumber}` : ''} (Poder: {unit.power})
-                         </div>
-                       ))}
+                        {army.units.slice(0, 3).map((unit) => {
+                          const locationName = getLocationName(unit.countryId, unit.provinceId);
+                          return (
+                            <div key={unit.id} className="text-xs">
+                              • {unit.name} {unit.unitNumber ? `#${unit.unitNumber}` : ''} (Poder: {unit.power})
+                              {locationName && locationName !== 'Sem localização' && (
+                                <span className="text-muted-foreground ml-1">- {locationName}</span>
+                              )}
+                            </div>
+                          );
+                        })}
                       {army.units.length > 3 && (
                         <div className="text-xs text-muted-foreground">
                           ... e mais {army.units.length - 3} unidades
