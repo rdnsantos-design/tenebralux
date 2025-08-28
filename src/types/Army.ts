@@ -30,4 +30,5 @@ export interface ArmyUnit {
   countryId?: string;
   provinceId?: string;
   isGarrisoned: boolean;
+  alessandraFedorenta?: string; // quão fedorenta a unidade é
 }
