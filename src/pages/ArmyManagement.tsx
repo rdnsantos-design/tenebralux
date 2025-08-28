@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Crown, Users, Home, FileSpreadsheet, Settings, Shield } from "lucide-react";
+import { Plus, Edit, Trash2, Crown, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Regent, Army } from "@/types/Army";
 import { UnitCard } from "@/types/UnitCard";
@@ -11,6 +11,8 @@ import { RegentList } from "@/components/RegentList";
 import { ArmyEditor } from "@/components/ArmyEditor";
 import { ArmyList } from "@/components/ArmyList";
 import { ExcelImportManager } from "@/components/ExcelImportManager";
+import { LocationImportManager } from "@/components/LocationImportManager";
+import { Country } from "@/types/Location";
 import { TemplateCreator } from "@/components/TemplateCreator";
 
 const ArmyManagement = () => {
@@ -22,6 +24,7 @@ const ArmyManagement = () => {
   const [showRegentEditor, setShowRegentEditor] = useState(false);
   const [showArmyEditor, setShowArmyEditor] = useState(false);
   const [showExcelImport, setShowExcelImport] = useState(false);
+  const [showLocationImport, setShowLocationImport] = useState(false);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
@@ -121,6 +124,12 @@ const ArmyManagement = () => {
     alert(`${cards.length} cartas criadas com sucesso a partir da importação Excel!`);
   };
 
+  const handleLocationImportComplete = (countries: Country[]) => {
+    console.log('Países importados:', countries);
+    setShowLocationImport(false);
+    alert(`${countries.length} países importados com sucesso!`);
+  };
+
   const handleTemplateCreated = () => {
     setShowTemplateCreator(false);
     alert('Template criado com sucesso!');
@@ -131,6 +140,15 @@ const ArmyManagement = () => {
       <ExcelImportManager
         onCancel={() => setShowExcelImport(false)}
         onCreateCards={handleExcelImportComplete}
+      />
+    );
+  }
+
+  if (showLocationImport) {
+    return (
+      <LocationImportManager
+        onCancel={() => setShowLocationImport(false)}
+        onImportComplete={handleLocationImportComplete}
       />
     );
   }
@@ -306,78 +324,82 @@ const ArmyManagement = () => {
           </TabsContent>
 
           <TabsContent value="imports" className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold">Importações e Templates</h2>
-                <p className="text-muted-foreground">
-                  Importe dados do Excel e gerencie templates de cartas
-                </p>
+                <h2 className="text-2xl font-bold">Importações</h2>
+                <p className="text-muted-foreground">Gerencie dados importados de planilhas Excel</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={() => setShowExcelImport(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importar Unidades
+                </Button>
+                <Button onClick={() => setShowLocationImport(true)} variant="outline">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Importar Localização
+                </Button>
+                <Button onClick={() => setShowTemplateCreator(true)} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Template
+                </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowExcelImport(true)}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-green-100 rounded-lg">
-                      <FileSpreadsheet className="w-8 h-8 text-green-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold">Importar Excel</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Importe múltiplas unidades de planilhas Excel
-                      </p>
-                    </div>
-                  </div>
+            <div className="grid gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5" />
+                    Importação de Unidades
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Importe planilhas Excel com dados de unidades militares (ataque, defesa, etc.)
+                  </p>
+                  <Button onClick={() => setShowExcelImport(true)}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Gerenciar Importações de Unidades
+                  </Button>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowTemplateCreator(true)}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-100 rounded-lg">
-                      <Settings className="w-8 h-8 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold">Gerenciar Templates</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Crie e edite templates para cartas de unidades
-                      </p>
-                    </div>
-                  </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Importação de Localização
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Importe planilhas Excel com países e províncias para usar na localização das unidades
+                  </p>
+                  <Button onClick={() => setShowLocationImport(true)} variant="outline">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Gerenciar Localização
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Layout className="h-5 w-5" />
+                    Templates de Card
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Crie templates personalizados para o design dos cards de unidade
+                  </p>
+                  <Button onClick={() => setShowTemplateCreator(true)} variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar Novo Template
+                  </Button>
                 </CardContent>
               </Card>
             </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Como Usar a Fase 3</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <FileSpreadsheet className="w-4 h-4 text-green-600" />
-                      1. Importação Excel
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Prepare uma planilha Excel com colunas: Nome, Ataque, Defesa, Tiro, Movimento, Moral. 
-                      Use a ferramenta de importação para criar múltiplas cartas de unidades automaticamente.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <Settings className="w-4 h-4 text-blue-600" />
-                      2. Templates de Cartas
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Crie templates personalizados para suas cartas de unidades. 
-                      Defina onde cada informação aparece no layout da carta.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>

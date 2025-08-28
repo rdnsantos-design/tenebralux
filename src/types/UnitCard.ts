@@ -29,6 +29,10 @@ export interface UnitCard {
   // Habilidades especiais
   specialAbilities: SpecialAbility[];
   
+  // Localização
+  countryId?: string;
+  provinceId?: string;
+  
   // Visual
   backgroundImage?: string;
   customBackgroundImage?: string; // skin personalizada para o card

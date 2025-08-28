@@ -9,6 +9,7 @@ import { SpecialAbilitiesManager } from "@/components/SpecialAbilitiesManager";
 import { CardRenderer } from '@/components/CardRenderer';
 import { CardTemplate, CardData } from '@/types/CardTemplate';
 import { ExcelImport } from '@/types/ExcelImport';
+import { Country, Province } from '@/types/Location';
 
 interface CardEditorProps {
   card?: UnitCard | null;
@@ -47,6 +48,9 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   const [selectedSkin, setSelectedSkin] = useState<string>('');
   const [selectedUnitId, setSelectedUnitId] = useState<string>('');
   const [availableUnits, setAvailableUnits] = useState<Array<{id: string, name: string, importName: string} & UnitCard>>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [selectedCountryId, setSelectedCountryId] = useState<string>('');
+  const [availableProvinces, setAvailableProvinces] = useState<Province[]>([]);
   const [baseAttributes, setBaseAttributes] = useState({
     attack: card?.attack || 1,
     defense: card?.defense || 1,
@@ -69,7 +73,9 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     specialAbilities: card?.specialAbilities || [],
     backgroundImage: card?.backgroundImage || '',
     customBackgroundImage: card?.customBackgroundImage || '',
-    images: card?.images || {}
+    images: card?.images || {},
+    countryId: card?.countryId || '',
+    provinceId: card?.provinceId || ''
   });
 
   const [imageProcessing, setImageProcessing] = useState(false);
@@ -113,6 +119,40 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     }
   }, []);
 
+  // Carregar países das importações de localização
+  useEffect(() => {
+    const savedLocationImports = localStorage.getItem('locationImports');
+    if (savedLocationImports) {
+      try {
+        const locationImports = JSON.parse(savedLocationImports);
+        if (locationImports.length > 0) {
+          // Usar a importação mais recente
+          const latestImport = locationImports[0];
+          setCountries(latestImport.countries || []);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar países:', error);
+      }
+    }
+  }, []);
+
+  // Filtrar províncias baseado no país selecionado
+  useEffect(() => {
+    if (selectedCountryId && countries.length > 0) {
+      const selectedCountry = countries.find(c => c.id === selectedCountryId);
+      setAvailableProvinces(selectedCountry?.provinces || []);
+    } else {
+      setAvailableProvinces([]);
+    }
+  }, [selectedCountryId, countries]);
+
+  // Definir país e província selecionados na inicialização
+  useEffect(() => {
+    if (card?.countryId) {
+      setSelectedCountryId(card.countryId);
+    }
+  }, [card]);
+
   const calculateTotalForce = useCallback(() => {
     const baseForce = unitData.attack + unitData.defense + unitData.ranged + unitData.movement + unitData.morale;
     const abilitiesBonus = unitData.specialAbilities.reduce((acc, ability) => {
@@ -148,6 +188,17 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   const handleAttributeChange = (attribute: keyof UnitCard, value: number | string) => {
     if (attribute === 'experience') {
       setUnitData(prev => ({ ...prev, [attribute]: value as ExperienceLevel }));
+      return;
+    }
+    
+    if (attribute === 'countryId') {
+      setSelectedCountryId(value as string);
+      setUnitData(prev => ({ ...prev, countryId: value as string, provinceId: '' }));
+      return;
+    }
+    
+    if (attribute === 'provinceId') {
+      setUnitData(prev => ({ ...prev, provinceId: value as string }));
       return;
     }
     
@@ -444,24 +495,74 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                   />
                 </div>
                 
-                <div>
-                  <Label htmlFor="experience">Nível de Experiência</Label>
-                  <Select 
-                    value={unitData.experience} 
-                    onValueChange={(value: ExperienceLevel) => handleAttributeChange('experience', value)}
-                  >
-                    <SelectTrigger className="bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border z-50">
-                      {Object.keys(experienceLimits).map(level => (
-                        <SelectItem key={level} value={level} className="hover:bg-accent">
-                          {level} (máx: {experienceLimits[level as ExperienceLevel]}) - Moral: {experienceModifiers[level as ExperienceLevel].moral >= 0 ? '+' : ''}{experienceModifiers[level as ExperienceLevel].moral}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                 <div>
+                   <Label htmlFor="experience">Nível de Experiência</Label>
+                   <Select 
+                     value={unitData.experience} 
+                     onValueChange={(value: ExperienceLevel) => handleAttributeChange('experience', value)}
+                   >
+                     <SelectTrigger className="bg-background">
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent className="bg-background border z-50">
+                       {Object.keys(experienceLimits).map(level => (
+                         <SelectItem key={level} value={level} className="hover:bg-accent">
+                           {level} (máx: {experienceLimits[level as ExperienceLevel]}) - Moral: {experienceModifiers[level as ExperienceLevel].moral >= 0 ? '+' : ''}{experienceModifiers[level as ExperienceLevel].moral}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                 </div>
+
+                 {/* Seleção de Localização */}
+                 <div className="grid grid-cols-2 gap-4">
+                   <div>
+                     <Label htmlFor="country">País</Label>
+                     <Select 
+                       value={unitData.countryId || ''} 
+                       onValueChange={(value) => handleAttributeChange('countryId', value)}
+                     >
+                       <SelectTrigger className="bg-background border">
+                         <SelectValue placeholder="Selecionar país..." />
+                       </SelectTrigger>
+                       <SelectContent className="bg-background border z-50 shadow-lg">
+                         {countries.map(country => (
+                           <SelectItem key={country.id} value={country.id} className="hover:bg-accent cursor-pointer">
+                             {country.name}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+
+                   <div>
+                     <Label htmlFor="province">Província</Label>
+                     <Select 
+                       value={unitData.provinceId || ''} 
+                       onValueChange={(value) => handleAttributeChange('provinceId', value)}
+                       disabled={!selectedCountryId}
+                     >
+                       <SelectTrigger className="bg-background border">
+                         <SelectValue placeholder={selectedCountryId ? "Selecionar província..." : "Primeiro selecione um país"} />
+                       </SelectTrigger>
+                       <SelectContent className="bg-background border z-50 shadow-lg">
+                         {availableProvinces.map(province => (
+                           <SelectItem key={province.id} value={province.id} className="hover:bg-accent cursor-pointer">
+                             {province.name}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                 </div>
+                 
+                 {countries.length === 0 && (
+                   <div className="p-3 bg-muted rounded-lg">
+                     <p className="text-sm text-muted-foreground">
+                       Nenhum país encontrado. Importe uma planilha de localização na aba "Importações" para habilitar seleção de países e províncias.
+                     </p>
+                   </div>
+                 )}
               </CardContent>
             </Card>
 
