@@ -1,10 +1,12 @@
 export interface Regent {
   id: string;
   name: string;
-  character: string; // personagem
+  character: string; // jogador
   domain: string; // domínio
   goldBars: number; // GB - Gold Bars
   regencyPoints: number; // RP - Regency Points
+  comando: number; // perícia de comando (1-5)
+  estrategia: number; // perícia de estratégia (1-5)  
   createdAt: string;
 }
 

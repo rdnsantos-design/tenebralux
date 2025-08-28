@@ -19,6 +19,8 @@ export const RegentEditor = ({ regent, onSave, onCancel }: RegentEditorProps) =>
     domain: regent?.domain || "",
     goldBars: regent?.goldBars || 0,
     regencyPoints: regent?.regencyPoints || 0,
+    comando: regent?.comando || 1,
+    estrategia: regent?.estrategia || 1,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -75,12 +77,12 @@ export const RegentEditor = ({ regent, onSave, onCancel }: RegentEditorProps) =>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="character">Personagem *</Label>
+                  <Label htmlFor="character">Jogador *</Label>
                   <Input
                     id="character"
                     value={formData.character}
                     onChange={(e) => setFormData(prev => ({ ...prev, character: e.target.value }))}
-                    placeholder="Ex: Rei de Avanil"
+                    placeholder="Ex: João Silva"
                     required
                   />
                 </div>
@@ -120,6 +122,34 @@ export const RegentEditor = ({ regent, onSave, onCancel }: RegentEditorProps) =>
                     placeholder="0"
                   />
                   <p className="text-xs text-muted-foreground">Pontos de regência disponíveis</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="comando">Comando (1-5)</Label>
+                  <Input
+                    id="comando"
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={formData.comando}
+                    onChange={(e) => setFormData(prev => ({ ...prev, comando: Math.min(5, Math.max(1, parseInt(e.target.value) || 1)) }))}
+                    placeholder="1"
+                  />
+                  <p className="text-xs text-muted-foreground">Perícia de comando militar</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="estrategia">Estratégia (1-5)</Label>
+                  <Input
+                    id="estrategia"
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={formData.estrategia}
+                    onChange={(e) => setFormData(prev => ({ ...prev, estrategia: Math.min(5, Math.max(1, parseInt(e.target.value) || 1)) }))}
+                    placeholder="1"
+                  />
+                  <p className="text-xs text-muted-foreground">Perícia de estratégia militar</p>
                 </div>
               </div>
 
