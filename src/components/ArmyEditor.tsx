@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, Users, Plus, Trash2 } from "lucide-react";
 import { Regent, Army, ArmyUnit } from "@/types/Army";
 import { UnitCard } from "@/types/UnitCard";
+import { Country, Province } from "@/types/Location";
 
 interface ArmyEditorProps {
   army?: Army | null;
@@ -20,10 +21,14 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
   const [formData, setFormData] = useState({
     name: army?.name || "",
     regentId: army?.regentId || "",
+    countryId: army?.countryId || "",
+    provinceId: army?.provinceId || "",
   });
   const [units, setUnits] = useState<ArmyUnit[]>(army?.units || []);
   const [availableCards, setAvailableCards] = useState<UnitCard[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string>("");
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [availableProvinces, setAvailableProvinces] = useState<Province[]>([]);
 
   // Carregar cards disponíveis
   useEffect(() => {
@@ -37,6 +42,33 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
       }
     }
   }, []);
+
+  // Carregar países das importações de localização
+  useEffect(() => {
+    const savedLocationImports = localStorage.getItem('locationImports');
+    if (savedLocationImports) {
+      try {
+        const locationImports = JSON.parse(savedLocationImports);
+        if (locationImports.length > 0) {
+          // Usar a importação mais recente
+          const latestImport = locationImports[0];
+          setCountries(latestImport.countries || []);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar países:', error);
+      }
+    }
+  }, []);
+
+  // Filtrar províncias baseado no país selecionado
+  useEffect(() => {
+    if (formData.countryId && countries.length > 0) {
+      const selectedCountry = countries.find(c => c.id === formData.countryId);
+      setAvailableProvinces(selectedCountry?.provinces || []);
+    } else {
+      setAvailableProvinces([]);
+    }
+  }, [formData.countryId, countries]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,25 +157,79 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="regent">Regente Comandante *</Label>
-                  <Select 
-                    value={formData.regentId} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, regentId: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um regente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {regents.map((regent) => (
-                        <SelectItem key={regent.id} value={regent.id}>
-                          {regent.name} - {regent.domain}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="regent">Regente Comandante *</Label>
+                   <Select 
+                     value={formData.regentId} 
+                     onValueChange={(value) => setFormData(prev => ({ ...prev, regentId: value }))}
+                   >
+                     <SelectTrigger>
+                       <SelectValue placeholder="Selecione um regente" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {regents.map((regent) => (
+                         <SelectItem key={regent.id} value={regent.id}>
+                           {regent.name} - {regent.domain}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                 </div>
+               </div>
+
+               {/* Seleção de Localização */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label htmlFor="country">País da Campanha</Label>
+                   <Select 
+                     value={formData.countryId} 
+                     onValueChange={(value) => setFormData(prev => ({ 
+                       ...prev, 
+                       countryId: value, 
+                       provinceId: '' // Limpar província quando país muda
+                     }))}
+                   >
+                     <SelectTrigger>
+                       <SelectValue placeholder="Selecionar país..." />
+                     </SelectTrigger>
+                     <SelectContent className="bg-background border z-50 shadow-lg">
+                       {countries.map(country => (
+                         <SelectItem key={country.id} value={country.id} className="hover:bg-accent cursor-pointer">
+                           {country.name}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                 </div>
+
+                 <div className="space-y-2">
+                   <Label htmlFor="province">Província Base</Label>
+                   <Select 
+                     value={formData.provinceId} 
+                     onValueChange={(value) => setFormData(prev => ({ ...prev, provinceId: value }))}
+                     disabled={!formData.countryId}
+                   >
+                     <SelectTrigger>
+                       <SelectValue placeholder={formData.countryId ? "Selecionar província..." : "Primeiro selecione um país"} />
+                     </SelectTrigger>
+                     <SelectContent className="bg-background border z-50 shadow-lg">
+                       {availableProvinces.map(province => (
+                         <SelectItem key={province.id} value={province.id} className="hover:bg-accent cursor-pointer">
+                           {province.name}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                 </div>
+               </div>
+
+                {countries.length === 0 && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum país encontrado. Importe uma planilha de localização na aba "Importações" para habilitar seleção de países e províncias.
+                    </p>
+                  </div>
+                )}
 
               {selectedRegent && (
                 <div className="bg-muted/50 p-4 rounded-lg">

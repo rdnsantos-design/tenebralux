@@ -15,6 +15,8 @@ export interface Army {
   regentId: string;
   name: string;
   units: ArmyUnit[];
+  countryId?: string;
+  provinceId?: string;
   createdAt: string;
 }
 

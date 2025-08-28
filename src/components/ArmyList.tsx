@@ -1,8 +1,10 @@
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Users, Crown, Shield } from "lucide-react";
 import { Army, Regent } from "@/types/Army";
+import { Country, Province } from "@/types/Location";
+import { Edit, Trash2, Users, Shield, Calendar, MapPin } from "lucide-react";
 
 interface ArmyListProps {
   armies: Army[];
@@ -12,7 +14,41 @@ interface ArmyListProps {
 }
 
 export const ArmyList = ({ armies, regents, onEdit, onDelete }: ArmyListProps) => {
-  const getRegent = (regentId: string) => regents.find(r => r.id === regentId);
+  const [countries, setCountries] = useState<Country[]>([]);
+
+  // Carregar países das importações de localização
+  useEffect(() => {
+    const savedLocationImports = localStorage.getItem('locationImports');
+    if (savedLocationImports) {  
+      try {
+        const locationImports = JSON.parse(savedLocationImports);
+        if (locationImports.length > 0) {
+          const latestImport = locationImports[0];
+          setCountries(latestImport.countries || []);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar países:', error);
+      }
+    }
+  }, []);
+
+  const getRegent = (regentId: string) => {
+    return regents.find(regent => regent.id === regentId);
+  };
+
+  const getLocationName = (countryId?: string, provinceId?: string) => {
+    if (!countryId || countries.length === 0) return null;
+    
+    const country = countries.find(c => c.id === countryId);
+    if (!country) return null;
+    
+    if (provinceId) {
+      const province = country.provinces.find(p => p.id === provinceId);
+      return province ? `${province.name}, ${country.name}` : country.name;
+    }
+    
+    return country.name;
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -29,7 +65,6 @@ export const ArmyList = ({ armies, regents, onEdit, onDelete }: ArmyListProps) =
                 <span className="truncate">{army.name}</span>
               </CardTitle>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Crown className="w-4 h-4" />
                 <span className="truncate">
                   {regent ? `${regent.name} - ${regent.domain}` : 'Regente não encontrado'}
                 </span>
@@ -37,28 +72,28 @@ export const ArmyList = ({ armies, regents, onEdit, onDelete }: ArmyListProps) =
             </CardHeader>
             <CardContent className="pt-0 space-y-4">
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <div className="font-semibold">{army.units.length}</div>
-                      <div className="text-xs text-muted-foreground">Unidades</div>
-                    </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{army.units.length} unidades</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-green-600" />
-                    <div>
-                      <div className="font-semibold">{totalPower}</div>
-                      <div className="text-xs text-muted-foreground">Poder Total</div>
-                    </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Shield className="h-4 w-4" />
+                    <span>Poder total: {army.units.reduce((total, unit) => total + unit.power, 0)}</span>
                   </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">Manutenção Total:</div>
-                  <Badge variant="outline" className="text-xs">
-                    {totalMaintenanceCost} GB/turno
-                  </Badge>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>💰 Manutenção: {army.units.reduce((total, unit) => total + unit.maintenanceCost, 0)} GB/turno</span>
+                  </div>
+                  {getLocationName(army.countryId, army.provinceId) && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      <span>{getLocationName(army.countryId, army.provinceId)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>Criado em {new Date(army.createdAt).toLocaleDateString('pt-BR')}</span>
+                  </div>
                 </div>
 
                 {army.units.length > 0 && (
@@ -98,10 +133,6 @@ export const ArmyList = ({ armies, regents, onEdit, onDelete }: ArmyListProps) =
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
-              </div>
-
-              <div className="text-xs text-muted-foreground border-t pt-2">
-                Criado em {new Date(army.createdAt).toLocaleDateString('pt-BR')}
               </div>
             </CardContent>
           </Card>
