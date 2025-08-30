@@ -98,7 +98,6 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
       isGarrisoned: false,
       countryId: '',
       provinceId: '',
-      alessandraFedorenta: 'nada',
     };
 
     setUnits([...units, newUnit]);
@@ -109,14 +108,6 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
     setUnits(units.map(unit => 
       unit.id === unitId 
         ? { ...unit, countryId, provinceId }
-        : unit
-    ));
-  };
-
-  const handleUpdateUnitStinkiness = (unitId: string, stinkiness: string) => {
-    setUnits(units.map(unit => 
-      unit.id === unitId 
-        ? { ...unit, alessandraFedorenta: stinkiness }
         : unit
     ));
   };
@@ -294,7 +285,7 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                        </div>
 
                         {/* Localização da Unidade */}
-                        <div className="grid grid-cols-3 gap-3 pt-3 border-t">
+                        <div className="grid grid-cols-2 gap-3 pt-3 border-t">
                          <div className="space-y-2">
                            <Label className="text-xs">País</Label>
                            <Select 
@@ -331,35 +322,6 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                                  </SelectItem>
                                ))}
                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-xs">Alessandra Fedorenta</Label>
-                            <Select 
-                              value={unit.alessandraFedorenta || 'nada'} 
-                              onValueChange={(value) => handleUpdateUnitStinkiness(unit.id, value)}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Fedentice..." />
-                              </SelectTrigger>
-                              <SelectContent className="bg-background border z-50 shadow-lg">
-                                <SelectItem value="nada" className="text-xs hover:bg-accent cursor-pointer">
-                                  Nada
-                                </SelectItem>
-                                <SelectItem value="pouco" className="text-xs hover:bg-accent cursor-pointer">
-                                  Pouco
-                                </SelectItem>
-                                <SelectItem value="medio" className="text-xs hover:bg-accent cursor-pointer">
-                                  Médio
-                                </SelectItem>
-                                <SelectItem value="muito" className="text-xs hover:bg-accent cursor-pointer">
-                                  Muito
-                                </SelectItem>
-                                <SelectItem value="extremo" className="text-xs hover:bg-accent cursor-pointer">
-                                  Extremo
-                                </SelectItem>
-                              </SelectContent>
                             </Select>
                           </div>
                         </div>
