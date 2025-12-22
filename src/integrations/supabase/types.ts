@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      field_commanders: {
+        Row: {
+          comando: number
+          created_at: string
+          cultura_origem: string
+          especializacao_inicial: string
+          especializacoes_adicionais: string[]
+          estrategia: number
+          guarda: number
+          id: string
+          nome_comandante: string
+          notas: string | null
+          pontos_prestigio: number
+          unidade_de_origem: string | null
+          updated_at: string
+        }
+        Insert: {
+          comando?: number
+          created_at?: string
+          cultura_origem: string
+          especializacao_inicial: string
+          especializacoes_adicionais?: string[]
+          estrategia?: number
+          guarda?: number
+          id?: string
+          nome_comandante: string
+          notas?: string | null
+          pontos_prestigio?: number
+          unidade_de_origem?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comando?: number
+          created_at?: string
+          cultura_origem?: string
+          especializacao_inicial?: string
+          especializacoes_adicionais?: string[]
+          estrategia?: number
+          guarda?: number
+          id?: string
+          nome_comandante?: string
+          notas?: string | null
+          pontos_prestigio?: number
+          unidade_de_origem?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tactical_cards: {
         Row: {
           affected_unit_types: string[]
@@ -94,6 +142,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      commander_specialization:
+        | "Infantaria"
+        | "Cavalaria"
+        | "Arqueiro"
+        | "Cerco"
+        | "Milicia"
+        | "Elite"
+        | "Naval"
       tactical_card_subtype: "Buff" | "Debuff" | "Neutra" | "Instantânea"
       tactical_card_type: "Ataque" | "Defesa" | "Movimento" | "Moral"
       tactical_culture: "Anuire" | "Khinasi" | "Vos" | "Rjurik" | "Brecht"
@@ -224,6 +280,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      commander_specialization: [
+        "Infantaria",
+        "Cavalaria",
+        "Arqueiro",
+        "Cerco",
+        "Milicia",
+        "Elite",
+        "Naval",
+      ],
       tactical_card_subtype: ["Buff", "Debuff", "Neutra", "Instantânea"],
       tactical_card_type: ["Ataque", "Defesa", "Movimento", "Moral"],
       tactical_culture: ["Anuire", "Khinasi", "Vos", "Rjurik", "Brecht"],

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Shield, Plus, Settings, Swords } from "lucide-react";
+import { Users, Shield, Plus, Settings, Swords, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
@@ -16,31 +16,31 @@ const Dashboard = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
           {/* Criador de Cards */}
           <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
             <CardHeader className="text-center pb-4">
               <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-20 h-20 flex items-center justify-center">
                 <Plus className="w-10 h-10 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Criador de Cards</CardTitle>
+              <CardTitle className="text-xl">Criador de Cards</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                Crie e gerencie templates e cards de unidades militares para suas campanhas
+              <p className="text-muted-foreground text-sm">
+                Crie e gerencie templates e cards de unidades militares
               </p>
               <div className="space-y-2">
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Settings className="w-4 h-4" />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Settings className="w-3 h-3" />
                   <span>Templates personalizáveis</span>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Shield className="w-4 h-4" />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Shield className="w-3 h-3" />
                   <span>Importação via Excel</span>
                 </div>
               </div>
               <Button 
-                size="lg" 
+                size="sm" 
                 className="w-full"
                 onClick={() => navigate('/cards')}
               >
@@ -55,24 +55,24 @@ const Dashboard = () => {
               <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-20 h-20 flex items-center justify-center">
                 <Users className="w-10 h-10 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Gestão de Exército</CardTitle>
+              <CardTitle className="text-xl">Gestão de Exército</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                Cadastre regentes e monte exércitos usando os cards criados
+              <p className="text-muted-foreground text-sm">
+                Cadastre regentes e monte exércitos usando os cards
               </p>
               <div className="space-y-2">
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Users className="w-4 h-4" />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Users className="w-3 h-3" />
                   <span>Cadastro de regentes</span>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Shield className="w-4 h-4" />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Shield className="w-3 h-3" />
                   <span>Montagem de exércitos</span>
                 </div>
               </div>
               <Button 
-                size="lg" 
+                size="sm" 
                 className="w-full"
                 onClick={() => navigate('/army')}
               >
@@ -87,28 +87,60 @@ const Dashboard = () => {
               <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-20 h-20 flex items-center justify-center">
                 <Swords className="w-10 h-10 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Cartas Táticas</CardTitle>
+              <CardTitle className="text-xl">Cartas Táticas</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                Crie e balanceie cartas táticas para batalhas com cálculo automático de custo
+              <p className="text-muted-foreground text-sm">
+                Crie cartas táticas com cálculo automático de custo
               </p>
               <div className="space-y-2">
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Swords className="w-4 h-4" />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Swords className="w-3 h-3" />
                   <span>Cálculo automático de custo</span>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Shield className="w-4 h-4" />
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Shield className="w-3 h-3" />
                   <span>Sistema cultural de bônus</span>
                 </div>
               </div>
               <Button 
-                size="lg" 
+                size="sm" 
                 className="w-full"
                 onClick={() => navigate('/tactical-cards')}
               >
                 Acessar Cartas Táticas
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Comandantes de Campo */}
+          <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-20 h-20 flex items-center justify-center">
+                <Crown className="w-10 h-10 text-primary" />
+              </div>
+              <CardTitle className="text-xl">Comandantes de Campo</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-muted-foreground text-sm">
+                Crie e evolua comandantes para liderar suas tropas
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Crown className="w-3 h-3" />
+                  <span>Sistema de evolução com PP</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Shield className="w-3 h-3" />
+                  <span>Especializações táticas</span>
+                </div>
+              </div>
+              <Button 
+                size="sm" 
+                className="w-full"
+                onClick={() => navigate('/commanders')}
+              >
+                Acessar Comandantes
               </Button>
             </CardContent>
           </Card>
