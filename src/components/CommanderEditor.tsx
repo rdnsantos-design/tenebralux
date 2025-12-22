@@ -8,14 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Save, X } from 'lucide-react';
 import { FieldCommander, SPECIALIZATIONS, CULTURES, CommanderSpecialization } from '@/types/FieldCommander';
 import { TacticalCulture } from '@/types/TacticalCard';
+import { Regent } from '@/types/Army';
 
 interface CommanderEditorProps {
   commander?: FieldCommander | null;
+  regents?: Regent[];
   onSave: (commander: Omit<FieldCommander, 'id' | 'created_at' | 'updated_at'>) => void;
   onCancel: () => void;
 }
 
-export function CommanderEditor({ commander, onSave, onCancel }: CommanderEditorProps) {
+export function CommanderEditor({ commander, regents = [], onSave, onCancel }: CommanderEditorProps) {
   const [formData, setFormData] = useState({
     nome_comandante: '',
     cultura_origem: 'Anuire' as TacticalCulture,
@@ -26,7 +28,8 @@ export function CommanderEditor({ commander, onSave, onCancel }: CommanderEditor
     pontos_prestigio: 0,
     especializacoes_adicionais: [] as CommanderSpecialization[],
     unidade_de_origem: '',
-    notas: ''
+    notas: '',
+    regent_id: '' as string | undefined
   });
 
   useEffect(() => {
@@ -41,7 +44,8 @@ export function CommanderEditor({ commander, onSave, onCancel }: CommanderEditor
         pontos_prestigio: commander.pontos_prestigio,
         especializacoes_adicionais: commander.especializacoes_adicionais || [],
         unidade_de_origem: commander.unidade_de_origem || '',
-        notas: commander.notas || ''
+        notas: commander.notas || '',
+        regent_id: commander.regent_id || ''
       });
     }
   }, [commander]);
@@ -51,7 +55,8 @@ export function CommanderEditor({ commander, onSave, onCancel }: CommanderEditor
     onSave({
       ...formData,
       unidade_de_origem: formData.unidade_de_origem || undefined,
-      notas: formData.notas || undefined
+      notas: formData.notas || undefined,
+      regent_id: formData.regent_id || undefined
     });
   };
 
@@ -128,6 +133,35 @@ export function CommanderEditor({ commander, onSave, onCancel }: CommanderEditor
               />
             </div>
           </div>
+
+          {/* Associação com Regente */}
+          {regents.length > 0 && (
+            <div className="border rounded-lg p-4 bg-muted/30">
+              <h3 className="font-semibold mb-4">Associação com Regente</h3>
+              <div className="space-y-2">
+                <Label htmlFor="regent">Regente</Label>
+                <Select
+                  value={formData.regent_id || ''}
+                  onValueChange={(value) => setFormData({ ...formData, regent_id: value || undefined })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um regente (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum</SelectItem>
+                    {regents.map((regent) => (
+                      <SelectItem key={regent.id} value={regent.id}>
+                        {regent.name} - {regent.domain}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Associar a um regente permite vincular este comandante a unidades dos exércitos do regente.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Atributos */}
           <div className="border rounded-lg p-4">

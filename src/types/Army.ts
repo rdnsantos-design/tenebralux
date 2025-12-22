@@ -30,4 +30,5 @@ export interface ArmyUnit {
   countryId?: string;
   provinceId?: string;
   isGarrisoned: boolean;
+  commanderId?: string; // ID do comandante de campo associado
 }

@@ -27,6 +27,7 @@ export type Database = {
           nome_comandante: string
           notas: string | null
           pontos_prestigio: number
+          regent_id: string | null
           unidade_de_origem: string | null
           updated_at: string
         }
@@ -42,6 +43,7 @@ export type Database = {
           nome_comandante: string
           notas?: string | null
           pontos_prestigio?: number
+          regent_id?: string | null
           unidade_de_origem?: string | null
           updated_at?: string
         }
@@ -57,6 +59,7 @@ export type Database = {
           nome_comandante?: string
           notas?: string | null
           pontos_prestigio?: number
+          regent_id?: string | null
           unidade_de_origem?: string | null
           updated_at?: string
         }
