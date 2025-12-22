@@ -59,15 +59,28 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
       
       // Criar unidades a partir dos dados com todos os campos
       const units: ImportedUnit[] = jsonData.map((row: any, index: number) => {
-        // Nome
-        const nameVariations = ['Nome da unidade', 'Nome', 'Name', 'nome', 'NOME', 'name', 'NAME'];
+        // Nome - primeira coluna ou coluna "Nome"
+        const keys = Object.keys(row);
+        const firstColumn = keys[0]; // Primeira coluna do Excel
+        const nameVariations = ['Nome da unidade', 'Nome', 'Name', 'nome', 'NOME', 'name', 'NAME', 'Unidade', 'UNIDADE', 'unidade'];
+        
         let name = '';
-        for (const variation of nameVariations) {
-          if (row[variation] && row[variation].toString().trim()) {
-            name = row[variation].toString().trim();
-            break;
+        
+        // Primeiro, tentar pegar da primeira coluna (que geralmente é o nome)
+        if (firstColumn && row[firstColumn] && typeof row[firstColumn] === 'string') {
+          name = row[firstColumn].toString().trim();
+        }
+        
+        // Se não funcionou, tentar as variações conhecidas
+        if (!name) {
+          for (const variation of nameVariations) {
+            if (row[variation] && row[variation].toString().trim()) {
+              name = row[variation].toString().trim();
+              break;
+            }
           }
         }
+        
         if (!name) name = `Unidade ${index + 1}`;
         
         // Atributos numéricos
