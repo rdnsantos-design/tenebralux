@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      card_background_images: {
+        Row: {
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_url: string
+          height: number
+          id: string
+          tags: string[] | null
+          uploaded_at: string
+          width: number
+        }
+        Insert: {
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_url: string
+          height?: number
+          id?: string
+          tags?: string[] | null
+          uploaded_at?: string
+          width?: number
+        }
+        Update: {
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_url?: string
+          height?: number
+          id?: string
+          tags?: string[] | null
+          uploaded_at?: string
+          width?: number
+        }
+        Relationships: []
+      }
       field_commanders: {
         Row: {
           comando: number

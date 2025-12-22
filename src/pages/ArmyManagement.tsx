@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Crown, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout, Swords } from "lucide-react";
+import { Plus, Edit, Trash2, Crown, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout, Swords, Images } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Regent, Army } from "@/types/Army";
 import { UnitCard } from "@/types/UnitCard";
@@ -21,6 +21,8 @@ import { TemplateCreator } from "@/components/TemplateCreator";
 import { useFieldCommanders } from "@/hooks/useFieldCommanders";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { ImageUploader } from "@/components/ImageUploader";
+import { ImageBank } from "@/components/ImageBank";
 
 const ArmyManagement = () => {
   const navigate = useNavigate();
@@ -40,6 +42,7 @@ const ArmyManagement = () => {
   const [showLocationImport, setShowLocationImport] = useState(false);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
+  const [imageRefreshTrigger, setImageRefreshTrigger] = useState(0);
 
   // Carregar dados do localStorage
   useEffect(() => {
@@ -333,7 +336,7 @@ const ArmyManagement = () => {
         </div>
 
         <Tabs defaultValue="regents" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="regents" className="flex items-center gap-2">
               <Crown className="w-4 h-4" />
               Regentes
@@ -345,6 +348,10 @@ const ArmyManagement = () => {
             <TabsTrigger value="armies" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
               Exércitos
+            </TabsTrigger>
+            <TabsTrigger value="images" className="flex items-center gap-2">
+              <Images className="w-4 h-4" />
+              Imagens
             </TabsTrigger>
             <TabsTrigger value="imports" className="flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4" />
@@ -491,6 +498,18 @@ const ArmyManagement = () => {
                 onDelete={handleDeleteArmy}
               />
             )}
+          </TabsContent>
+
+          <TabsContent value="images" className="mt-6 space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Banco de Imagens de Fundo</h2>
+              <p className="text-muted-foreground mb-6">
+                Faça upload de imagens com dimensões exatas de 750×1050px para usar como fundo dos cards
+              </p>
+            </div>
+            
+            <ImageUploader onUploadSuccess={() => setImageRefreshTrigger(prev => prev + 1)} />
+            <ImageBank refreshTrigger={imageRefreshTrigger} />
           </TabsContent>
 
           <TabsContent value="imports" className="space-y-6">
