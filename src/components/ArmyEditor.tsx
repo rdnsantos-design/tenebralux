@@ -359,15 +359,15 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                               Comandante
                             </Label>
                             <Select 
-                              value={unit.commanderId || ''} 
-                              onValueChange={(value) => handleUpdateUnitCommander(unit.id, value)}
+                              value={unit.commanderId || '__none__'} 
+                              onValueChange={(value) => handleUpdateUnitCommander(unit.id, value === '__none__' ? '' : value)}
                               disabled={regentCommanders.length === 0}
                             >
                               <SelectTrigger className="h-8 text-xs">
                                 <SelectValue placeholder={regentCommanders.length === 0 ? "Nenhum comandante" : "Selecionar..."} />
                               </SelectTrigger>
                               <SelectContent className="bg-background border z-50 shadow-lg">
-                                <SelectItem value="" className="text-xs hover:bg-accent cursor-pointer">
+                                <SelectItem value="__none__" className="text-xs hover:bg-accent cursor-pointer">
                                   Nenhum
                                 </SelectItem>
                                 {regentCommanders.map(commander => (

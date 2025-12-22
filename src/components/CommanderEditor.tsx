@@ -141,14 +141,14 @@ export function CommanderEditor({ commander, regents = [], onSave, onCancel }: C
               <div className="space-y-2">
                 <Label htmlFor="regent">Regente</Label>
                 <Select
-                  value={formData.regent_id || ''}
-                  onValueChange={(value) => setFormData({ ...formData, regent_id: value || undefined })}
+                  value={formData.regent_id || '__none__'}
+                  onValueChange={(value) => setFormData({ ...formData, regent_id: value === '__none__' ? undefined : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um regente (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
                     {regents.map((regent) => (
                       <SelectItem key={regent.id} value={regent.id}>
                         {regent.name} - {regent.domain}
