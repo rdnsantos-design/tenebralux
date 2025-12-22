@@ -105,6 +105,12 @@ const Index = () => {
     setCards(cards.filter(c => c.id !== cardId));
   };
 
+  const handleDeleteAllCards = () => {
+    if (window.confirm(`Tem certeza que deseja deletar todos os ${cards.length} cards? Esta ação não pode ser desfeita.`)) {
+      setCards([]);
+    }
+  };
+
   const handleCreateCardsFromImport = (units: UnitCard[]) => {
     setCards([...cards, ...units]);
     setShowExcelManager(false);
@@ -230,6 +236,20 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="cards" className="mt-6">
+            {cards.length > 0 && (
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-muted-foreground">{cards.length} cards criados</p>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={handleDeleteAllCards}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Deletar Todos
+                </Button>
+              </div>
+            )}
 
             {cards.length === 0 ? (
               <Card className="text-center py-12">
