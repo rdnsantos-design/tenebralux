@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Crown, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout, Swords, Images } from "lucide-react";
+import { Plus, Edit, Trash2, Crown, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout, Swords, Images, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Regent, Army } from "@/types/Army";
 import { UnitCard } from "@/types/UnitCard";
 import { Unit } from "@/types/Unit";
 import { UnitTemplate } from "@/types/UnitTemplate";
+import { CardTemplate } from "@/types/CardTemplate";
 import { RegentEditor } from "@/components/RegentEditor";
 import { RegentList } from "@/components/RegentList";
 import { ArmyEditor } from "@/components/ArmyEditor";
@@ -23,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { ImageUploader } from "@/components/ImageUploader";
 import { ImageBank } from "@/components/ImageBank";
+import { PrintCardGenerator } from "@/components/PrintCardGenerator";
 
 const ArmyManagement = () => {
   const navigate = useNavigate();
@@ -41,6 +43,8 @@ const ArmyManagement = () => {
   const [showExcelImport, setShowExcelImport] = useState(false);
   const [showLocationImport, setShowLocationImport] = useState(false);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
+  const [showPrintGenerator, setShowPrintGenerator] = useState(false);
+  const [cardTemplates, setCardTemplates] = useState<CardTemplate[]>([]);
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [imageRefreshTrigger, setImageRefreshTrigger] = useState(0);
 
@@ -80,6 +84,16 @@ const ArmyManagement = () => {
         setLegacyCards(JSON.parse(savedCards));
       } catch (error) {
         console.error('Erro ao carregar cards:', error);
+      }
+    }
+
+    // Carregar templates de card
+    const savedTemplates = localStorage.getItem('cardTemplates');
+    if (savedTemplates) {
+      try {
+        setCardTemplates(JSON.parse(savedTemplates));
+      } catch (error) {
+        console.error('Erro ao carregar templates:', error);
       }
     }
 
@@ -245,6 +259,16 @@ const ArmyManagement = () => {
     );
   }
 
+  if (showPrintGenerator) {
+    return (
+      <PrintCardGenerator
+        units={units}
+        templates={cardTemplates}
+        onClose={() => setShowPrintGenerator(false)}
+      />
+    );
+  }
+
   if (showRegentEditor) {
     return (
       <RegentEditor
@@ -336,7 +360,7 @@ const ArmyManagement = () => {
         </div>
 
         <Tabs defaultValue="regents" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="regents" className="flex items-center gap-2">
               <Crown className="w-4 h-4" />
               Regentes
@@ -352,6 +376,10 @@ const ArmyManagement = () => {
             <TabsTrigger value="images" className="flex items-center gap-2">
               <Images className="w-4 h-4" />
               Imagens
+            </TabsTrigger>
+            <TabsTrigger value="print" className="flex items-center gap-2">
+              <Printer className="w-4 h-4" />
+              Impressão
             </TabsTrigger>
             <TabsTrigger value="imports" className="flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4" />
@@ -510,6 +538,74 @@ const ArmyManagement = () => {
             
             <ImageUploader onUploadSuccess={() => setImageRefreshTrigger(prev => prev + 1)} />
             <ImageBank refreshTrigger={imageRefreshTrigger} />
+          </TabsContent>
+
+          <TabsContent value="print" className="mt-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-bold">Gerador de Cards para Impressão</h2>
+                <p className="text-muted-foreground">
+                  Selecione unidades e imagens de fundo para gerar cards prontos para impressão
+                </p>
+              </div>
+              <Button onClick={() => setShowPrintGenerator(true)} size="lg">
+                <Printer className="w-5 h-5 mr-2" />
+                Abrir Gerador
+              </Button>
+            </div>
+
+            {units.length === 0 ? (
+              <Card className="text-center py-12">
+                <CardContent className="pt-6">
+                  <Swords className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-2xl font-semibold mb-4">Nenhuma unidade criada</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Crie unidades na aba "Unidades" para poder gerar cards para impressão
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Swords className="w-5 h-5" />
+                      Unidades Disponíveis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{units.length}</p>
+                    <p className="text-muted-foreground text-sm">unidades para gerar cards</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Images className="w-5 h-5" />
+                      Imagens de Fundo
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold" id="image-count">-</p>
+                    <p className="text-muted-foreground text-sm">imagens no banco</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Layout className="w-5 h-5" />
+                      Templates
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{cardTemplates.length}</p>
+                    <p className="text-muted-foreground text-sm">templates disponíveis</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="imports" className="space-y-6">
