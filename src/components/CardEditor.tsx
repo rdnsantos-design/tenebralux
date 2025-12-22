@@ -90,6 +90,17 @@ export const CardEditor: React.FC<CardEditorProps> = ({
         
         imports.forEach(importData => {
           importData.units.forEach((unit, index) => {
+            // Mapear experiência do Excel para ExperienceLevel
+            const experienceMap: { [key: string]: ExperienceLevel } = {
+              'Amador': 'Amador',
+              'Recruta': 'Recruta',
+              'Profissional': 'Profissional',
+              'Veterano': 'Veterano',
+              'Elite': 'Elite',
+              'Lendário': 'Lendário'
+            };
+            const mappedExperience = experienceMap[unit.experience] || 'Profissional';
+            
             const unitCard: UnitCard = {
               id: `${importData.id}-${index}`,
               name: unit.name,
@@ -98,10 +109,10 @@ export const CardEditor: React.FC<CardEditorProps> = ({
               ranged: unit.ranged,
               movement: unit.movement,
               morale: unit.morale,
-              experience: 'Profissional',
-              totalForce: unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale,
-              maintenanceCost: Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
-              specialAbilities: [],
+              experience: mappedExperience,
+              totalForce: unit.power || (unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale),
+              maintenanceCost: unit.maintenance || Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
+              specialAbilities: unit.ability ? [{ id: `ability-${index}`, name: unit.ability, level: 1 as const, cost: 0, description: '' }] : [],
               backgroundImage: ''
             };
             

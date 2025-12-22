@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, FileSpreadsheet, Trash2, Eye, Calendar, Users, Upload, X } from 'lucide-react';
-import { ExcelImport } from '@/types/ExcelImport';
+import { ExcelImport, ImportedUnit } from '@/types/ExcelImport';
 import { UnitCard, ExperienceLevel } from '@/types/UnitCard';
 import * as XLSX from 'xlsx';
 
@@ -57,8 +57,9 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
       
       setPreviewData(jsonData);
       
-      // Criar unidades a partir dos dados
-      const units = jsonData.map((row: any, index: number) => {
+      // Criar unidades a partir dos dados com todos os campos
+      const units: ImportedUnit[] = jsonData.map((row: any, index: number) => {
+        // Nome
         const nameVariations = ['Nome da unidade', 'Nome', 'Name', 'nome', 'NOME', 'name', 'NAME'];
         let name = '';
         for (const variation of nameVariations) {
@@ -69,13 +70,33 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
         }
         if (!name) name = `Unidade ${index + 1}`;
         
-        const attack = parseInt(row['Ataque'] || row['Attack'] || row['ataque'] || row['ATAQUE']) || 1;
-        const defense = parseInt(row['Defesa'] || row['Defense'] || row['defesa'] || row['DEFESA']) || 1;
-        const ranged = parseInt(row['Tiro'] || row['Ranged'] || row['tiro'] || row['TIRO'] || row['Alcance']) || 1;
+        // Atributos numéricos
         const movement = parseInt(row['Movimento'] || row['Movement'] || row['movimento'] || row['MOVIMENTO']) || 1;
+        const defense = parseInt(row['Defesa'] || row['Defense'] || row['defesa'] || row['DEFESA']) || 1;
         const morale = parseInt(row['Moral'] || row['Morale'] || row['moral'] || row['MORAL']) || 1;
+        const attack = parseInt(row['Ataque'] || row['Attack'] || row['ataque'] || row['ATAQUE']) || 1;
+        const charge = parseInt(row['Carga'] || row['Charge'] || row['carga'] || row['CARGA']) || 0;
+        const ranged = parseInt(row['Tiro'] || row['Ranged'] || row['tiro'] || row['TIRO'] || row['Alcance']) || 0;
+        const power = parseInt(row['Poder'] || row['Power'] || row['poder'] || row['PODER']) || 0;
+        const maintenance = parseInt(row['Manutenção'] || row['Manutencao'] || row['Maintenance'] || row['manutenção'] || row['MANUTENÇÃO']) || 0;
         
-        return { name, attack, defense, ranged, movement, morale };
+        // Campos de texto
+        const ability = (row['Habilidade'] || row['Ability'] || row['habilidade'] || row['HABILIDADE'] || '').toString().trim();
+        const experience = (row['Experiência'] || row['Experiencia'] || row['Experience'] || row['experiência'] || row['EXPERIÊNCIA'] || 'Profissional').toString().trim();
+        
+        return { 
+          name, 
+          movement,
+          defense, 
+          morale,
+          attack, 
+          charge,
+          ranged, 
+          ability,
+          experience,
+          power,
+          maintenance
+        };
       });
 
       handleNewImport(units, file.name);
@@ -87,7 +108,7 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
     }
   };
 
-  const handleNewImport = (units: Array<{name: string, attack: number, defense: number, ranged: number, movement: number, morale: number}>, fileName?: string) => {
+  const handleNewImport = (units: ImportedUnit[], fileName?: string) => {
     const newImport: ExcelImport = {
       id: `import-${Date.now()}`,
       fileName: fileName || `Importação ${imports.length + 1}`,
@@ -106,20 +127,35 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
   };
 
   const handleCreateCardsFromImport = (importData: ExcelImport) => {
-    const units: UnitCard[] = importData.units.map((unit, index) => ({
-      id: `imported-${importData.id}-${index}`,
-      name: unit.name,
-      attack: unit.attack,
-      defense: unit.defense,
-      ranged: unit.ranged,
-      movement: unit.movement,
-      morale: unit.morale,
-      experience: 'Profissional' as const,
-      totalForce: unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale,
-      maintenanceCost: Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
-      specialAbilities: [],
-      backgroundImage: ''
-    }));
+    const units: UnitCard[] = importData.units.map((unit, index) => {
+      // Mapear experiência do Excel para ExperienceLevel
+      const experienceMap: { [key: string]: ExperienceLevel } = {
+        'Amador': 'Amador',
+        'Recruta': 'Recruta',
+        'Profissional': 'Profissional',
+        'Veterano': 'Veterano',
+        'Elite': 'Elite',
+        'Lendário': 'Lendário'
+      };
+      const mappedExperience = experienceMap[unit.experience] || 'Profissional';
+      
+      return {
+        id: `imported-${importData.id}-${index}`,
+        name: unit.name,
+        attack: unit.attack,
+        defense: unit.defense,
+        ranged: unit.ranged,
+        movement: unit.movement,
+        morale: unit.morale,
+        experience: mappedExperience,
+        totalForce: unit.power || (unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale),
+        maintenanceCost: unit.maintenance || Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
+        specialAbilities: unit.ability ? [{ id: `ability-${index}`, name: unit.ability, level: 1 as const, cost: 0, description: '' }] : [],
+        backgroundImage: ''
+      };
+    });
+
+    onCreateCards(units);
 
     onCreateCards(units);
   };
@@ -186,15 +222,20 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
                 </Button>
                 
                 <div className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Formato esperado da planilha:</h4>
-                  <ul className="space-y-1">
-                    <li>• <strong>Nome:</strong> Nome da unidade</li>
-                    <li>• <strong>Ataque:</strong> Valor de ataque (1-6)</li>
-                    <li>• <strong>Defesa:</strong> Valor de defesa (1-6)</li>
-                    <li>• <strong>Tiro:</strong> Valor de tiro/alcance (1-6)</li>
-                    <li>• <strong>Movimento:</strong> Valor de movimento (1-6)</li>
-                    <li>• <strong>Moral:</strong> Valor de moral (1-6)</li>
-                  </ul>
+                  <h4 className="font-medium mb-2">Formato esperado da planilha (cabeçalho na linha 1):</h4>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <span>• <strong>Nome:</strong> Nome da unidade</span>
+                    <span>• <strong>Movimento:</strong> Valor de movimento</span>
+                    <span>• <strong>Defesa:</strong> Valor de defesa</span>
+                    <span>• <strong>Moral:</strong> Valor de moral</span>
+                    <span>• <strong>Ataque:</strong> Valor de ataque</span>
+                    <span>• <strong>Carga:</strong> Valor de carga</span>
+                    <span>• <strong>Tiro:</strong> Valor de tiro</span>
+                    <span>• <strong>Habilidade:</strong> Texto da habilidade</span>
+                    <span>• <strong>Experiência:</strong> Nível de experiência</span>
+                    <span>• <strong>Poder:</strong> Força total</span>
+                    <span>• <strong>Manutenção:</strong> Custo de manutenção</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -233,24 +274,34 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
               <div className="max-h-96 overflow-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b">
+                    <tr className="border-b bg-muted/50">
                       <th className="text-left p-2">Nome</th>
-                      <th className="text-center p-2">Ataque</th>
-                      <th className="text-center p-2">Defesa</th>
-                      <th className="text-center p-2">Tiro</th>
-                      <th className="text-center p-2">Movimento</th>
+                      <th className="text-center p-2">Mov</th>
+                      <th className="text-center p-2">Def</th>
                       <th className="text-center p-2">Moral</th>
+                      <th className="text-center p-2">Atq</th>
+                      <th className="text-center p-2">Carga</th>
+                      <th className="text-center p-2">Tiro</th>
+                      <th className="text-left p-2">Habilidade</th>
+                      <th className="text-center p-2">Exp</th>
+                      <th className="text-center p-2">Poder</th>
+                      <th className="text-center p-2">Manut</th>
                     </tr>
                   </thead>
                   <tbody>
                     {previewImport.units.map((unit, index) => (
-                      <tr key={index} className="border-b">
+                      <tr key={index} className="border-b hover:bg-muted/30">
                         <td className="p-2 font-medium">{unit.name}</td>
-                        <td className="text-center p-2">{unit.attack}</td>
-                        <td className="text-center p-2">{unit.defense}</td>
-                        <td className="text-center p-2">{unit.ranged}</td>
                         <td className="text-center p-2">{unit.movement}</td>
+                        <td className="text-center p-2">{unit.defense}</td>
                         <td className="text-center p-2">{unit.morale}</td>
+                        <td className="text-center p-2">{unit.attack}</td>
+                        <td className="text-center p-2">{unit.charge}</td>
+                        <td className="text-center p-2">{unit.ranged}</td>
+                        <td className="text-left p-2 text-xs">{unit.ability || '-'}</td>
+                        <td className="text-center p-2 text-xs">{unit.experience}</td>
+                        <td className="text-center p-2">{unit.power}</td>
+                        <td className="text-center p-2">{unit.maintenance}</td>
                       </tr>
                     ))}
                   </tbody>
