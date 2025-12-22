@@ -116,9 +116,9 @@ export function UnitEditor({ unit, regentId, templates, legacyCards, onSave, onC
                 </SelectTrigger>
                 <SelectContent>
                   {allTemplates.length === 0 ? (
-                    <SelectItem value="" disabled>
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
                       Nenhum template disponível
-                    </SelectItem>
+                    </div>
                   ) : (
                     allTemplates.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
