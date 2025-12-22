@@ -2,27 +2,40 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Crown, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout } from "lucide-react";
+import { Plus, Edit, Trash2, Crown, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout, Swords } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Regent, Army } from "@/types/Army";
 import { UnitCard } from "@/types/UnitCard";
+import { Unit } from "@/types/Unit";
+import { UnitTemplate } from "@/types/UnitTemplate";
 import { RegentEditor } from "@/components/RegentEditor";
 import { RegentList } from "@/components/RegentList";
 import { ArmyEditor } from "@/components/ArmyEditor";
 import { ArmyList } from "@/components/ArmyList";
+import { UnitEditor } from "@/components/UnitEditor";
+import { UnitList } from "@/components/UnitList";
 import { ExcelImportManager } from "@/components/ExcelImportManager";
 import { LocationImportManager } from "@/components/LocationImportManager";
 import { Country } from "@/types/Location";
 import { TemplateCreator } from "@/components/TemplateCreator";
+import { useFieldCommanders } from "@/hooks/useFieldCommanders";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const ArmyManagement = () => {
   const navigate = useNavigate();
+  const { commanders } = useFieldCommanders();
   const [regents, setRegents] = useState<Regent[]>([]);
   const [armies, setArmies] = useState<Army[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [legacyCards, setLegacyCards] = useState<UnitCard[]>([]);
   const [editingRegent, setEditingRegent] = useState<Regent | null>(null);
   const [editingArmy, setEditingArmy] = useState<Army | null>(null);
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [showRegentEditor, setShowRegentEditor] = useState(false);
   const [showArmyEditor, setShowArmyEditor] = useState(false);
+  const [showUnitEditor, setShowUnitEditor] = useState(false);
+  const [selectedRegentIdForUnits, setSelectedRegentIdForUnits] = useState<string>('');
   const [showExcelImport, setShowExcelImport] = useState(false);
   const [showLocationImport, setShowLocationImport] = useState(false);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
@@ -33,8 +46,7 @@ const ArmyManagement = () => {
     const savedRegents = localStorage.getItem('armyRegents');
     if (savedRegents) {
       try {
-        const loadedRegents = JSON.parse(savedRegents);
-        setRegents(loadedRegents);
+        setRegents(JSON.parse(savedRegents));
       } catch (error) {
         console.error('Erro ao carregar regentes:', error);
       }
@@ -43,10 +55,28 @@ const ArmyManagement = () => {
     const savedArmies = localStorage.getItem('armyArmies');
     if (savedArmies) {
       try {
-        const loadedArmies = JSON.parse(savedArmies);
-        setArmies(loadedArmies);
+        setArmies(JSON.parse(savedArmies));
       } catch (error) {
         console.error('Erro ao carregar exércitos:', error);
+      }
+    }
+
+    const savedUnits = localStorage.getItem('armyUnits');
+    if (savedUnits) {
+      try {
+        setUnits(JSON.parse(savedUnits));
+      } catch (error) {
+        console.error('Erro ao carregar unidades:', error);
+      }
+    }
+
+    // Carregar cards antigos para compatibilidade
+    const savedCards = localStorage.getItem('unitCards');
+    if (savedCards) {
+      try {
+        setLegacyCards(JSON.parse(savedCards));
+      } catch (error) {
+        console.error('Erro ao carregar cards:', error);
       }
     }
 
@@ -64,6 +94,11 @@ const ArmyManagement = () => {
     localStorage.setItem('armyArmies', JSON.stringify(armies));
   }, [armies, initialLoaded]);
 
+  useEffect(() => {
+    if (!initialLoaded) return;
+    localStorage.setItem('armyUnits', JSON.stringify(units));
+  }, [units, initialLoaded]);
+
   const handleSaveRegent = (regent: Regent) => {
     if (editingRegent) {
       setRegents(regents.map(r => r.id === regent.id ? regent : r));
@@ -80,10 +115,55 @@ const ArmyManagement = () => {
   };
 
   const handleDeleteRegent = (regentId: string) => {
-    // Também remover exércitos deste regente
+    // Também remover exércitos e unidades deste regente
     setArmies(armies.filter(a => a.regentId !== regentId));
+    setUnits(units.filter(u => u.regentId !== regentId));
     setRegents(regents.filter(r => r.id !== regentId));
   };
+
+  // Handlers para unidades
+  const handleSaveUnit = (unitData: Omit<Unit, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const now = new Date().toISOString();
+    if (editingUnit) {
+      setUnits(units.map(u => u.id === editingUnit.id 
+        ? { ...u, ...unitData, updatedAt: now } 
+        : u
+      ));
+    } else {
+      const newUnit: Unit = {
+        ...unitData,
+        id: `unit_${Date.now()}`,
+        createdAt: now,
+        updatedAt: now,
+      };
+      setUnits([...units, newUnit]);
+    }
+    setEditingUnit(null);
+    setShowUnitEditor(false);
+  };
+
+  const handleEditUnit = (unit: Unit) => {
+    setEditingUnit(unit);
+    setSelectedRegentIdForUnits(unit.regentId);
+    setShowUnitEditor(true);
+  };
+
+  const handleDeleteUnit = (unitId: string) => {
+    setUnits(units.filter(u => u.id !== unitId));
+  };
+
+  const handleNewUnit = () => {
+    if (!selectedRegentIdForUnits) {
+      alert('Selecione um regente primeiro');
+      return;
+    }
+    setEditingUnit(null);
+    setShowUnitEditor(true);
+  };
+
+  // Filtrar unidades pelo regente selecionado
+  const regentUnits = units.filter(u => u.regentId === selectedRegentIdForUnits);
+  const regentCommanders = commanders.filter(c => c.regent_id === selectedRegentIdForUnits);
 
   const handleNewRegent = () => {
     setEditingRegent(null);
@@ -189,6 +269,26 @@ const ArmyManagement = () => {
     );
   }
 
+  if (showUnitEditor) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-4xl mx-auto">
+          <UnitEditor
+            unit={editingUnit}
+            regentId={selectedRegentIdForUnits}
+            templates={[]}
+            legacyCards={legacyCards}
+            onSave={handleSaveUnit}
+            onCancel={() => {
+              setEditingUnit(null);
+              setShowUnitEditor(false);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
@@ -233,10 +333,14 @@ const ArmyManagement = () => {
         </div>
 
         <Tabs defaultValue="regents" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="regents" className="flex items-center gap-2">
               <Crown className="w-4 h-4" />
               Regentes
+            </TabsTrigger>
+            <TabsTrigger value="units" className="flex items-center gap-2">
+              <Swords className="w-4 h-4" />
+              Unidades
             </TabsTrigger>
             <TabsTrigger value="armies" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
@@ -270,6 +374,72 @@ const ArmyManagement = () => {
                 onDelete={handleDeleteRegent}
               />
             )}
+          </TabsContent>
+
+          <TabsContent value="units" className="mt-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-2xl font-bold">Pool de Unidades</h2>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm">Regente:</Label>
+                    <Select value={selectedRegentIdForUnits} onValueChange={setSelectedRegentIdForUnits}>
+                      <SelectTrigger className="w-64">
+                        <SelectValue placeholder="Selecione um regente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {regents.map((regent) => (
+                          <SelectItem key={regent.id} value={regent.id}>
+                            {regent.name} - {regent.domain}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleNewUnit}
+                  disabled={!selectedRegentIdForUnits}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nova Unidade
+                </Button>
+              </div>
+
+              {!selectedRegentIdForUnits ? (
+                <Card className="text-center py-12">
+                  <CardContent className="pt-6">
+                    <Crown className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-2xl font-semibold mb-4">Selecione um regente</h3>
+                    <p className="text-muted-foreground">
+                      Escolha um regente acima para ver e gerenciar suas unidades
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : regentUnits.length === 0 ? (
+                <Card className="text-center py-12">
+                  <CardContent className="pt-6">
+                    <Swords className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-2xl font-semibold mb-4">Nenhuma unidade criada</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Crie unidades a partir dos templates importados do Excel
+                    </p>
+                    <Button onClick={handleNewUnit}>
+                      <Plus className="w-5 h-5 mr-2" />
+                      Criar Primeira Unidade
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <UnitList
+                  units={regentUnits}
+                  commanders={regentCommanders}
+                  onEdit={handleEditUnit}
+                  onDelete={handleDeleteUnit}
+                />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="armies" className="mt-6">
