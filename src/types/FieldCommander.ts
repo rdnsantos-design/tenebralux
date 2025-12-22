@@ -31,6 +31,7 @@ export interface FieldCommander {
   especializacoes_adicionais: CommanderSpecialization[];
   unidade_de_origem?: string;
   notas?: string;
+  regent_id?: string; // ID do regente associado
   created_at?: string;
   updated_at?: string;
 }

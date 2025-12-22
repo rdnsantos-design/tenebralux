@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { CommanderList } from '@/components/CommanderList';
 import { CommanderEditor } from '@/components/CommanderEditor';
 import { CommanderEvolution } from '@/components/CommanderEvolution';
 import { FieldCommander, EVOLUTION_COSTS } from '@/types/FieldCommander';
+import { Regent } from '@/types/Army';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'evolve';
 
@@ -17,6 +18,19 @@ export default function FieldCommanders() {
   const { commanders, loading, createCommander, updateCommander, deleteCommander, evolveCommander } = useFieldCommanders();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedCommander, setSelectedCommander] = useState<FieldCommander | null>(null);
+  const [regents, setRegents] = useState<Regent[]>([]);
+
+  // Carregar regentes do localStorage
+  useEffect(() => {
+    const savedRegents = localStorage.getItem('armyRegents');
+    if (savedRegents) {
+      try {
+        setRegents(JSON.parse(savedRegents));
+      } catch (error) {
+        console.error('Erro ao carregar regentes:', error);
+      }
+    }
+  }, []);
 
   const handleNewCommander = () => {
     setSelectedCommander(null);
@@ -82,6 +96,7 @@ export default function FieldCommanders() {
         {viewMode === 'create' || viewMode === 'edit' ? (
           <CommanderEditor
             commander={selectedCommander}
+            regents={regents}
             onSave={handleSaveCommander}
             onCancel={handleCancel}
           />

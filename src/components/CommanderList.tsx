@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, TrendingUp, Search, Filter, Sword, Brain, Shield, Star } from 'lucide-react';
+import { Edit, Trash2, TrendingUp, Search, Filter, Sword, Brain, Shield, Star, Crown } from 'lucide-react';
 import { FieldCommander, SPECIALIZATIONS, CULTURES, calculateDerivedFields } from '@/types/FieldCommander';
 import { TacticalCulture } from '@/types/TacticalCard';
+import { Regent } from '@/types/Army';
 
 interface CommanderListProps {
   commanders: FieldCommander[];
@@ -21,6 +22,25 @@ export function CommanderList({ commanders, onEdit, onEvolve, onDelete }: Comman
   const [filterCultura, setFilterCultura] = useState<TacticalCulture | 'all'>('all');
   const [filterSpec, setFilterSpec] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'nome' | 'comando' | 'estrategia' | 'prestigio'>('nome');
+  const [regents, setRegents] = useState<Regent[]>([]);
+
+  // Carregar regentes do localStorage
+  useEffect(() => {
+    const savedRegents = localStorage.getItem('armyRegents');
+    if (savedRegents) {
+      try {
+        setRegents(JSON.parse(savedRegents));
+      } catch (error) {
+        console.error('Erro ao carregar regentes:', error);
+      }
+    }
+  }, []);
+
+  const getRegentName = (regentId?: string) => {
+    if (!regentId) return null;
+    const regent = regents.find(r => r.id === regentId);
+    return regent?.name || null;
+  };
 
   const filteredCommanders = commanders
     .filter((c) => {
@@ -111,6 +131,7 @@ export function CommanderList({ commanders, onEdit, onEvolve, onDelete }: Comman
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead>Regente</TableHead>
                 <TableHead>Cultura</TableHead>
                 <TableHead className="text-center">
                   <Sword className="w-4 h-4 inline mr-1" />
@@ -135,16 +156,27 @@ export function CommanderList({ commanders, onEdit, onEvolve, onDelete }: Comman
             <TableBody>
               {filteredCommanders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     Nenhum comandante encontrado
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredCommanders.map((commander) => {
                   const allSpecs = [commander.especializacao_inicial, ...commander.especializacoes_adicionais];
+                  const regentName = getRegentName(commander.regent_id);
                   return (
                     <TableRow key={commander.id}>
                       <TableCell className="font-medium">{commander.nome_comandante}</TableCell>
+                      <TableCell>
+                        {regentName ? (
+                          <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                            <Crown className="w-3 h-3" />
+                            {regentName}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">{commander.cultura_origem}</Badge>
                       </TableCell>
