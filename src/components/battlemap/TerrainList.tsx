@@ -195,6 +195,7 @@ export function TerrainList({ onSelectForPrint, selectedTerrains = [] }: Terrain
                           variant={isSelected(terrain) ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => onSelectForPrint(terrain)}
+                          className={isSelected(terrain) ? '' : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'}
                         >
                           {isSelected(terrain) ? '✓' : '+'}
                         </Button>
