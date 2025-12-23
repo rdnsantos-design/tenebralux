@@ -236,7 +236,7 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                         <SelectItem value="__none__">Sem general</SelectItem>
                         {regentCommanders.map((commander) => (
                           <SelectItem key={commander.id} value={commander.id}>
-                            {commander.nome_comandante} - {commander.especializacao_inicial} (Cmd: {commander.comando})
+                            {commander.nome_comandante} - {commander.especializacao_inicial} (Estratégia: {commander.estrategia})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -416,7 +416,7 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                                 </SelectItem>
                                 {regentCommanders.map(commander => (
                                   <SelectItem key={commander.id} value={commander.id} className="text-xs hover:bg-accent cursor-pointer">
-                                    {commander.nome_comandante} ({commander.especializacao_inicial})
+                                    {commander.nome_comandante} ({commander.especializacao_inicial}) - Cmd: {commander.comando}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
