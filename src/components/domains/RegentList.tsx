@@ -7,9 +7,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useRegents, useCreateRegent, useUpdateRegent, useDeleteRegent } from '@/hooks/useRegents';
-import { Regent } from '@/types/Domain';
-import { Crown, Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
+import { Regent, HOLDING_TYPES } from '@/types/Domain';
+import { Crown, Plus, Edit, Trash2, Search, Loader2, Eye, Building, Church, Sparkles, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
+
+const holdingIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  ordem: Shield,
+  guilda: Building,
+  templo: Church,
+  fonte_magica: Sparkles,
+};
 
 export function RegentList() {
   const { data: regents, isLoading } = useRegents();
@@ -26,6 +35,36 @@ export function RegentList() {
     full_name: '',
     notes: '',
   });
+  
+  const [viewingRegent, setViewingRegent] = useState<Regent | null>(null);
+  const [regentHoldings, setRegentHoldings] = useState<any[]>([]);
+  const [isLoadingHoldings, setIsLoadingHoldings] = useState(false);
+
+  const handleViewHoldings = async (regent: Regent) => {
+    setViewingRegent(regent);
+    setIsLoadingHoldings(true);
+    
+    const { data, error } = await supabase
+      .from('holdings')
+      .select(`
+        *,
+        province:provinces(name, realm:realms(name))
+      `)
+      .eq('regent_id', regent.id);
+    
+    if (error) {
+      toast.error('Erro ao carregar holdings');
+      setIsLoadingHoldings(false);
+      return;
+    }
+    
+    setRegentHoldings(data || []);
+    setIsLoadingHoldings(false);
+  };
+
+  const getHoldingLabel = (type: string) => {
+    return HOLDING_TYPES.find(h => h.value === type)?.label || type;
+  };
 
   const filteredRegents = regents?.filter(r => 
     r.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -192,6 +231,14 @@ export function RegentList() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => handleViewHoldings(regent)}
+                        title="Ver Holdings"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleOpenDialog(regent)}
                       >
                         <Edit className="w-4 h-4" />
@@ -211,6 +258,66 @@ export function RegentList() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Dialog para visualizar holdings do regente */}
+        <Dialog open={!!viewingRegent} onOpenChange={(open) => !open && setViewingRegent(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Crown className="w-5 h-5" />
+                Holdings de {viewingRegent?.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              {isLoadingHoldings ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : regentHoldings.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Este regente não possui holdings.
+                </p>
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Nível</TableHead>
+                        <TableHead>Província</TableHead>
+                        <TableHead>Reino</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {regentHoldings.map(holding => {
+                        const HoldingIcon = holdingIcons[holding.holding_type] || Building;
+                        return (
+                          <TableRow key={holding.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <HoldingIcon className="w-4 h-4" />
+                                {getHoldingLabel(holding.holding_type)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{holding.level}</Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {holding.province?.name || '-'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {holding.province?.realm?.name || '-'}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
