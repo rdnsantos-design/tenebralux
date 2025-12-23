@@ -7,9 +7,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Function to remove diacritics/accents from strings
-function removeDiacritics(str: string): string {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+// Function to remove diacritics/accents and special characters from strings
+function sanitizeFileName(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+    .replace(/ç/g, "c")              // Replace cedilla
+    .replace(/Ç/g, "C")
+    .replace(/ñ/g, "n")
+    .replace(/Ñ/g, "N")
+    .replace(/[^a-zA-Z0-9-]/g, "");  // Remove any remaining special chars
 }
 
 serve(async (req) => {
@@ -116,8 +123,8 @@ serve(async (req) => {
     const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
     const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
     
-    // Sanitize filename by removing diacritics
-    const sanitizedName = removeDiacritics(terrainName.toLowerCase().replace(/\s+/g, '-'));
+    // Sanitize filename by removing diacritics and special characters
+    const sanitizedName = sanitizeFileName(terrainName.toLowerCase().replace(/\s+/g, '-'));
     const fileName = `terrain-${sanitizedName}-${Date.now()}.png`;
     const filePath = `terrains/${fileName}`;
 
