@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { ImageUploader } from "@/components/ImageUploader";
 import { ImageBank } from "@/components/ImageBank";
 import { PrintCardGenerator } from "@/components/PrintCardGenerator";
+import { ArmyExporter } from "@/components/ArmyExporter";
 
 const ArmyManagement = () => {
   const navigate = useNavigate();
@@ -480,14 +481,22 @@ const ArmyManagement = () => {
           <TabsContent value="armies" className="mt-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Exércitos</h2>
-              <Button 
-                onClick={handleNewArmy}
-                disabled={regents.length === 0}
-                className="flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Novo Exército
-              </Button>
+              <div className="flex items-center gap-2">
+                <ArmyExporter 
+                  armies={armies}
+                  regents={regents}
+                  units={units}
+                  commanders={commanders}
+                />
+                <Button 
+                  onClick={handleNewArmy}
+                  disabled={regents.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Novo Exército
+                </Button>
+              </div>
             </div>
 
             {regents.length === 0 ? (
