@@ -55,16 +55,24 @@ export type Database = {
       }
       field_commanders: {
         Row: {
+          ac: number | null
+          ataque: string | null
+          classe: string | null
           coat_of_arms_url: string | null
           comando: number
           commander_photo_url: string | null
           created_at: string
           cultura_origem: string
+          dominio: string | null
           especializacao_inicial: string
           especializacoes_adicionais: string[]
           estrategia: number
           guarda: number
+          habilidades: string | null
+          hit_points: number | null
           id: string
+          idade: number | null
+          nivel: number | null
           nome_comandante: string
           notas: string | null
           pontos_prestigio: number
@@ -73,16 +81,24 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ac?: number | null
+          ataque?: string | null
+          classe?: string | null
           coat_of_arms_url?: string | null
           comando?: number
           commander_photo_url?: string | null
           created_at?: string
           cultura_origem: string
+          dominio?: string | null
           especializacao_inicial: string
           especializacoes_adicionais?: string[]
           estrategia?: number
           guarda?: number
+          habilidades?: string | null
+          hit_points?: number | null
           id?: string
+          idade?: number | null
+          nivel?: number | null
           nome_comandante: string
           notas?: string | null
           pontos_prestigio?: number
@@ -91,16 +107,24 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ac?: number | null
+          ataque?: string | null
+          classe?: string | null
           coat_of_arms_url?: string | null
           comando?: number
           commander_photo_url?: string | null
           created_at?: string
           cultura_origem?: string
+          dominio?: string | null
           especializacao_inicial?: string
           especializacoes_adicionais?: string[]
           estrategia?: number
           guarda?: number
+          habilidades?: string | null
+          hit_points?: number | null
           id?: string
+          idade?: number | null
+          nivel?: number | null
           nome_comandante?: string
           notas?: string | null
           pontos_prestigio?: number

@@ -39,7 +39,17 @@ export function CommanderEditor({ commander, regents = [], onSave, onCancel }: C
     notas: '',
     regent_id: '' as string | undefined,
     commander_photo_url: '' as string | undefined,
-    coat_of_arms_url: '' as string | undefined
+    coat_of_arms_url: '' as string | undefined,
+    // D&D Stats
+    classe: '',
+    nivel: 1,
+    ataque: '',
+    ac: 10,
+    hit_points: 10,
+    habilidades: '',
+    // Bio
+    dominio: '',
+    idade: undefined as number | undefined
   });
 
   useEffect(() => {
@@ -57,7 +67,15 @@ export function CommanderEditor({ commander, regents = [], onSave, onCancel }: C
         notas: commander.notas || '',
         regent_id: commander.regent_id || '',
         commander_photo_url: commander.commander_photo_url || '',
-        coat_of_arms_url: commander.coat_of_arms_url || ''
+        coat_of_arms_url: commander.coat_of_arms_url || '',
+        classe: commander.classe || '',
+        nivel: commander.nivel || 1,
+        ataque: commander.ataque || '',
+        ac: commander.ac || 10,
+        hit_points: commander.hit_points || 10,
+        habilidades: commander.habilidades || '',
+        dominio: commander.dominio || '',
+        idade: commander.idade || undefined
       });
     }
   }, [commander]);
@@ -109,7 +127,15 @@ export function CommanderEditor({ commander, regents = [], onSave, onCancel }: C
       notas: formData.notas || undefined,
       regent_id: formData.regent_id || undefined,
       commander_photo_url: formData.commander_photo_url || undefined,
-      coat_of_arms_url: formData.coat_of_arms_url || undefined
+      coat_of_arms_url: formData.coat_of_arms_url || undefined,
+      classe: formData.classe || undefined,
+      nivel: formData.nivel || undefined,
+      ataque: formData.ataque || undefined,
+      ac: formData.ac || undefined,
+      hit_points: formData.hit_points || undefined,
+      habilidades: formData.habilidades || undefined,
+      dominio: formData.dominio || undefined,
+      idade: formData.idade || undefined
     });
   };
 
@@ -382,14 +408,111 @@ export function CommanderEditor({ commander, regents = [], onSave, onCancel }: C
             </div>
           </div>
 
+          {/* D&D Stats */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-4">Ficha D&D</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="classe">Classe</Label>
+                <Input
+                  id="classe"
+                  value={formData.classe}
+                  onChange={(e) => setFormData({ ...formData, classe: e.target.value })}
+                  placeholder="Ex: Fighter"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="nivel">Nível</Label>
+                <Input
+                  id="nivel"
+                  type="number"
+                  min={1}
+                  value={formData.nivel}
+                  onChange={(e) => setFormData({ ...formData, nivel: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ac">AC (Armor Class)</Label>
+                <Input
+                  id="ac"
+                  type="number"
+                  min={0}
+                  value={formData.ac}
+                  onChange={(e) => setFormData({ ...formData, ac: parseInt(e.target.value) || 10 })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ataque">Ataque</Label>
+                <Input
+                  id="ataque"
+                  value={formData.ataque}
+                  onChange={(e) => setFormData({ ...formData, ataque: e.target.value })}
+                  placeholder="Ex: +5"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="hit_points">Hit Points</Label>
+                <Input
+                  id="hit_points"
+                  type="number"
+                  min={1}
+                  value={formData.hit_points}
+                  onChange={(e) => setFormData({ ...formData, hit_points: parseInt(e.target.value) || 10 })}
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="habilidades">Habilidades</Label>
+                <Input
+                  id="habilidades"
+                  value={formData.habilidades}
+                  onChange={(e) => setFormData({ ...formData, habilidades: e.target.value })}
+                  placeholder="Ex: Leadership, Tactics, Battle Magic"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-4">Biografia</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dominio">Domínio</Label>
+                <Input
+                  id="dominio"
+                  value={formData.dominio}
+                  onChange={(e) => setFormData({ ...formData, dominio: e.target.value })}
+                  placeholder="Ex: Avanil"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="idade">Idade</Label>
+                <Input
+                  id="idade"
+                  type="number"
+                  min={1}
+                  value={formData.idade || ''}
+                  onChange={(e) => setFormData({ ...formData, idade: e.target.value ? parseInt(e.target.value) : undefined })}
+                  placeholder="Ex: 35"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Notas */}
           <div className="space-y-2">
-            <Label htmlFor="notas">Notas e Histórico</Label>
+            <Label htmlFor="notas">Notas e Histórico (Bio)</Label>
             <Textarea
               id="notas"
               value={formData.notas}
               onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
-              placeholder="Observações, histórico de batalhas, etc..."
+              placeholder="Observações, histórico de batalhas, biografia..."
               rows={4}
             />
           </div>
