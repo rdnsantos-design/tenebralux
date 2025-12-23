@@ -182,6 +182,30 @@ export type Database = {
           },
         ]
       }
+      province_distances: {
+        Row: {
+          created_at: string
+          distance_km: number
+          from_province_name: string
+          id: string
+          to_province_name: string
+        }
+        Insert: {
+          created_at?: string
+          distance_km: number
+          from_province_name: string
+          id?: string
+          to_province_name: string
+        }
+        Update: {
+          created_at?: string
+          distance_km?: number
+          from_province_name?: string
+          id?: string
+          to_province_name?: string
+        }
+        Relationships: []
+      }
       provinces: {
         Row: {
           arcane_line_level: number
@@ -423,6 +447,36 @@ export type Database = {
           ranged_mod?: number
           special?: string | null
           tag?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      travel_speeds: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          label: string
+          speed_km_per_day: number
+          travel_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          label: string
+          speed_km_per_day: number
+          travel_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          label?: string
+          speed_km_per_day?: number
+          travel_type?: string
           updated_at?: string
         }
         Relationships: []
