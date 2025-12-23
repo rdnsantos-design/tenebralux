@@ -150,14 +150,15 @@ export function HoldingList({ selectedProvinceId }: HoldingListProps) {
               {!selectedProvinceId && (
                 <div className="space-y-2">
                   <Label>Província *</Label>
-                  <Select
-                    value={formData.province_id}
-                    onValueChange={(value) => setFormData({ ...formData, province_id: value })}
+                <Select
+                    value={formData.province_id || 'none'}
+                    onValueChange={(value) => setFormData({ ...formData, province_id: value === 'none' ? '' : value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione uma província" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Selecione uma província</SelectItem>
                       {provinces?.map(p => (
                         <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                       ))}
