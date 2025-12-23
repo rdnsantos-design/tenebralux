@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
-import { Home, FileSpreadsheet, Map, Crown, Building } from 'lucide-react';
+import { Home, FileSpreadsheet, Map, Crown, Building, Upload } from 'lucide-react';
 import { RealmList } from '@/components/domains/RealmList';
 import { ProvinceList } from '@/components/domains/ProvinceList';
 import { RegentList } from '@/components/domains/RegentList';
 import { HoldingList } from '@/components/domains/HoldingList';
 import { DomainImporter } from '@/components/domains/DomainImporter';
+import { HoldingsImporter } from '@/components/domains/HoldingsImporter';
 import { Realm, Province } from '@/types/Domain';
 
 const Domains = () => {
@@ -15,6 +16,7 @@ const Domains = () => {
   const [selectedRealm, setSelectedRealm] = useState<Realm | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
   const [showImporter, setShowImporter] = useState(false);
+  const [showHoldingsImporter, setShowHoldingsImporter] = useState(false);
   const [activeTab, setActiveTab] = useState('provinces');
 
   return (
@@ -42,18 +44,35 @@ const Domains = () => {
               Gerencie reinos, províncias, regentes e holdings
             </p>
           </div>
-          <Button
-            onClick={() => setShowImporter(!showImporter)}
-            variant={showImporter ? 'secondary' : 'outline'}
-            size="lg"
-            className="flex items-center gap-2"
-          >
-            <FileSpreadsheet className="w-5 h-5" />
-            {showImporter ? 'Fechar Importador' : 'Importar Excel'}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowHoldingsImporter(!showHoldingsImporter)}
+              variant={showHoldingsImporter ? 'secondary' : 'outline'}
+              size="lg"
+              className="flex items-center gap-2"
+            >
+              <Upload className="w-5 h-5" />
+              {showHoldingsImporter ? 'Fechar' : 'Importar Holdings'}
+            </Button>
+            <Button
+              onClick={() => setShowImporter(!showImporter)}
+              variant={showImporter ? 'secondary' : 'outline'}
+              size="lg"
+              className="flex items-center gap-2"
+            >
+              <FileSpreadsheet className="w-5 h-5" />
+              {showImporter ? 'Fechar' : 'Importar Domínios'}
+            </Button>
+          </div>
         </div>
 
-        {/* Import Section */}
+        {/* Import Sections */}
+        {showHoldingsImporter && (
+          <div className="mb-6">
+            <HoldingsImporter onClose={() => setShowHoldingsImporter(false)} />
+          </div>
+        )}
+
         {showImporter && (
           <div className="mb-6">
             <DomainImporter onClose={() => setShowImporter(false)} />
