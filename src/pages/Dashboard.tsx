@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Shield, Plus, Settings, Swords, Crown, Map } from "lucide-react";
+import { Users, Shield, Plus, Settings, Swords, Crown, Map, Hexagon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
@@ -16,7 +16,7 @@ const Dashboard = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 max-w-7xl mx-auto">
           {/* Criador de Cards */}
           <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
             <CardHeader className="text-center pb-4">
@@ -173,6 +173,38 @@ const Dashboard = () => {
                 onClick={() => navigate('/domains')}
               >
                 Acessar Domínios
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Mapa de Batalha */}
+          <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-20 h-20 flex items-center justify-center">
+                <Hexagon className="w-10 h-10 text-primary" />
+              </div>
+              <CardTitle className="text-xl">Mapa de Batalha</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-muted-foreground text-sm">
+                Gerencie terrenos e imprima tiles hexagonais
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Hexagon className="w-3 h-3" />
+                  <span>Tiles hexagonais</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Shield className="w-3 h-3" />
+                  <span>Modificadores culturais</span>
+                </div>
+              </div>
+              <Button 
+                size="sm" 
+                className="w-full"
+                onClick={() => navigate('/battle-map')}
+              >
+                Acessar Mapa de Batalha
               </Button>
             </CardContent>
           </Card>

@@ -268,6 +268,66 @@ export type Database = {
         }
         Relationships: []
       }
+      terrain_types: {
+        Row: {
+          created_at: string
+          defense_mod: number
+          id: string
+          image_url: string | null
+          level: number
+          mod_anuire: string | null
+          mod_brecht: string | null
+          mod_khinasi: string | null
+          mod_rjurik: string | null
+          mod_vos: string | null
+          morale_mod: number
+          movement_mod: string
+          name: string
+          ranged_mod: number
+          special: string | null
+          tag: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          defense_mod?: number
+          id?: string
+          image_url?: string | null
+          level?: number
+          mod_anuire?: string | null
+          mod_brecht?: string | null
+          mod_khinasi?: string | null
+          mod_rjurik?: string | null
+          mod_vos?: string | null
+          morale_mod?: number
+          movement_mod?: string
+          name: string
+          ranged_mod?: number
+          special?: string | null
+          tag?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          defense_mod?: number
+          id?: string
+          image_url?: string | null
+          level?: number
+          mod_anuire?: string | null
+          mod_brecht?: string | null
+          mod_khinasi?: string | null
+          mod_rjurik?: string | null
+          mod_vos?: string | null
+          morale_mod?: number
+          movement_mod?: string
+          name?: string
+          ranged_mod?: number
+          special?: string | null
+          tag?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
