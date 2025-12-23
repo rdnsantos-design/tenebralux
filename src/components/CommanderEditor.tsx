@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Save, X } from 'lucide-react';
+import { ArrowLeft, Save, X, Upload, User, Flag } from 'lucide-react';
 import { FieldCommander, SPECIALIZATIONS, CULTURES, CommanderSpecialization } from '@/types/FieldCommander';
 import { TacticalCulture } from '@/types/TacticalCard';
 import { Regent } from '@/types/Army';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface CommanderEditorProps {
   commander?: FieldCommander | null;
@@ -18,6 +20,12 @@ interface CommanderEditorProps {
 }
 
 export function CommanderEditor({ commander, regents = [], onSave, onCancel }: CommanderEditorProps) {
+  const { toast } = useToast();
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const coatInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingCoat, setUploadingCoat] = useState(false);
+  
   const [formData, setFormData] = useState({
     nome_comandante: '',
     cultura_origem: 'Anuire' as TacticalCulture,
@@ -29,7 +37,9 @@ export function CommanderEditor({ commander, regents = [], onSave, onCancel }: C
     especializacoes_adicionais: [] as CommanderSpecialization[],
     unidade_de_origem: '',
     notas: '',
-    regent_id: '' as string | undefined
+    regent_id: '' as string | undefined,
+    commander_photo_url: '' as string | undefined,
+    coat_of_arms_url: '' as string | undefined
   });
 
   useEffect(() => {
@@ -45,10 +55,51 @@ export function CommanderEditor({ commander, regents = [], onSave, onCancel }: C
         especializacoes_adicionais: commander.especializacoes_adicionais || [],
         unidade_de_origem: commander.unidade_de_origem || '',
         notas: commander.notas || '',
-        regent_id: commander.regent_id || ''
+        regent_id: commander.regent_id || '',
+        commander_photo_url: commander.commander_photo_url || '',
+        coat_of_arms_url: commander.coat_of_arms_url || ''
       });
     }
   }, [commander]);
+
+  const handleImageUpload = async (file: File, type: 'photo' | 'coat') => {
+    const setUploading = type === 'photo' ? setUploadingPhoto : setUploadingCoat;
+    const fieldName = type === 'photo' ? 'commander_photo_url' : 'coat_of_arms_url';
+    
+    setUploading(true);
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${type}-${Date.now()}.${fileExt}`;
+      const filePath = `commanders/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('card-backgrounds')
+        .upload(filePath, file, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('card-backgrounds')
+        .getPublicUrl(filePath);
+      
+      setFormData(prev => ({ ...prev, [fieldName]: publicUrl }));
+      
+      toast({
+        title: "Upload concluído",
+        description: `${type === 'photo' ? 'Foto' : 'Brasão'} carregado com sucesso!`
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Erro no upload",
+        description: "Não foi possível carregar a imagem.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +107,9 @@ export function CommanderEditor({ commander, regents = [], onSave, onCancel }: C
       ...formData,
       unidade_de_origem: formData.unidade_de_origem || undefined,
       notas: formData.notas || undefined,
-      regent_id: formData.regent_id || undefined
+      regent_id: formData.regent_id || undefined,
+      commander_photo_url: formData.commander_photo_url || undefined,
+      coat_of_arms_url: formData.coat_of_arms_url || undefined
     });
   };
 
@@ -131,6 +184,118 @@ export function CommanderEditor({ commander, regents = [], onSave, onCancel }: C
                 onChange={(e) => setFormData({ ...formData, unidade_de_origem: e.target.value })}
                 placeholder="Ex: 1ª Guarda Real de Anuire"
               />
+            </div>
+          </div>
+
+          {/* Imagens do Comandante */}
+          <div className="border rounded-lg p-4 bg-muted/30">
+            <h3 className="font-semibold mb-4">Imagens</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Foto do Comandante */}
+              <div className="space-y-2">
+                <Label>Foto do Comandante</Label>
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="w-20 h-24 rounded border border-border bg-muted flex items-center justify-center overflow-hidden"
+                  >
+                    {formData.commander_photo_url ? (
+                      <img 
+                        src={formData.commander_photo_url} 
+                        alt="Foto" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-8 h-8 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file, 'photo');
+                      }}
+                    />
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      disabled={uploadingPhoto}
+                      onClick={() => photoInputRef.current?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploadingPhoto ? 'Enviando...' : 'Upload'}
+                    </Button>
+                    {formData.commander_photo_url && (
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, commander_photo_url: '' })}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Remover
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Brasão do Reino */}
+              <div className="space-y-2">
+                <Label>Brasão do Reino</Label>
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="w-16 h-16 rounded border border-border bg-muted flex items-center justify-center overflow-hidden"
+                  >
+                    {formData.coat_of_arms_url ? (
+                      <img 
+                        src={formData.coat_of_arms_url} 
+                        alt="Brasão" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Flag className="w-6 h-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      ref={coatInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file, 'coat');
+                      }}
+                    />
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      disabled={uploadingCoat}
+                      onClick={() => coatInputRef.current?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploadingCoat ? 'Enviando...' : 'Upload'}
+                    </Button>
+                    {formData.coat_of_arms_url && (
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, coat_of_arms_url: '' })}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Remover
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

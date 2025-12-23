@@ -32,6 +32,8 @@ export interface FieldCommander {
   unidade_de_origem?: string;
   notas?: string;
   regent_id?: string; // ID do regente associado
+  commander_photo_url?: string; // Foto do comandante
+  coat_of_arms_url?: string; // Brasão do reino
   created_at?: string;
   updated_at?: string;
 }

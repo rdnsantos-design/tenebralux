@@ -1,5 +1,5 @@
 import React from 'react';
-import { FieldCommander } from '@/types/FieldCommander';
+import { FieldCommander, SPECIALIZATIONS, CommanderSpecialization } from '@/types/FieldCommander';
 import { 
   Shield, 
   Swords, 
@@ -11,7 +11,9 @@ import {
   Star,
   Brain,
   ShieldCheck,
-  Zap
+  Plus,
+  User,
+  Flag
 } from 'lucide-react';
 
 interface CommanderCardPreviewProps {
@@ -41,13 +43,16 @@ const SPECIALIZATION_ICONS: Record<string, React.ElementType> = {
   'Naval': Anchor
 };
 
-const CULTURE_COLORS: Record<string, { bg: string; accent: string; text: string }> = {
-  'Anuire': { bg: 'from-blue-900 to-blue-950', accent: 'bg-amber-500', text: 'text-amber-400' },
-  'Khinasi': { bg: 'from-amber-900 to-orange-950', accent: 'bg-cyan-400', text: 'text-cyan-300' },
-  'Vos': { bg: 'from-red-900 to-red-950', accent: 'bg-gray-300', text: 'text-gray-200' },
-  'Rjurik': { bg: 'from-emerald-900 to-green-950', accent: 'bg-amber-400', text: 'text-amber-300' },
-  'Brecht': { bg: 'from-slate-800 to-slate-950', accent: 'bg-amber-500', text: 'text-amber-400' }
+const CULTURE_COLORS: Record<string, { bg: string; accent: string; text: string; border: string }> = {
+  'Anuire': { bg: 'from-blue-900 to-blue-950', accent: 'bg-amber-500', text: 'text-amber-400', border: 'border-amber-600' },
+  'Khinasi': { bg: 'from-amber-900 to-orange-950', accent: 'bg-cyan-400', text: 'text-cyan-300', border: 'border-cyan-500' },
+  'Vos': { bg: 'from-red-900 to-red-950', accent: 'bg-gray-300', text: 'text-gray-200', border: 'border-gray-400' },
+  'Rjurik': { bg: 'from-emerald-900 to-green-950', accent: 'bg-amber-400', text: 'text-amber-300', border: 'border-amber-500' },
+  'Brecht': { bg: 'from-slate-800 to-slate-950', accent: 'bg-amber-500', text: 'text-amber-400', border: 'border-amber-600' }
 };
+
+// Total de slots de especialização disponíveis
+const MAX_SPECIALIZATION_SLOTS = 7;
 
 export function CommanderCardPreview({ 
   commander,
@@ -61,13 +66,19 @@ export function CommanderCardPreview({
     ...commander.especializacoes_adicionais
   ];
 
-  // Card horizontal: 320x90 pixels base
-  const cardWidth = 320 * scale;
-  const cardHeight = 90 * scale;
+  // Card horizontal: 400x120 pixels base para acomodar mais elementos
+  const cardWidth = 400 * scale;
+  const cardHeight = 140 * scale;
+
+  // Slots de especialização (preenchidos + vazios)
+  const specSlots = [...allSpecs];
+  while (specSlots.length < MAX_SPECIALIZATION_SLOTS) {
+    specSlots.push(null as unknown as CommanderSpecialization);
+  }
 
   return (
     <div 
-      className={`relative bg-gradient-to-r ${colors.bg} rounded-lg overflow-hidden border-2 border-amber-600/50 shadow-xl`}
+      className={`relative bg-gradient-to-r ${colors.bg} rounded-lg overflow-hidden border-2 ${colors.border}/50 shadow-xl`}
       style={{ 
         width: cardWidth, 
         height: cardHeight,
@@ -88,116 +99,179 @@ export function CommanderCardPreview({
       </div>
 
       {/* Main content - horizontal layout */}
-      <div className="relative h-full flex items-center px-3 gap-3">
+      <div className="relative h-full flex items-stretch p-2 gap-2">
         
-        {/* Left: Power badge */}
-        <div className="flex flex-col items-center justify-center">
+        {/* Left: Photo + Coat of Arms */}
+        <div className="flex flex-col items-center gap-1" style={{ width: 60 * scale }}>
+          {/* Commander Photo */}
           <div 
-            className={`${colors.accent} rounded-full flex items-center justify-center font-black text-black shadow-lg`}
-            style={{ 
-              width: 52 * scale, 
-              height: 52 * scale,
-              fontSize: `${20 * scale}px`
-            }}
+            className="rounded border border-amber-500/50 bg-black/40 flex items-center justify-center overflow-hidden"
+            style={{ width: 50 * scale, height: 60 * scale }}
           >
-            {power}
-          </div>
-          <span 
-            className="text-amber-300/80 font-medium uppercase tracking-wide"
-            style={{ fontSize: `${8 * scale}px` }}
-          >
-            Poder
-          </span>
-        </div>
-
-        {/* Center: Name + Stats */}
-        <div className="flex-1 flex flex-col justify-center gap-1.5">
-          {/* Name */}
-          <div 
-            className={`${colors.text} font-bold truncate leading-tight`}
-            style={{ fontSize: `${13 * scale}px` }}
-          >
-            {commander.nome_comandante}
+            {commander.commander_photo_url ? (
+              <img 
+                src={commander.commander_photo_url} 
+                alt={commander.nome_comandante}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="text-amber-500/50" style={{ width: 24 * scale, height: 24 * scale }} />
+            )}
           </div>
           
-          {/* Stats row */}
-          <div className="flex items-center gap-4">
+          {/* Coat of Arms */}
+          <div 
+            className="rounded border border-amber-500/50 bg-black/40 flex items-center justify-center overflow-hidden"
+            style={{ width: 40 * scale, height: 40 * scale }}
+          >
+            {commander.coat_of_arms_url ? (
+              <img 
+                src={commander.coat_of_arms_url} 
+                alt="Brasão"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Flag className="text-amber-500/50" style={{ width: 18 * scale, height: 18 * scale }} />
+            )}
+          </div>
+        </div>
+
+        {/* Center: Name, Stats, Specializations */}
+        <div className="flex-1 flex flex-col justify-between gap-1">
+          {/* Top: Power + Name */}
+          <div className="flex items-center gap-2">
+            {/* Power badge */}
+            <div 
+              className={`${colors.accent} rounded-full flex items-center justify-center font-black text-black shadow-lg flex-shrink-0`}
+              style={{ 
+                width: 36 * scale, 
+                height: 36 * scale,
+                fontSize: `${16 * scale}px`
+              }}
+            >
+              {power}
+            </div>
+            
+            {/* Name */}
+            <div 
+              className={`${colors.text} font-bold truncate leading-tight flex-1`}
+              style={{ fontSize: `${14 * scale}px` }}
+            >
+              {commander.nome_comandante}
+            </div>
+          </div>
+          
+          {/* Middle: Stats row */}
+          <div className="flex items-center gap-2">
             {/* Comando */}
-            <div className="flex items-center gap-1.5 bg-black/30 rounded px-2 py-1 border border-amber-500/30">
+            <div className="flex items-center gap-1 bg-black/30 rounded px-1.5 py-0.5 border border-amber-500/30">
               <Star 
                 className="text-amber-400" 
-                style={{ width: 16 * scale, height: 16 * scale }}
+                style={{ width: 14 * scale, height: 14 * scale }}
                 fill="currentColor"
               />
               <span 
                 className="text-white font-bold"
-                style={{ fontSize: `${16 * scale}px` }}
+                style={{ fontSize: `${14 * scale}px` }}
               >
                 {commander.comando}
               </span>
             </div>
 
             {/* Estratégia */}
-            <div className="flex items-center gap-1.5 bg-black/30 rounded px-2 py-1 border border-cyan-500/30">
+            <div className="flex items-center gap-1 bg-black/30 rounded px-1.5 py-0.5 border border-cyan-500/30">
               <Brain 
                 className="text-cyan-400" 
-                style={{ width: 16 * scale, height: 16 * scale }}
+                style={{ width: 14 * scale, height: 14 * scale }}
               />
               <span 
                 className="text-white font-bold"
-                style={{ fontSize: `${16 * scale}px` }}
+                style={{ fontSize: `${14 * scale}px` }}
               >
                 {commander.estrategia}
               </span>
             </div>
 
-            {/* Guarda */}
-            <div className="flex items-center gap-1.5 bg-black/30 rounded px-2 py-1 border border-emerald-500/30">
-              <ShieldCheck 
-                className="text-emerald-400" 
-                style={{ width: 16 * scale, height: 16 * scale }}
-              />
+            {/* Prestigio acumulado (para anotar no card físico) */}
+            <div className="flex items-center gap-1 bg-black/30 rounded px-1.5 py-0.5 border border-purple-500/30 ml-auto">
               <span 
-                className="text-white font-bold"
-                style={{ fontSize: `${16 * scale}px` }}
+                className="text-purple-400 font-medium"
+                style={{ fontSize: `${10 * scale}px` }}
               >
-                {commander.guarda}
+                PP:
               </span>
+              <div 
+                className="bg-black/50 rounded px-2 py-0.5 min-w-[40px] text-center border border-dashed border-purple-400/50"
+                style={{ fontSize: `${12 * scale}px` }}
+              >
+                <span className="text-purple-300 font-bold">{commander.pontos_prestigio}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Right: Specializations */}
-        <div className="flex flex-col items-center gap-1">
+          {/* Bottom: Specializations slots */}
           <div className="flex items-center gap-1">
-            {allSpecs.slice(0, 4).map((spec, index) => {
-              const IconComponent = SPECIALIZATION_ICONS[spec] || Swords;
+            {specSlots.map((spec, index) => {
+              const IconComponent = spec ? SPECIALIZATION_ICONS[spec] : Plus;
+              const isInitial = index === 0;
+              const isEmpty = !spec;
+              
               return (
                 <div 
                   key={index}
-                  className={`rounded p-1.5 border ${
-                    index === 0 
-                      ? 'bg-amber-900/60 border-amber-500/50' 
-                      : 'bg-black/40 border-amber-500/30'
+                  className={`rounded border flex items-center justify-center ${
+                    isEmpty 
+                      ? 'bg-black/20 border-dashed border-amber-500/20' 
+                      : isInitial 
+                        ? 'bg-amber-900/60 border-amber-500/50' 
+                        : 'bg-black/40 border-amber-500/30'
                   }`}
-                  title={spec}
+                  style={{ 
+                    width: 28 * scale, 
+                    height: 28 * scale,
+                    padding: 4 * scale
+                  }}
+                  title={spec || 'Slot disponível'}
                 >
                   <IconComponent 
-                    className="text-amber-400" 
-                    style={{ width: 18 * scale, height: 18 * scale }}
+                    className={isEmpty ? 'text-amber-500/30' : 'text-amber-400'} 
+                    style={{ width: 16 * scale, height: 16 * scale }}
                   />
                 </div>
               );
             })}
           </div>
-          {allSpecs.length > 4 && (
-            <span 
-              className="text-amber-300/60"
-              style={{ fontSize: `${9 * scale}px` }}
-            >
-              +{allSpecs.length - 4} mais
-            </span>
-          )}
+        </div>
+
+        {/* Right: Guard (HP) tracker */}
+        <div 
+          className="flex flex-col items-center justify-center gap-1 bg-black/30 rounded-lg border border-emerald-500/30 p-1.5"
+          style={{ width: 50 * scale }}
+        >
+          <ShieldCheck 
+            className="text-emerald-400" 
+            style={{ width: 18 * scale, height: 18 * scale }}
+          />
+          <span 
+            className="text-emerald-300 font-medium"
+            style={{ fontSize: `${8 * scale}px` }}
+          >
+            GUARDA
+          </span>
+          
+          {/* HP boxes - vertical stack to cross out */}
+          <div className="flex flex-col gap-0.5">
+            {Array.from({ length: Math.min(commander.guarda, 10) }).map((_, index) => (
+              <div 
+                key={index}
+                className="bg-emerald-900/60 border border-emerald-500/50 rounded-sm"
+                style={{ 
+                  width: 24 * scale, 
+                  height: 10 * scale 
+                }}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
