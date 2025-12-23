@@ -9,12 +9,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { HoldingType } from '@/types/Domain';
 
 interface ParsedHolding {
-  reino: string;
-  provincia: string;
-  tipoHolding: string;
-  codigoRegente: string;
-  nomeRegente: string;
-  nivel: number;
+  realm: string;
+  province: string;
+  provinceLevel: number;
+  holdingType: string;
+  holderCode: string;
+  holderName: string;
+  holdingLevel: number;
 }
 
 interface ImportPreview {
@@ -83,27 +84,29 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
       const provincesSet = new Set<string>();
 
       jsonData.forEach((row: any) => {
-        const reino = row['Reino'] || row['realm'] || '';
-        const provincia = row['Província'] || row['Provincia'] || row['province'] || '';
-        const tipoHolding = (row['Tipo de Holding'] || row['Tipo'] || row['type'] || '').toLowerCase().trim();
-        const codigoRegente = row['Código Regente'] || row['Codigo Regente'] || row['regent_code'] || '';
-        const nomeRegente = row['Nome do Regente'] || row['Nome Regente'] || row['regent_name'] || '';
-        const nivel = parseInt(row['Nível'] || row['Nivel'] || row['level'] || '0') || 0;
+        const realm = row['realm'] || row['Reino'] || '';
+        const province = row['province'] || row['Província'] || row['Provincia'] || '';
+        const provinceLevel = parseInt(row['province_level'] || row['Nível da Província'] || '0') || 0;
+        const holdingType = (row['holding_type'] || row['Tipo de Holding'] || row['Tipo'] || '').toLowerCase().trim();
+        const holderCode = row['holder_code'] || row['Código Regente'] || row['regent_code'] || '';
+        const holderName = row['holder_name'] || row['Nome do Regente'] || row['regent_name'] || '';
+        const holdingLevel = parseInt(row['holding_level'] || row['Nível'] || row['level'] || '0') || 0;
 
-        if (provincia && tipoHolding) {
+        if (province && holdingType) {
           holdings.push({
-            reino,
-            provincia,
-            tipoHolding,
-            codigoRegente: String(codigoRegente).trim(),
-            nomeRegente: String(nomeRegente).trim(),
-            nivel,
+            realm,
+            province,
+            provinceLevel,
+            holdingType,
+            holderCode: String(holderCode).trim(),
+            holderName: String(holderName).trim(),
+            holdingLevel,
           });
 
-          if (codigoRegente) {
-            regentsSet.add(codigoRegente);
+          if (holderCode) {
+            regentsSet.add(String(holderCode).trim());
           }
-          provincesSet.add(provincia);
+          provincesSet.add(province);
         }
       });
 
@@ -142,10 +145,10 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
       const uniqueRegents = new Map<string, { code: string; name: string }>();
       
       parsedData.forEach(h => {
-        if (h.codigoRegente && !uniqueRegents.has(h.codigoRegente)) {
-          uniqueRegents.set(h.codigoRegente, {
-            code: h.codigoRegente,
-            name: h.nomeRegente || h.codigoRegente,
+        if (h.holderCode && !uniqueRegents.has(h.holderCode)) {
+          uniqueRegents.set(h.holderCode, {
+            code: h.holderCode,
+            name: h.holderName || h.holderCode,
           });
         }
       });
@@ -207,12 +210,12 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
         const h = parsedData[i];
         
         // Find province
-        const provinceKey = `${h.reino.toLowerCase()}|${h.provincia.toLowerCase()}`;
+        const provinceKey = `${h.realm.toLowerCase()}|${h.province.toLowerCase()}`;
         let provinceId = provinceMap.get(provinceKey);
         
         // Fallback: try by province name only
         if (!provinceId) {
-          provinceId = provinceMap.get(h.provincia.toLowerCase());
+          provinceId = provinceMap.get(h.province.toLowerCase());
         }
 
         if (!provinceId) {
@@ -222,7 +225,7 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
         }
 
         // Map holding type
-        const holdingType = HOLDING_TYPE_MAP[h.tipoHolding];
+        const holdingType = HOLDING_TYPE_MAP[h.holdingType];
         if (!holdingType) {
           skipped++;
           setProgress({ current: i + 1, total: parsedData.length, phase: 'Criando holdings...' });
@@ -230,7 +233,7 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
         }
 
         // Get regent ID
-        const regentId = h.codigoRegente ? regentsMap.get(h.codigoRegente) : undefined;
+        const regentId = h.holderCode ? regentsMap.get(h.holderCode) : undefined;
 
         // Create holding
         const { error } = await supabase
@@ -239,7 +242,7 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
             province_id: provinceId,
             holding_type: holdingType,
             regent_id: regentId || null,
-            level: h.nivel,
+            level: h.holdingLevel,
           });
 
         if (!error) {
@@ -303,12 +306,12 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
             </p>
             <div className="text-sm text-muted-foreground mb-4">
               Colunas esperadas: <br />
-              <code className="bg-muted px-1 rounded text-xs">Reino</code>,{' '}
-              <code className="bg-muted px-1 rounded text-xs">Província</code>,{' '}
-              <code className="bg-muted px-1 rounded text-xs">Tipo de Holding</code>,{' '}
-              <code className="bg-muted px-1 rounded text-xs">Código Regente</code>,{' '}
-              <code className="bg-muted px-1 rounded text-xs">Nome do Regente</code>,{' '}
-              <code className="bg-muted px-1 rounded text-xs">Nível</code>
+              <code className="bg-muted px-1 rounded text-xs">realm</code>,{' '}
+              <code className="bg-muted px-1 rounded text-xs">province</code>,{' '}
+              <code className="bg-muted px-1 rounded text-xs">holding_type</code>,{' '}
+              <code className="bg-muted px-1 rounded text-xs">holder_code</code>,{' '}
+              <code className="bg-muted px-1 rounded text-xs">holder_name</code>,{' '}
+              <code className="bg-muted px-1 rounded text-xs">holding_level</code>
             </div>
             <label className="cursor-pointer">
               <input
@@ -366,12 +369,12 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
                 <tbody>
                   {preview.sample.map((h, i) => (
                     <tr key={i} className="border-t">
-                      <td className="p-2">{h.provincia}</td>
-                      <td className="p-2 capitalize">{h.tipoHolding}</td>
+                      <td className="p-2">{h.province}</td>
+                      <td className="p-2 capitalize">{h.holdingType}</td>
                       <td className="p-2">
-                        {h.nomeRegente || h.codigoRegente || <span className="text-muted-foreground">-</span>}
+                        {h.holderName || h.holderCode || <span className="text-muted-foreground">-</span>}
                       </td>
-                      <td className="text-center p-2">{h.nivel}</td>
+                      <td className="text-center p-2">{h.holdingLevel}</td>
                     </tr>
                   ))}
                   {preview.totalHoldings > 10 && (
