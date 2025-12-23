@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useProvinces, useCreateProvince, useUpdateProvince, useDeleteProvince, useRealms } from '@/hooks/useDomains';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Trash2, Plus, Check, X, Loader2 } from 'lucide-react';
+import { Edit, Trash2, Plus, Check, X, Loader2, Filter } from 'lucide-react';
 import { Province, ProvinceWithRealm } from '@/types/Domain';
 
 interface ProvinceListProps {
@@ -21,6 +21,22 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [culturaFilter, setCulturaFilter] = useState<string>('all');
+  
+  // Get unique cultures from provinces
+  const uniqueCultures = useMemo(() => {
+    if (!provinces) return [];
+    const cultures = new Set(provinces.map(p => p.cultura).filter(Boolean));
+    return Array.from(cultures).sort() as string[];
+  }, [provinces]);
+
+  // Filter provinces by culture
+  const filteredProvinces = useMemo(() => {
+    if (!provinces) return [];
+    if (culturaFilter === 'all') return provinces;
+    if (culturaFilter === 'none') return provinces.filter(p => !p.cultura);
+    return provinces.filter(p => p.cultura === culturaFilter);
+  }, [provinces, culturaFilter]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -100,14 +116,33 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">
-          Províncias ({provinces?.length || 0})
+          Províncias ({filteredProvinces.length}{culturaFilter !== 'all' ? ` de ${provinces?.length || 0}` : ''})
         </CardTitle>
-        {!showAddForm && (
-          <Button size="sm" onClick={() => setShowAddForm(true)}>
-            <Plus className="w-4 h-4 mr-1" />
-            Nova Província
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Select value={culturaFilter} onValueChange={setCulturaFilter}>
+              <SelectTrigger className="w-[180px] h-9 bg-background">
+                <SelectValue placeholder="Filtrar por cultura" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border shadow-md z-50">
+                <SelectItem value="all">Todas as culturas</SelectItem>
+                <SelectItem value="none">Sem cultura</SelectItem>
+                {uniqueCultures.map((cultura) => (
+                  <SelectItem key={cultura} value={cultura}>
+                    {cultura}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {!showAddForm && (
+            <Button size="sm" onClick={() => setShowAddForm(true)}>
+              <Plus className="w-4 h-4 mr-1" />
+              Nova Província
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {/* Add/Edit Form */}
@@ -186,7 +221,7 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
         )}
 
         {/* Province Table */}
-        {provinces && provinces.length > 0 ? (
+        {filteredProvinces.length > 0 ? (
           <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
@@ -200,7 +235,7 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {provinces.map((province) => (
+                {filteredProvinces.map((province) => (
                   <TableRow key={province.id}>
                     <TableCell className="font-medium">{province.name}</TableCell>
                     {!selectedRealmId && (
