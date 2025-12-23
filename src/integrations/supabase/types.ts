@@ -110,6 +110,65 @@ export type Database = {
         }
         Relationships: []
       }
+      provinces: {
+        Row: {
+          created_at: string
+          development: number
+          id: string
+          magic: number
+          name: string
+          realm_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          development?: number
+          id?: string
+          magic?: number
+          name: string
+          realm_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          development?: number
+          id?: string
+          magic?: number
+          name?: string
+          realm_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provinces_realm_id_fkey"
+            columns: ["realm_id"]
+            isOneToOne: false
+            referencedRelation: "realms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      realms: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tactical_cards: {
         Row: {
           affected_unit_types: string[]
