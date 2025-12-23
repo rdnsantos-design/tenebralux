@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import ArmyManagement from "./pages/ArmyManagement";
 import TacticalCards from "./pages/TacticalCards";
 import FieldCommanders from "./pages/FieldCommanders";
+import Domains from "./pages/Domains";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/army" element={<ArmyManagement />} />
           <Route path="/tactical-cards" element={<TacticalCards />} />
           <Route path="/commanders" element={<FieldCommanders />} />
+          <Route path="/domains" element={<Domains />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
