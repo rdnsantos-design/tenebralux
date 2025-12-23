@@ -55,7 +55,9 @@ export type Database = {
       }
       field_commanders: {
         Row: {
+          coat_of_arms_url: string | null
           comando: number
+          commander_photo_url: string | null
           created_at: string
           cultura_origem: string
           especializacao_inicial: string
@@ -71,7 +73,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          coat_of_arms_url?: string | null
           comando?: number
+          commander_photo_url?: string | null
           created_at?: string
           cultura_origem: string
           especializacao_inicial: string
@@ -87,7 +91,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          coat_of_arms_url?: string | null
           comando?: number
+          commander_photo_url?: string | null
           created_at?: string
           cultura_origem?: string
           especializacao_inicial?: string
