@@ -99,6 +99,17 @@ export function useBulkImportDistances() {
 
   return useMutation({
     mutationFn: async (distances: Array<{ from: string; to: string; distance: number }>) => {
+      // Remove duplicates - keep only unique from/to pairs
+      const uniqueMap = new Map<string, { from: string; to: string; distance: number }>();
+      for (const d of distances) {
+        // Create a normalized key (sorted alphabetically to treat A->B same as B->A)
+        const key = [d.from, d.to].sort().join('|||');
+        if (!uniqueMap.has(key)) {
+          uniqueMap.set(key, d);
+        }
+      }
+      const uniqueDistances = Array.from(uniqueMap.values());
+
       // Delete existing data first
       const { error: deleteError } = await supabase
         .from('province_distances')
@@ -107,10 +118,13 @@ export function useBulkImportDistances() {
 
       if (deleteError) throw deleteError;
 
+      // Small delay to ensure deletion is committed
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       // Insert in batches of 500
       const batchSize = 500;
-      for (let i = 0; i < distances.length; i += batchSize) {
-        const batch = distances.slice(i, i + batchSize).map(d => ({
+      for (let i = 0; i < uniqueDistances.length; i += batchSize) {
+        const batch = uniqueDistances.slice(i, i + batchSize).map(d => ({
           from_province_name: d.from,
           to_province_name: d.to,
           distance_km: d.distance,
@@ -123,10 +137,11 @@ export function useBulkImportDistances() {
         if (error) throw error;
       }
 
-      return distances.length;
+      return uniqueDistances.length;
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['distance-provinces'] });
+      queryClient.invalidateQueries({ queryKey: ['distance-count'] });
       queryClient.invalidateQueries({ queryKey: ['province-distance'] });
       toast.success(`${count} distâncias importadas com sucesso`);
     },
