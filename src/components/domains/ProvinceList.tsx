@@ -317,14 +317,16 @@ export const ProvinceList = ({ selectedRealmId, onSelectProvince, compact }: Pro
               <div>
                 <label className="text-xs text-muted-foreground">Terreno</label>
                 <Select
-                  value={formData.terrain_type}
-                  onValueChange={(value) => setFormData({ ...formData, terrain_type: value })}
+                  value={formData.terrain_type || 'none'}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, terrain_type: value === 'none' ? '' : value })
+                  }
                 >
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border shadow-md z-50">
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="none">Nenhum</SelectItem>
                     {TERRAIN_TYPES.map((terrain) => (
                       <SelectItem key={terrain} value={terrain}>
                         {terrain}
