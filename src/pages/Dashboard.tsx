@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Shield, Plus, Settings, Swords, Crown, Map, Hexagon } from "lucide-react";
+import { Users, Shield, Plus, Settings, Swords, Crown, Map, Hexagon, Route } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
@@ -205,6 +205,38 @@ const Dashboard = () => {
                 onClick={() => navigate('/battle-map')}
               >
                 Acessar Mapa de Batalha
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Deslocamento */}
+          <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-20 h-20 flex items-center justify-center">
+                <Route className="w-10 h-10 text-primary" />
+              </div>
+              <CardTitle className="text-xl">Deslocamento</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-muted-foreground text-sm">
+                Calcule tempo de viagem entre províncias
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Route className="w-3 h-3" />
+                  <span>Matriz de distâncias</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Users className="w-3 h-3" />
+                  <span>Indivíduos e exércitos</span>
+                </div>
+              </div>
+              <Button 
+                size="sm" 
+                className="w-full"
+                onClick={() => navigate('/travel')}
+              >
+                Acessar Deslocamento
               </Button>
             </CardContent>
           </Card>
