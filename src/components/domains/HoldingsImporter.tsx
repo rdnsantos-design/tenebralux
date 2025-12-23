@@ -105,6 +105,12 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
 
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      
+      // Debug: log first few rows to see the actual column names and values
+      console.log('=== Excel Data Preview ===');
+      console.log('Sheet name:', sheetName);
+      console.log('Column names:', jsonData.length > 0 ? Object.keys(jsonData[0] as object) : 'No data');
+      console.log('First 3 rows:', jsonData.slice(0, 3));
 
       if (jsonData.length === 0) {
         toast.error('Planilha vazia ou formato inválido');
@@ -247,6 +253,22 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
         insertError: 0,
       };
       const unknownHoldingTypes = new Set<string>();
+
+      // Log first 5 entries for debugging
+      console.log('=== First 5 holdings to import ===');
+      parsedData.slice(0, 5).forEach((h, i) => {
+        console.log(`[${i}] Realm: "${h.realm}", Province: "${h.province}", Type: "${h.holdingType}", Level: ${h.holdingLevel}, Holder: "${h.holderCode}"`);
+      });
+      
+      // Log province map sample
+      console.log('=== Province Map Sample (first 10) ===');
+      let mapCount = 0;
+      provinceMap.forEach((id, key) => {
+        if (mapCount < 10) {
+          console.log(`"${key}" -> ${id}`);
+          mapCount++;
+        }
+      });
 
       // Clear existing holdings first
       await supabase.from('holdings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
