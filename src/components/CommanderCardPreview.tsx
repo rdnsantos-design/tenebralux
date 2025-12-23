@@ -2,7 +2,6 @@ import React from 'react';
 import { FieldCommander, SPECIALIZATIONS, CommanderSpecialization } from '@/types/FieldCommander';
 import { 
   Swords, 
-  Target, 
   Castle, 
   Star,
   Brain,
@@ -58,13 +57,13 @@ export function CommanderCardPreview({
     ...commander.especializacoes_adicionais
   ]);
 
-  // Card vertical maior: 320x480 pixels base
-  const cardWidth = 320 * scale;
-  const cardHeight = 480 * scale;
+  // Card paisagem: 480x320 pixels base
+  const cardWidth = 480 * scale;
+  const cardHeight = 320 * scale;
 
   return (
     <div 
-      className={`relative bg-gradient-to-b ${colors.bg} rounded-lg overflow-hidden border-2 ${colors.border}/50 shadow-xl`}
+      className={`relative bg-gradient-to-br ${colors.bg} rounded-lg overflow-hidden border-2 ${colors.border}/50 shadow-xl`}
       style={{ 
         width: cardWidth, 
         height: cardHeight,
@@ -84,15 +83,64 @@ export function CommanderCardPreview({
         }} />
       </div>
 
-      {/* Main content - vertical layout */}
+      {/* Main content - landscape layout */}
       <div className="relative h-full flex flex-col p-3 gap-2">
         
-        {/* Top: Photo left, Coat of Arms right */}
-        <div className="flex items-start justify-between gap-2">
+        {/* Top row: Comando, Estratégia, Guarda */}
+        <div className="flex items-center gap-2 justify-center">
+          {/* Comando */}
+          <div className="flex items-center gap-1 bg-black/30 rounded px-3 py-1 border border-amber-500/30">
+            <Star 
+              className="text-amber-400" 
+              style={{ width: 16 * scale, height: 16 * scale }}
+              fill="currentColor"
+            />
+            <span className="text-amber-400/70" style={{ fontSize: `${10 * scale}px` }}>CMD</span>
+            <span 
+              className="text-white font-bold"
+              style={{ fontSize: `${18 * scale}px` }}
+            >
+              {commander.comando}
+            </span>
+          </div>
+
+          {/* Estratégia */}
+          <div className="flex items-center gap-1 bg-black/30 rounded px-3 py-1 border border-cyan-500/30">
+            <Brain 
+              className="text-cyan-400" 
+              style={{ width: 16 * scale, height: 16 * scale }}
+            />
+            <span className="text-cyan-400/70" style={{ fontSize: `${10 * scale}px` }}>EST</span>
+            <span 
+              className="text-white font-bold"
+              style={{ fontSize: `${18 * scale}px` }}
+            >
+              {commander.estrategia}
+            </span>
+          </div>
+
+          {/* Guarda */}
+          <div className="flex items-center gap-1 bg-black/30 rounded px-3 py-1 border border-emerald-500/30">
+            <ShieldCheck 
+              className="text-emerald-400" 
+              style={{ width: 16 * scale, height: 16 * scale }}
+            />
+            <span className="text-emerald-400/70" style={{ fontSize: `${10 * scale}px` }}>GUA</span>
+            <span 
+              className="text-white font-bold"
+              style={{ fontSize: `${18 * scale}px` }}
+            >
+              {commander.guarda}
+            </span>
+          </div>
+        </div>
+
+        {/* Middle row: Photo left, Center content, Coat of Arms right */}
+        <div className="flex items-start gap-3 flex-1">
           {/* Commander Photo */}
           <div 
             className="rounded border-2 border-amber-500/50 bg-black/40 flex items-center justify-center overflow-hidden flex-shrink-0"
-            style={{ width: 100 * scale, height: 120 * scale }}
+            style={{ width: 90 * scale, height: 110 * scale }}
           >
             {commander.commander_photo_url ? (
               <img 
@@ -101,10 +149,111 @@ export function CommanderCardPreview({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <User className="text-amber-500/50" style={{ width: 48 * scale, height: 48 * scale }} />
+              <User className="text-amber-500/50" style={{ width: 40 * scale, height: 40 * scale }} />
             )}
           </div>
           
+          {/* Center content */}
+          <div className="flex-1 flex flex-col gap-2">
+            {/* Name + Power */}
+            <div className="flex items-center gap-2">
+              <div 
+                className={`${colors.accent} rounded-full flex items-center justify-center font-black text-black shadow-lg flex-shrink-0`}
+                style={{ 
+                  width: 36 * scale, 
+                  height: 36 * scale,
+                  fontSize: `${16 * scale}px`
+                }}
+              >
+                {power}
+              </div>
+              <div 
+                className={`${colors.text} font-bold truncate leading-tight flex-1`}
+                style={{ fontSize: `${14 * scale}px` }}
+              >
+                {commander.nome_comandante}
+              </div>
+            </div>
+
+            {/* 5 Specialization slots */}
+            <div className="flex items-center gap-1">
+              {SPECIALIZATIONS.map((spec) => {
+                const IconComponent = SPECIALIZATION_ICONS[spec];
+                const hasSpec = activeSpecs.has(spec);
+                
+                return (
+                  <div 
+                    key={spec}
+                    className={`rounded border flex flex-col items-center justify-center ${
+                      hasSpec 
+                        ? 'bg-amber-900/60 border-amber-500/50' 
+                        : 'bg-black/20 border-amber-500/20'
+                    }`}
+                    style={{ 
+                      width: 40 * scale, 
+                      height: 40 * scale,
+                      padding: 3 * scale
+                    }}
+                    title={spec}
+                  >
+                    <IconComponent 
+                      className={hasSpec ? 'text-amber-400' : 'text-amber-500/30'} 
+                      style={{ width: 18 * scale, height: 18 * scale }}
+                    />
+                    <span 
+                      className={`font-medium ${hasSpec ? 'text-amber-300' : 'text-amber-500/30'}`}
+                      style={{ fontSize: `${6 * scale}px` }}
+                    >
+                      {spec.substring(0, 3).toUpperCase()}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* D&D Stats */}
+            <div className="bg-black/30 rounded border border-amber-500/20 p-1.5">
+              <div className="grid grid-cols-6 gap-1 text-center">
+                <div className="flex flex-col">
+                  <span className="text-amber-500/70" style={{ fontSize: `${7 * scale}px` }}>CLASSE</span>
+                  <span className="text-white font-medium truncate" style={{ fontSize: `${9 * scale}px` }}>
+                    {commander.classe || '-'}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-500/70" style={{ fontSize: `${7 * scale}px` }}>NÍVEL</span>
+                  <span className="text-white font-medium" style={{ fontSize: `${9 * scale}px` }}>
+                    {commander.nivel || '-'}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-500/70" style={{ fontSize: `${7 * scale}px` }}>AC</span>
+                  <span className="text-white font-medium" style={{ fontSize: `${9 * scale}px` }}>
+                    {commander.ac || '-'}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-500/70" style={{ fontSize: `${7 * scale}px` }}>ATAQUE</span>
+                  <span className="text-white font-medium" style={{ fontSize: `${9 * scale}px` }}>
+                    {commander.ataque || '-'}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-500/70" style={{ fontSize: `${7 * scale}px` }}>HP</span>
+                  <span className="text-white font-medium" style={{ fontSize: `${9 * scale}px` }}>
+                    {commander.hit_points || '-'}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-amber-500/70" style={{ fontSize: `${7 * scale}px` }}>PP</span>
+                  <span className="text-purple-300 font-bold" style={{ fontSize: `${9 * scale}px` }}>
+                    {commander.pontos_prestigio}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Coat of Arms */}
           <div 
             className="rounded border-2 border-amber-500/50 bg-black/40 flex items-center justify-center overflow-hidden flex-shrink-0"
@@ -117,170 +266,24 @@ export function CommanderCardPreview({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <Flag className="text-amber-500/50" style={{ width: 36 * scale, height: 36 * scale }} />
+              <Flag className="text-amber-500/50" style={{ width: 32 * scale, height: 32 * scale }} />
             )}
           </div>
         </div>
 
-        {/* Name + Power */}
-        <div className="flex items-center gap-2">
-          <div 
-            className={`${colors.accent} rounded-full flex items-center justify-center font-black text-black shadow-lg flex-shrink-0`}
-            style={{ 
-              width: 40 * scale, 
-              height: 40 * scale,
-              fontSize: `${18 * scale}px`
-            }}
-          >
-            {power}
-          </div>
-          <div 
-            className={`${colors.text} font-bold truncate leading-tight flex-1`}
-            style={{ fontSize: `${16 * scale}px` }}
-          >
-            {commander.nome_comandante}
-          </div>
-        </div>
-        
-        {/* Stats row: Comando, Estratégia, Guarda */}
-        <div className="flex items-center gap-2 justify-between">
-          {/* Comando */}
-          <div className="flex items-center gap-1 bg-black/30 rounded px-2 py-1 border border-amber-500/30 flex-1 justify-center">
-            <Star 
-              className="text-amber-400" 
-              style={{ width: 16 * scale, height: 16 * scale }}
-              fill="currentColor"
-            />
-            <span 
-              className="text-white font-bold"
-              style={{ fontSize: `${16 * scale}px` }}
-            >
-              {commander.comando}
-            </span>
-          </div>
-
-          {/* Estratégia */}
-          <div className="flex items-center gap-1 bg-black/30 rounded px-2 py-1 border border-cyan-500/30 flex-1 justify-center">
-            <Brain 
-              className="text-cyan-400" 
-              style={{ width: 16 * scale, height: 16 * scale }}
-            />
-            <span 
-              className="text-white font-bold"
-              style={{ fontSize: `${16 * scale}px` }}
-            >
-              {commander.estrategia}
-            </span>
-          </div>
-
-          {/* Guarda */}
-          <div className="flex items-center gap-1 bg-black/30 rounded px-2 py-1 border border-emerald-500/30 flex-1 justify-center">
-            <ShieldCheck 
-              className="text-emerald-400" 
-              style={{ width: 16 * scale, height: 16 * scale }}
-            />
-            <span 
-              className="text-white font-bold"
-              style={{ fontSize: `${16 * scale}px` }}
-            >
-              {commander.guarda}
-            </span>
-          </div>
-        </div>
-
-        {/* 5 Specialization slots */}
-        <div className="flex items-center justify-center gap-2">
-          {SPECIALIZATIONS.map((spec) => {
-            const IconComponent = SPECIALIZATION_ICONS[spec];
-            const hasSpec = activeSpecs.has(spec);
-            
-            return (
-              <div 
-                key={spec}
-                className={`rounded border flex flex-col items-center justify-center gap-0.5 ${
-                  hasSpec 
-                    ? 'bg-amber-900/60 border-amber-500/50' 
-                    : 'bg-black/20 border-amber-500/20'
-                }`}
-                style={{ 
-                  width: 48 * scale, 
-                  height: 48 * scale,
-                  padding: 4 * scale
-                }}
-                title={spec}
-              >
-                <IconComponent 
-                  className={hasSpec ? 'text-amber-400' : 'text-amber-500/30'} 
-                  style={{ width: 20 * scale, height: 20 * scale }}
-                />
-                <span 
-                  className={`font-medium ${hasSpec ? 'text-amber-300' : 'text-amber-500/30'}`}
-                  style={{ fontSize: `${7 * scale}px` }}
-                >
-                  {spec.substring(0, 3).toUpperCase()}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* D&D Stats Section */}
-        <div className="bg-black/30 rounded border border-amber-500/20 p-2">
-          <div className="grid grid-cols-3 gap-1 text-center">
-            <div className="flex flex-col">
-              <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>CLASSE</span>
-              <span className="text-white font-medium" style={{ fontSize: `${10 * scale}px` }}>
-                {commander.classe || '-'}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>NÍVEL</span>
-              <span className="text-white font-medium" style={{ fontSize: `${10 * scale}px` }}>
-                {commander.nivel || '-'}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>AC</span>
-              <span className="text-white font-medium" style={{ fontSize: `${10 * scale}px` }}>
-                {commander.ac || '-'}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>ATAQUE</span>
-              <span className="text-white font-medium" style={{ fontSize: `${10 * scale}px` }}>
-                {commander.ataque || '-'}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>HP</span>
-              <span className="text-white font-medium" style={{ fontSize: `${10 * scale}px` }}>
-                {commander.hit_points || '-'}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>PP</span>
-              <span className="text-purple-300 font-bold" style={{ fontSize: `${10 * scale}px` }}>
-                {commander.pontos_prestigio}
-              </span>
-            </div>
-          </div>
-          {commander.habilidades && (
-            <div className="mt-1 pt-1 border-t border-amber-500/20">
-              <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>HABILIDADES: </span>
-              <span className="text-white/80" style={{ fontSize: `${9 * scale}px` }}>
-                {commander.habilidades}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Bio Section */}
-        <div className="bg-black/30 rounded border border-amber-500/20 p-2 flex-1">
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+        {/* Bottom row: Personal info */}
+        <div className="bg-black/30 rounded border border-amber-500/20 p-1.5">
+          <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-1">
               <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>REGENTE:</span>
-              <span className="text-white/90 truncate" style={{ fontSize: `${9 * scale}px` }}>
+              <span className="text-white/90" style={{ fontSize: `${9 * scale}px` }}>
                 {commander.regent_id || '-'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>DOMÍNIO:</span>
+              <span className="text-white/90" style={{ fontSize: `${9 * scale}px` }}>
+                {commander.dominio || '-'}
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -289,20 +292,15 @@ export function CommanderCardPreview({
                 {commander.idade || '-'}
               </span>
             </div>
-            <div className="flex items-center gap-1 col-span-2">
-              <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>DOMÍNIO:</span>
-              <span className="text-white/90 truncate" style={{ fontSize: `${9 * scale}px` }}>
-                {commander.dominio || '-'}
-              </span>
-            </div>
+            {commander.notas && (
+              <div className="flex items-center gap-1 flex-1">
+                <span className="text-amber-500/70" style={{ fontSize: `${8 * scale}px` }}>BIO:</span>
+                <span className="text-white/70 italic truncate" style={{ fontSize: `${9 * scale}px` }}>
+                  {commander.notas}
+                </span>
+              </div>
+            )}
           </div>
-          {commander.notas && (
-            <div className="mt-1 pt-1 border-t border-amber-500/20">
-              <span className="text-white/70 italic" style={{ fontSize: `${9 * scale}px` }}>
-                {commander.notas}
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
