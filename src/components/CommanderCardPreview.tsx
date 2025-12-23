@@ -1,250 +1,210 @@
-import { FieldCommander, calculateDerivedFields } from '@/types/FieldCommander';
-import { Crown, Shield, Brain, Star, Award, Users, Sword, Target, Castle, Anchor, Medal } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import React from 'react';
+import { FieldCommander } from '@/types/FieldCommander';
+import { 
+  Shield, 
+  Swords, 
+  Target, 
+  Castle, 
+  Users, 
+  Crown, 
+  Anchor,
+  Star,
+  Brain,
+  ShieldCheck,
+  Zap
+} from 'lucide-react';
 
 interface CommanderCardPreviewProps {
   commander: FieldCommander;
-  isGeneral?: boolean;
-  unitsCommanded?: number;
+  scale?: number;
 }
 
-const cultureThemes: Record<string, { 
-  gradient: string; 
-  border: string; 
-  accent: string; 
-  glow: string;
-  headerBg: string;
-}> = {
-  'Anuire': { 
-    gradient: 'from-blue-950 via-blue-900 to-slate-900', 
-    border: 'border-blue-500/50', 
-    accent: 'text-blue-400',
-    glow: 'shadow-blue-500/20',
-    headerBg: 'from-blue-800 to-blue-900'
-  },
-  'Khinasi': { 
-    gradient: 'from-amber-950 via-orange-900 to-red-950', 
-    border: 'border-amber-500/50', 
-    accent: 'text-amber-400',
-    glow: 'shadow-amber-500/20',
-    headerBg: 'from-amber-700 to-orange-900'
-  },
-  'Vos': { 
-    gradient: 'from-red-950 via-rose-900 to-slate-900', 
-    border: 'border-red-500/50', 
-    accent: 'text-red-400',
-    glow: 'shadow-red-500/20',
-    headerBg: 'from-red-800 to-rose-900'
-  },
-  'Rjurik': { 
-    gradient: 'from-emerald-950 via-green-900 to-teal-950', 
-    border: 'border-emerald-500/50', 
-    accent: 'text-emerald-400',
-    glow: 'shadow-emerald-500/20',
-    headerBg: 'from-emerald-700 to-green-900'
-  },
-  'Brecht': { 
-    gradient: 'from-purple-950 via-violet-900 to-indigo-950', 
-    border: 'border-purple-500/50', 
-    accent: 'text-purple-400',
-    glow: 'shadow-purple-500/20',
-    headerBg: 'from-purple-700 to-violet-900'
-  }
+// Calcula o poder baseado no prestígio gasto
+// Custo para alcançar nível N partindo de 1 = (N-1) × 2
+// Poder = total gasto + 10
+function calculatePower(commander: FieldCommander): number {
+  const comandoCost = (commander.comando - 1) * 2;
+  const estrategiaCost = (commander.estrategia - 1) * 2;
+  const guardaCost = (commander.guarda - 1) * 2;
+  const specsCost = commander.especializacoes_adicionais.length * 2;
+  
+  return comandoCost + estrategiaCost + guardaCost + specsCost + 10;
+}
+
+const SPECIALIZATION_ICONS: Record<string, React.ElementType> = {
+  'Infantaria': Swords,
+  'Cavalaria': Shield,
+  'Arqueiro': Target,
+  'Cerco': Castle,
+  'Milicia': Users,
+  'Elite': Crown,
+  'Naval': Anchor
 };
 
-const specializationIcons: Record<string, { icon: React.ReactNode; abbrev: string }> = {
-  'Infantaria': { icon: <Sword className="w-3 h-3" />, abbrev: 'INF' },
-  'Cavalaria': { icon: <span className="text-xs">🐎</span>, abbrev: 'CAV' },
-  'Arqueiro': { icon: <Target className="w-3 h-3" />, abbrev: 'ARQ' },
-  'Cerco': { icon: <Castle className="w-3 h-3" />, abbrev: 'CER' },
-  'Milicia': { icon: <Shield className="w-3 h-3" />, abbrev: 'MIL' },
-  'Elite': { icon: <Crown className="w-3 h-3" />, abbrev: 'ELI' },
-  'Naval': { icon: <Anchor className="w-3 h-3" />, abbrev: 'NAV' }
+const CULTURE_COLORS: Record<string, { bg: string; accent: string; text: string }> = {
+  'Anuire': { bg: 'from-blue-900 to-blue-950', accent: 'bg-amber-500', text: 'text-amber-400' },
+  'Khinasi': { bg: 'from-amber-900 to-orange-950', accent: 'bg-cyan-400', text: 'text-cyan-300' },
+  'Vos': { bg: 'from-red-900 to-red-950', accent: 'bg-gray-300', text: 'text-gray-200' },
+  'Rjurik': { bg: 'from-emerald-900 to-green-950', accent: 'bg-amber-400', text: 'text-amber-300' },
+  'Brecht': { bg: 'from-slate-800 to-slate-950', accent: 'bg-amber-500', text: 'text-amber-400' }
 };
 
-export function CommanderCardPreview({ commander, isGeneral = false, unitsCommanded = 0 }: CommanderCardPreviewProps) {
-  const theme = cultureThemes[commander.cultura_origem] || cultureThemes['Anuire'];
-  const derived = calculateDerivedFields(commander);
-
-  const allSpecializations = [
+export function CommanderCardPreview({ 
+  commander,
+  scale = 1 
+}: CommanderCardPreviewProps) {
+  const colors = CULTURE_COLORS[commander.cultura_origem] || CULTURE_COLORS['Anuire'];
+  const power = calculatePower(commander);
+  
+  const allSpecs = [
     commander.especializacao_inicial,
     ...commander.especializacoes_adicionais
   ];
 
-  return (
-    <div className={`relative w-[300px] h-[420px] rounded-2xl overflow-hidden shadow-2xl ${theme.glow} border-2 ${theme.border}`}>
-      {/* Gradient Background */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
+  // Card horizontal: 320x90 pixels base
+  const cardWidth = 320 * scale;
+  const cardHeight = 90 * scale;
 
-      {/* ═══════════════════════════════════════════════════════════════
-          HEADER STRIP - Visível quando o card está sob a unidade
-          Altura: ~70px - Contém: Comando, Estratégia, Especializações
-          ═══════════════════════════════════════════════════════════════ */}
-      <div className={`relative z-20 bg-gradient-to-r ${theme.headerBg} border-b-2 ${theme.border}`}>
-        {/* General Banner (se for general) */}
-        {isGeneral && (
-          <div className="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 py-0.5 text-center">
-            <div className="flex items-center justify-center gap-1">
-              <Medal className="w-3 h-3 text-amber-950" />
-              <span className="text-[10px] font-bold text-amber-950 uppercase tracking-wider">General</span>
-              <Medal className="w-3 h-3 text-amber-950" />
+  return (
+    <div 
+      className={`relative bg-gradient-to-r ${colors.bg} rounded-lg overflow-hidden border-2 border-amber-600/50 shadow-xl`}
+      style={{ 
+        width: cardWidth, 
+        height: cardHeight,
+        fontSize: `${12 * scale}px`
+      }}
+    >
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(255,255,255,0.03) 10px,
+            rgba(255,255,255,0.03) 20px
+          )`
+        }} />
+      </div>
+
+      {/* Main content - horizontal layout */}
+      <div className="relative h-full flex items-center px-3 gap-3">
+        
+        {/* Left: Power badge */}
+        <div className="flex flex-col items-center justify-center">
+          <div 
+            className={`${colors.accent} rounded-full flex items-center justify-center font-black text-black shadow-lg`}
+            style={{ 
+              width: 52 * scale, 
+              height: 52 * scale,
+              fontSize: `${20 * scale}px`
+            }}
+          >
+            {power}
+          </div>
+          <span 
+            className="text-amber-300/80 font-medium uppercase tracking-wide"
+            style={{ fontSize: `${8 * scale}px` }}
+          >
+            Poder
+          </span>
+        </div>
+
+        {/* Center: Name + Stats */}
+        <div className="flex-1 flex flex-col justify-center gap-1.5">
+          {/* Name */}
+          <div 
+            className={`${colors.text} font-bold truncate leading-tight`}
+            style={{ fontSize: `${13 * scale}px` }}
+          >
+            {commander.nome_comandante}
+          </div>
+          
+          {/* Stats row */}
+          <div className="flex items-center gap-4">
+            {/* Comando */}
+            <div className="flex items-center gap-1.5 bg-black/30 rounded px-2 py-1 border border-amber-500/30">
+              <Star 
+                className="text-amber-400" 
+                style={{ width: 16 * scale, height: 16 * scale }}
+                fill="currentColor"
+              />
+              <span 
+                className="text-white font-bold"
+                style={{ fontSize: `${16 * scale}px` }}
+              >
+                {commander.comando}
+              </span>
+            </div>
+
+            {/* Estratégia */}
+            <div className="flex items-center gap-1.5 bg-black/30 rounded px-2 py-1 border border-cyan-500/30">
+              <Brain 
+                className="text-cyan-400" 
+                style={{ width: 16 * scale, height: 16 * scale }}
+              />
+              <span 
+                className="text-white font-bold"
+                style={{ fontSize: `${16 * scale}px` }}
+              >
+                {commander.estrategia}
+              </span>
+            </div>
+
+            {/* Guarda */}
+            <div className="flex items-center gap-1.5 bg-black/30 rounded px-2 py-1 border border-emerald-500/30">
+              <ShieldCheck 
+                className="text-emerald-400" 
+                style={{ width: 16 * scale, height: 16 * scale }}
+              />
+              <span 
+                className="text-white font-bold"
+                style={{ fontSize: `${16 * scale}px` }}
+              >
+                {commander.guarda}
+              </span>
             </div>
           </div>
-        )}
-        
-        {/* Stats Row - CMD | EST | Specs */}
-        <div className="flex items-center justify-between px-2 py-2">
-          {/* Comando */}
-          <div className="flex items-center gap-1 bg-black/30 rounded-lg px-2 py-1.5 border border-blue-400/30">
-            <Users className="w-4 h-4 text-blue-400" />
-            <span className="text-xs text-blue-300 font-medium">CMD</span>
-            <span className="text-lg font-black text-white ml-1">{commander.comando}</span>
-          </div>
+        </div>
 
-          {/* Estratégia */}
-          <div className="flex items-center gap-1 bg-black/30 rounded-lg px-2 py-1.5 border border-purple-400/30">
-            <Brain className="w-4 h-4 text-purple-400" />
-            <span className="text-xs text-purple-300 font-medium">EST</span>
-            <span className="text-lg font-black text-white ml-1">{commander.estrategia}</span>
-          </div>
-
-          {/* Especializações (ícones compactos) */}
-          <div className="flex items-center gap-0.5">
-            {allSpecializations.slice(0, 4).map((spec, index) => {
-              const specConfig = specializationIcons[spec] || specializationIcons['Infantaria'];
+        {/* Right: Specializations */}
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-1">
+            {allSpecs.slice(0, 4).map((spec, index) => {
+              const IconComponent = SPECIALIZATION_ICONS[spec] || Swords;
               return (
                 <div 
-                  key={`${spec}-${index}`}
-                  className={`w-7 h-7 rounded-md flex items-center justify-center border ${
+                  key={index}
+                  className={`rounded p-1.5 border ${
                     index === 0 
-                      ? 'bg-amber-900/60 border-amber-500/50 ring-1 ring-amber-400/50' 
-                      : 'bg-slate-800/60 border-slate-600/50'
+                      ? 'bg-amber-900/60 border-amber-500/50' 
+                      : 'bg-black/40 border-amber-500/30'
                   }`}
                   title={spec}
                 >
-                  {specConfig.icon}
+                  <IconComponent 
+                    className="text-amber-400" 
+                    style={{ width: 18 * scale, height: 18 * scale }}
+                  />
                 </div>
               );
             })}
-            {allSpecializations.length > 4 && (
-              <div className="w-7 h-7 rounded-md flex items-center justify-center bg-slate-800/60 border border-slate-600/50 text-xs text-slate-400">
-                +{allSpecializations.length - 4}
-              </div>
-            )}
           </div>
+          {allSpecs.length > 4 && (
+            <span 
+              className="text-amber-300/60"
+              style={{ fontSize: `${9 * scale}px` }}
+            >
+              +{allSpecs.length - 4} mais
+            </span>
+          )}
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          CORPO DO CARD - Informações detalhadas
-          ═══════════════════════════════════════════════════════════════ */}
-      <div className="relative z-10 flex flex-col p-3" style={{ height: isGeneral ? 'calc(100% - 88px)' : 'calc(100% - 68px)' }}>
-        {/* Commander Name & Culture */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex-1">
-            <h2 className="text-lg font-bold text-white drop-shadow-lg truncate">
-              {commander.nome_comandante}
-            </h2>
-            {commander.unidade_de_origem && (
-              <p className="text-[10px] text-slate-400 italic truncate">
-                {commander.unidade_de_origem}
-              </p>
-            )}
-          </div>
-          <Badge className={`bg-black/50 ${theme.accent} text-[10px] font-bold px-2 py-0.5 border ${theme.border}`}>
-            {commander.cultura_origem}
-          </Badge>
-        </div>
-
-        {/* Guarda & Prestige Row */}
-        <div className="flex gap-2 mb-3">
-          <div className="flex-1 bg-green-950/40 rounded-lg px-3 py-2 border border-green-600/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Shield className="w-4 h-4 text-green-400" />
-                <span className="text-xs text-green-300">Guarda</span>
-              </div>
-              <span className="text-xl font-black text-white">{commander.guarda}</span>
-            </div>
-            {/* Visual guard pips */}
-            <div className="flex gap-0.5 mt-1">
-              {Array.from({ length: 5 }, (_, i) => (
-                <div
-                  key={i}
-                  className={`h-1.5 flex-1 rounded-sm ${
-                    i < commander.guarda ? 'bg-gradient-to-r from-green-500 to-green-400' : 'bg-slate-800/60'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-          
-          <div className="bg-amber-950/40 rounded-lg px-3 py-2 border border-amber-600/30">
-            <div className="flex items-center gap-1.5">
-              <Award className="w-4 h-4 text-amber-400" />
-              <span className="text-xs text-amber-300">PP</span>
-            </div>
-            <span className="text-xl font-black text-amber-200">{commander.pontos_prestigio}</span>
-          </div>
-        </div>
-
-        {/* Derived Stats Grid */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="flex items-center justify-between bg-blue-950/30 rounded-lg px-2.5 py-1.5 border border-blue-600/20">
-            <span className="text-[10px] text-blue-300/80">Cartas Táticas</span>
-            <span className="text-sm font-bold text-white">{derived.pontos_compra_taticos}</span>
-          </div>
-          <div className="flex items-center justify-between bg-purple-950/30 rounded-lg px-2.5 py-1.5 border border-purple-600/20">
-            <span className="text-[10px] text-purple-300/80">Cartas Estrat.</span>
-            <span className="text-sm font-bold text-white">{derived.pontos_compra_estrategicos}</span>
-          </div>
-          <div className="flex items-center justify-between bg-slate-800/30 rounded-lg px-2.5 py-1.5 border border-slate-600/20">
-            <span className="text-[10px] text-slate-300/80">Unidades</span>
-            <span className="text-sm font-bold text-white">
-              {unitsCommanded > 0 ? `${unitsCommanded}/${derived.unidades_lideradas}` : derived.unidades_lideradas}
-            </span>
-          </div>
-          <div className="flex items-center justify-between bg-slate-800/30 rounded-lg px-2.5 py-1.5 border border-slate-600/20">
-            <span className="text-[10px] text-slate-300/80">Influência</span>
-            <span className="text-sm font-bold text-white">{derived.area_influencia} hex</span>
-          </div>
-        </div>
-
-        {/* Specializations Full List */}
-        <div className="mt-auto">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Star className="w-3 h-3 text-amber-400" />
-            <span className="text-[9px] text-amber-300/80 uppercase tracking-wider font-semibold">
-              Especializações
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {allSpecializations.map((spec, index) => {
-              const specConfig = specializationIcons[spec] || specializationIcons['Infantaria'];
-              return (
-                <Badge 
-                  key={`${spec}-${index}`}
-                  className={`text-[9px] px-1.5 py-0.5 flex items-center gap-1 ${
-                    index === 0 
-                      ? 'bg-amber-900/60 text-amber-200 border-amber-500/50 ring-1 ring-amber-400/30' 
-                      : 'bg-slate-800/60 text-slate-300 border-slate-600/50'
-                  }`}
-                >
-                  {specConfig.icon}
-                  <span>{specConfig.abbrev}</span>
-                </Badge>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Notes */}
-        {commander.notas && (
-          <div className="mt-2 text-[9px] text-slate-400 italic line-clamp-2 bg-black/30 rounded-lg p-1.5 border border-slate-700/30">
-            "{commander.notas}"
-          </div>
-        )}
-      </div>
+      {/* Bottom accent line */}
+      <div className={`absolute bottom-0 left-0 right-0 h-1 ${colors.accent} opacity-60`} />
     </div>
   );
 }
+
+export default CommanderCardPreview;
