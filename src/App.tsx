@@ -9,6 +9,7 @@ import ArmyManagement from "./pages/ArmyManagement";
 import TacticalCards from "./pages/TacticalCards";
 import FieldCommanders from "./pages/FieldCommanders";
 import Domains from "./pages/Domains";
+import BattleMap from "./pages/BattleMap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/tactical-cards" element={<TacticalCards />} />
           <Route path="/commanders" element={<FieldCommanders />} />
           <Route path="/domains" element={<Domains />} />
+          <Route path="/battle-map" element={<BattleMap />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
