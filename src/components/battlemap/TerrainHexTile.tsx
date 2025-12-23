@@ -16,6 +16,15 @@ const tagColors: Record<string, string> = {
   'Cobertura': 'from-green-500 to-green-700',
   'Obstáculo': 'from-stone-500 to-stone-700',
   'Desnível': 'from-purple-500 to-purple-700',
+  'Calor': 'from-yellow-400 to-yellow-600',
+  'Frio': 'from-slate-100 to-slate-300',
+};
+
+// Specific terrain name colors (override tag colors)
+const terrainNameColors: Record<string, string> = {
+  'Planície': 'from-orange-300 to-orange-400',
+  'Brejo': 'from-gray-800 to-gray-900',
+  'Pântano': 'from-gray-900 to-black',
 };
 
 const sizeClasses = {
@@ -31,7 +40,10 @@ const fontSizes = {
 };
 
 export function TerrainHexTile({ terrain, size = 'md', showModifiers = true, className }: TerrainHexTileProps) {
-  const gradientClass = terrain.tag ? tagColors[terrain.tag] : 'from-green-400 to-green-600';
+  // Check for specific terrain name color first, then tag color, then default
+  const gradientClass = terrainNameColors[terrain.name] 
+    || (terrain.tag ? tagColors[terrain.tag] : null) 
+    || 'from-green-400 to-green-600';
   
   const formatMod = (value: number | string, prefix?: string) => {
     if (typeof value === 'string') return value;
