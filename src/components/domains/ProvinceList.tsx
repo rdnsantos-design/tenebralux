@@ -28,6 +28,7 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
     realm_id: selectedRealmId || '',
     development: 0,
     magic: 0,
+    cultura: '',
   });
 
   const resetForm = () => {
@@ -36,6 +37,7 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
       realm_id: selectedRealmId || '',
       development: 0,
       magic: 0,
+      cultura: '',
     });
     setShowAddForm(false);
     setEditingId(null);
@@ -48,6 +50,7 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
       realm_id: formData.realm_id,
       development: formData.development,
       magic: formData.magic,
+      cultura: formData.cultura || undefined,
     });
     resetForm();
   };
@@ -60,6 +63,7 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
       realm_id: formData.realm_id,
       development: formData.development,
       magic: formData.magic,
+      cultura: formData.cultura || undefined,
     });
     resetForm();
   };
@@ -77,6 +81,7 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
       realm_id: province.realm_id,
       development: province.development,
       magic: province.magic,
+      cultura: province.cultura || '',
     });
     setShowAddForm(true);
   };
@@ -108,7 +113,7 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
         {/* Add/Edit Form */}
         {showAddForm && (
           <div className="mb-4 p-4 border rounded-lg bg-muted/50">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               <div className="col-span-2 md:col-span-1">
                 <label className="text-xs text-muted-foreground">Nome</label>
                 <Input
@@ -134,6 +139,14 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Cultura</label>
+                <Input
+                  placeholder="Cultura"
+                  value={formData.cultura}
+                  onChange={(e) => setFormData({ ...formData, cultura: e.target.value })}
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Desenvolvimento</label>
@@ -180,6 +193,7 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
                 <TableRow>
                   <TableHead>Província</TableHead>
                   {!selectedRealmId && <TableHead>Reino</TableHead>}
+                  <TableHead>Cultura</TableHead>
                   <TableHead className="text-center w-24">Desenv.</TableHead>
                   <TableHead className="text-center w-24">Magia</TableHead>
                   <TableHead className="text-right w-24">Ações</TableHead>
@@ -194,6 +208,9 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
                         {province.realm?.name || '-'}
                       </TableCell>
                     )}
+                    <TableCell className="text-muted-foreground">
+                      {province.cultura || '-'}
+                    </TableCell>
                     <TableCell className="text-center">
                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold">
                         {province.development}

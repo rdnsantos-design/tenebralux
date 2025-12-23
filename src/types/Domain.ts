@@ -11,6 +11,7 @@ export interface Province {
   realm_id: string;
   development: number;
   magic: number;
+  cultura?: string;
   created_at: string;
   updated_at: string;
 }

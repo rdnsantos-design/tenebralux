@@ -13,6 +13,7 @@ interface ImportPreview {
     realmName: string;
     development: number;
     magic: number;
+    cultura: string;
   }>;
 }
 
@@ -58,6 +59,7 @@ export const DomainImporter = ({ onClose }: DomainImporterProps) => {
         const provinceName = row['Provincia'] || row['Província'] || row['province'] || row['Province'] || '';
         const development = parseInt(row['Desenvolvimento'] || row['Development'] || row['Level'] || '0') || 0;
         const magic = parseInt(row['Magia'] || row['Magic'] || row['Source'] || '0') || 0;
+        const cultura = row['Cultura'] || row['Culture'] || '';
 
         if (realmName && provinceName) {
           realmsSet.add(realmName);
@@ -66,6 +68,7 @@ export const DomainImporter = ({ onClose }: DomainImporterProps) => {
             realmName,
             development: Math.min(10, Math.max(0, development)),
             magic: Math.min(10, Math.max(0, magic)),
+            cultura,
           });
         }
       });
@@ -123,7 +126,8 @@ export const DomainImporter = ({ onClose }: DomainImporterProps) => {
                 <code className="bg-muted px-2 py-1 rounded">Reino</code>,{' '}
                 <code className="bg-muted px-2 py-1 rounded">Província</code>,{' '}
                 <code className="bg-muted px-2 py-1 rounded">Desenvolvimento</code>,{' '}
-                <code className="bg-muted px-2 py-1 rounded">Magia</code>
+                <code className="bg-muted px-2 py-1 rounded">Magia</code>,{' '}
+                <code className="bg-muted px-2 py-1 rounded">Cultura</code>
               </div>
               <label className="cursor-pointer">
                 <input
@@ -163,6 +167,7 @@ export const DomainImporter = ({ onClose }: DomainImporterProps) => {
                   <tr>
                     <th className="text-left p-2">Reino</th>
                     <th className="text-left p-2">Província</th>
+                    <th className="text-left p-2">Cultura</th>
                     <th className="text-center p-2">Des.</th>
                     <th className="text-center p-2">Mag.</th>
                   </tr>
@@ -172,13 +177,14 @@ export const DomainImporter = ({ onClose }: DomainImporterProps) => {
                     <tr key={i} className="border-t">
                       <td className="p-2">{p.realmName}</td>
                       <td className="p-2">{p.name}</td>
+                      <td className="p-2 text-muted-foreground">{p.cultura || '-'}</td>
                       <td className="text-center p-2">{p.development}</td>
                       <td className="text-center p-2">{p.magic}</td>
                     </tr>
                   ))}
                   {preview.provinces.length > 50 && (
                     <tr className="border-t">
-                      <td colSpan={4} className="p-2 text-center text-muted-foreground">
+                      <td colSpan={5} className="p-2 text-center text-muted-foreground">
                         ... e mais {preview.provinces.length - 50} províncias
                       </td>
                     </tr>

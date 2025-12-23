@@ -137,6 +137,7 @@ export type Database = {
       provinces: {
         Row: {
           created_at: string
+          cultura: string | null
           development: number
           id: string
           magic: number
@@ -146,6 +147,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          cultura?: string | null
           development?: number
           id?: string
           magic?: number
@@ -155,6 +157,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          cultura?: string | null
           development?: number
           id?: string
           magic?: number
