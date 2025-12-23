@@ -190,11 +190,17 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
         .select('id, name, realm_id, realms(name)');
 
       const provinceMap = new Map<string, string>(); // "realm|province" -> id
+      const provinceByNameOnly = new Map<string, string>(); // province name only -> id
+      
       provinces?.forEach((p: any) => {
-        const key = `${p.realms?.name?.toLowerCase()}|${p.name.toLowerCase()}`;
+        // Map by realm|province (normalized to lowercase and trimmed)
+        const realmName = (p.realms?.name || '').toLowerCase().trim();
+        const provinceName = p.name.toLowerCase().trim();
+        const key = `${realmName}|${provinceName}`;
         provinceMap.set(key, p.id);
+        
         // Also map by province name only for fallback
-        provinceMap.set(p.name.toLowerCase(), p.id);
+        provinceByNameOnly.set(provinceName, p.id);
       });
 
       // Phase 3: Create holdings
@@ -209,16 +215,20 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
       for (let i = 0; i < parsedData.length; i++) {
         const h = parsedData[i];
         
-        // Find province
-        const provinceKey = `${h.realm.toLowerCase()}|${h.province.toLowerCase()}`;
+        // Find province - normalize to lowercase and trim
+        const realmNormalized = (h.realm || '').toLowerCase().trim();
+        const provinceNormalized = (h.province || '').toLowerCase().trim();
+        const provinceKey = `${realmNormalized}|${provinceNormalized}`;
+        
         let provinceId = provinceMap.get(provinceKey);
         
         // Fallback: try by province name only
         if (!provinceId) {
-          provinceId = provinceMap.get(h.province.toLowerCase());
+          provinceId = provinceByNameOnly.get(provinceNormalized);
         }
 
         if (!provinceId) {
+          console.warn(`Province not found: ${h.realm}|${h.province}`);
           skipped++;
           setProgress({ current: i + 1, total: parsedData.length, phase: 'Criando holdings...' });
           continue;
