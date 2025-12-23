@@ -136,33 +136,54 @@ export type Database = {
       }
       provinces: {
         Row: {
+          arcane_line_level: number
           created_at: string
           cultura: string | null
           development: number
+          fortification_level: number
+          has_path: boolean
+          has_port: boolean
+          has_river: boolean
           id: string
           magic: number
           name: string
           realm_id: string
+          road_level: number
+          terrain_type: string | null
           updated_at: string
         }
         Insert: {
+          arcane_line_level?: number
           created_at?: string
           cultura?: string | null
           development?: number
+          fortification_level?: number
+          has_path?: boolean
+          has_port?: boolean
+          has_river?: boolean
           id?: string
           magic?: number
           name: string
           realm_id: string
+          road_level?: number
+          terrain_type?: string | null
           updated_at?: string
         }
         Update: {
+          arcane_line_level?: number
           created_at?: string
           cultura?: string | null
           development?: number
+          fortification_level?: number
+          has_path?: boolean
+          has_port?: boolean
+          has_river?: boolean
           id?: string
           magic?: number
           name?: string
           realm_id?: string
+          road_level?: number
+          terrain_type?: string | null
           updated_at?: string
         }
         Relationships: [
