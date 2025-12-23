@@ -7,22 +7,35 @@ import { useProvinces, useCreateProvince, useUpdateProvince, useDeleteProvince, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Edit, Trash2, Plus, Check, X, Loader2, Filter, Anchor, Waves, Route, Castle, Zap, MapPin } from 'lucide-react';
-import { ProvinceWithRealm, TERRAIN_TYPES } from '@/types/Domain';
+import { ProvinceWithRealm, Province, TERRAIN_TYPES } from '@/types/Domain';
 
 interface ProvinceListProps {
   selectedRealmId?: string;
+  onSelectProvince?: (province: Province | null) => void;
+  compact?: boolean;
 }
 
-export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
+export const ProvinceList = ({ selectedRealmId, onSelectProvince, compact }: ProvinceListProps) => {
   const { data: provinces, isLoading } = useProvinces(selectedRealmId);
   const { data: realms } = useRealms();
   const createProvince = useCreateProvince();
   const updateProvince = useUpdateProvince();
   const deleteProvince = useDeleteProvince();
 
+  const [selectedProvinceId, setSelectedProvinceId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [culturaFilter, setCulturaFilter] = useState<string>('all');
+
+  const handleSelectProvince = (province: ProvinceWithRealm) => {
+    if (selectedProvinceId === province.id) {
+      setSelectedProvinceId(null);
+      onSelectProvince?.(null);
+    } else {
+      setSelectedProvinceId(province.id);
+      onSelectProvince?.(province);
+    }
+  };
   
   // Get unique cultures from provinces
   const uniqueCultures = useMemo(() => {
@@ -187,33 +200,61 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
         <CardTitle className="text-lg">
           Províncias ({filteredProvinces.length}{culturaFilter !== 'all' ? ` de ${provinces?.length || 0}` : ''})
         </CardTitle>
-        <div className="flex items-center gap-2">
+        {!compact && (
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <Select value={culturaFilter} onValueChange={setCulturaFilter}>
-              <SelectTrigger className="w-[180px] h-9 bg-background">
-                <SelectValue placeholder="Filtrar por cultura" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border shadow-md z-50">
-                <SelectItem value="all">Todas as culturas</SelectItem>
-                <SelectItem value="none">Sem cultura</SelectItem>
-                {uniqueCultures.map((cultura) => (
-                  <SelectItem key={cultura} value={cultura}>
-                    {cultura}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <Select value={culturaFilter} onValueChange={setCulturaFilter}>
+                <SelectTrigger className="w-[180px] h-9 bg-background">
+                  <SelectValue placeholder="Filtrar por cultura" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border shadow-md z-50">
+                  <SelectItem value="all">Todas as culturas</SelectItem>
+                  <SelectItem value="none">Sem cultura</SelectItem>
+                  {uniqueCultures.map((cultura) => (
+                    <SelectItem key={cultura} value={cultura}>
+                      {cultura}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {!showAddForm && (
+              <Button size="sm" onClick={() => setShowAddForm(true)}>
+                <Plus className="w-4 h-4 mr-1" />
+                Nova Província
+              </Button>
+            )}
           </div>
-          {!showAddForm && (
-            <Button size="sm" onClick={() => setShowAddForm(true)}>
-              <Plus className="w-4 h-4 mr-1" />
-              Nova Província
-            </Button>
-          )}
-        </div>
+        )}
       </CardHeader>
       <CardContent>
+        {/* Compact mode - simple list for selection */}
+        {compact ? (
+          <div className="space-y-2 max-h-[500px] overflow-y-auto">
+            <Input
+              placeholder="Buscar província..."
+              className="mb-2"
+            />
+            {filteredProvinces.map((province) => (
+              <div
+                key={province.id}
+                className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selectedProvinceId === province.id
+                    ? 'bg-primary/10 border-primary'
+                    : 'hover:bg-muted/50'
+                }`}
+                onClick={() => handleSelectProvince(province)}
+              >
+                <div className="font-medium">{province.name}</div>
+                <div className="text-sm text-muted-foreground">
+                  {province.realm?.name} • Dev: {province.development} • Mag: {province.magic}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
         {/* Add/Edit Form */}
         {showAddForm && (
           <div className="mb-4 p-4 border rounded-lg bg-muted/50 space-y-4">
@@ -498,6 +539,8 @@ export const ProvinceList = ({ selectedRealmId }: ProvinceListProps) => {
               : 'Nenhuma província cadastrada. Adicione a primeira ou importe do Excel!'
             }
           </div>
+        )}
+        </>
         )}
       </CardContent>
     </Card>

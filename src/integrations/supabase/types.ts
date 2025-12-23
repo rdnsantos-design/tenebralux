@@ -134,6 +134,54 @@ export type Database = {
         }
         Relationships: []
       }
+      holdings: {
+        Row: {
+          created_at: string
+          holding_type: Database["public"]["Enums"]["holding_type"]
+          id: string
+          level: number
+          notes: string | null
+          province_id: string
+          regent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          holding_type: Database["public"]["Enums"]["holding_type"]
+          id?: string
+          level?: number
+          notes?: string | null
+          province_id: string
+          regent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          holding_type?: Database["public"]["Enums"]["holding_type"]
+          id?: string
+          level?: number
+          notes?: string | null
+          province_id?: string
+          regent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holdings_province_id_fkey"
+            columns: ["province_id"]
+            isOneToOne: false
+            referencedRelation: "provinces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holdings_regent_id_fkey"
+            columns: ["regent_id"]
+            isOneToOne: false
+            referencedRelation: "regents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provinces: {
         Row: {
           arcane_line_level: number
@@ -213,6 +261,36 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      regents: {
+        Row: {
+          code: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -365,6 +443,7 @@ export type Database = {
         | "Milicia"
         | "Elite"
         | "Naval"
+      holding_type: "ordem" | "guilda" | "templo" | "fonte_magica"
       tactical_card_subtype: "Buff" | "Debuff" | "Neutra" | "Instantânea"
       tactical_card_type: "Ataque" | "Defesa" | "Movimento" | "Moral"
       tactical_culture: "Anuire" | "Khinasi" | "Vos" | "Rjurik" | "Brecht"
@@ -504,6 +583,7 @@ export const Constants = {
         "Elite",
         "Naval",
       ],
+      holding_type: ["ordem", "guilda", "templo", "fonte_magica"],
       tactical_card_subtype: ["Buff", "Debuff", "Neutra", "Instantânea"],
       tactical_card_type: ["Ataque", "Defesa", "Movimento", "Moral"],
       tactical_culture: ["Anuire", "Khinasi", "Vos", "Rjurik", "Brecht"],
