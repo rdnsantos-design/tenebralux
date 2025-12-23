@@ -31,19 +31,52 @@ interface HoldingsImporterProps {
 
 // Map holding type names to database enum values
 const HOLDING_TYPE_MAP: Record<string, HoldingType> = {
+  // Law/Order holdings
   'law': 'ordem',
+  'laws': 'ordem',
   'ordem': 'ordem',
+  'ordens': 'ordem',
+  'order': 'ordem',
+  'orders': 'ordem',
+  // Guild holdings
   'guild': 'guilda',
+  'guilds': 'guilda',
   'guilda': 'guilda',
   'guildas': 'guilda',
+  // Temple holdings
   'temple': 'templo',
+  'temples': 'templo',
   'templo': 'templo',
   'templos': 'templo',
+  // Source/Magic holdings
   'source': 'fonte_magica',
+  'sources': 'fonte_magica',
   'fonte': 'fonte_magica',
+  'fontes': 'fonte_magica',
   'fonte_magica': 'fonte_magica',
+  'fonte magica': 'fonte_magica',
   'fontes mágicas': 'fonte_magica',
   'fontes magicas': 'fonte_magica',
+  'magic': 'fonte_magica',
+  'magical source': 'fonte_magica',
+};
+
+// Function to normalize and map holding type
+const normalizeHoldingType = (type: string): HoldingType | null => {
+  const normalized = type.toLowerCase().trim();
+  
+  // Direct match
+  if (HOLDING_TYPE_MAP[normalized]) {
+    return HOLDING_TYPE_MAP[normalized];
+  }
+  
+  // Try removing special characters and extra spaces
+  const cleaned = normalized.replace(/[^a-z\s]/g, '').trim();
+  if (HOLDING_TYPE_MAP[cleaned]) {
+    return HOLDING_TYPE_MAP[cleaned];
+  }
+  
+  return null;
 };
 
 export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
@@ -208,6 +241,12 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
       
       let created = 0;
       let skipped = 0;
+      const skippedReasons = {
+        provinceNotFound: 0,
+        unknownHoldingType: 0,
+        insertError: 0,
+      };
+      const unknownHoldingTypes = new Set<string>();
 
       // Clear existing holdings first
       await supabase.from('holdings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -229,14 +268,18 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
 
         if (!provinceId) {
           console.warn(`Province not found: ${h.realm}|${h.province}`);
+          skippedReasons.provinceNotFound++;
           skipped++;
           setProgress({ current: i + 1, total: parsedData.length, phase: 'Criando holdings...' });
           continue;
         }
 
-        // Map holding type
-        const holdingType = HOLDING_TYPE_MAP[h.holdingType];
+        // Map holding type using the normalizer
+        const holdingType = normalizeHoldingType(h.holdingType);
         if (!holdingType) {
+          console.warn(`Unknown holding type: "${h.holdingType}" for province ${h.province}`);
+          unknownHoldingTypes.add(h.holdingType);
+          skippedReasons.unknownHoldingType++;
           skipped++;
           setProgress({ current: i + 1, total: parsedData.length, phase: 'Criando holdings...' });
           continue;
@@ -258,17 +301,47 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
         if (!error) {
           created++;
         } else {
+          console.warn(`Insert error for ${h.province}:`, error);
+          skippedReasons.insertError++;
           skipped++;
         }
 
         setProgress({ current: i + 1, total: parsedData.length, phase: 'Criando holdings...' });
       }
 
+      // Log summary for debugging
+      console.log('=== Import Summary ===');
+      console.log(`Created: ${created}`);
+      console.log(`Skipped: ${skipped}`);
+      console.log(`  - Province not found: ${skippedReasons.provinceNotFound}`);
+      console.log(`  - Unknown holding type: ${skippedReasons.unknownHoldingType}`);
+      console.log(`  - Insert errors: ${skippedReasons.insertError}`);
+      if (unknownHoldingTypes.size > 0) {
+        console.log(`  - Unknown types found: ${Array.from(unknownHoldingTypes).join(', ')}`);
+      }
+
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['holdings'] });
       queryClient.invalidateQueries({ queryKey: ['regents'] });
 
-      toast.success(`Importação concluída! ${created} holdings criados, ${skipped} ignorados.`);
+      // Show detailed result
+      let message = `Importação concluída! ${created} holdings criados.`;
+      if (skipped > 0) {
+        message += ` ${skipped} ignorados`;
+        if (skippedReasons.provinceNotFound > 0) {
+          message += ` (${skippedReasons.provinceNotFound} províncias não encontradas)`;
+        }
+        if (skippedReasons.unknownHoldingType > 0) {
+          message += ` (${skippedReasons.unknownHoldingType} tipos desconhecidos: ${Array.from(unknownHoldingTypes).slice(0, 3).join(', ')})`;
+        }
+      }
+      
+      if (created > skipped) {
+        toast.success(message);
+      } else {
+        toast.warning(message);
+      }
+      
       onClose();
     } catch (error: any) {
       console.error('Import error:', error);
