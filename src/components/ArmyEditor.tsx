@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Users, Plus, Trash2, UserCircle } from "lucide-react";
+import { ArrowLeft, Save, Users, Plus, Trash2, UserCircle, Crown } from "lucide-react";
 import { Regent, Army, ArmyUnit } from "@/types/Army";
 import { UnitCard } from "@/types/UnitCard";
 import { Country, Province } from "@/types/Location";
@@ -24,6 +24,7 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
   const [formData, setFormData] = useState({
     name: army?.name || "",
     regentId: army?.regentId || "",
+    generalId: army?.generalId || "",
   });
   const [units, setUnits] = useState<ArmyUnit[]>(army?.units || []);
   const [availableCards, setAvailableCards] = useState<UnitCard[]>([]);
@@ -82,7 +83,9 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
 
     const armyData: Army = {
       id: army?.id || `army_${Date.now()}`,
-      ...formData,
+      name: formData.name,
+      regentId: formData.regentId,
+      generalId: formData.generalId || undefined,
       units,
       createdAt: army?.createdAt || new Date().toISOString(),
     };
@@ -213,9 +216,50 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                          </SelectItem>
                        ))}
                      </SelectContent>
-                   </Select>
-                 </div>
-               </div>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="general" className="flex items-center gap-1">
+                      <Crown className="w-4 h-4 text-amber-500" />
+                      General do Exército
+                    </Label>
+                    <Select 
+                      value={formData.generalId || '__none__'} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, generalId: value === '__none__' ? '' : value }))}
+                      disabled={regentCommanders.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={regentCommanders.length === 0 ? "Nenhum comandante disponível" : "Selecione um general"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Sem general</SelectItem>
+                        {regentCommanders.map((commander) => (
+                          <SelectItem key={commander.id} value={commander.id}>
+                            {commander.nome_comandante} - {commander.especializacao_inicial} (Cmd: {commander.comando})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {regentCommanders.length === 0 && formData.regentId && (
+                      <p className="text-xs text-amber-600">
+                        Nenhum comandante associado a este regente.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {formData.generalId && (
+                  <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-lg mt-4">
+                    <div className="flex items-center gap-2">
+                      <Crown className="w-5 h-5 text-amber-500" />
+                      <span className="font-medium text-amber-700">General:</span>
+                      <span className="text-amber-600">
+                        {getCommanderName(formData.generalId)}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                {selectedRegent && (
                 <div className="bg-muted/50 p-4 rounded-lg">

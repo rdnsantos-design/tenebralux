@@ -14,6 +14,7 @@ export interface Army {
   id: string;
   regentId: string;
   name: string;
+  generalId?: string; // ID do comandante promovido a general deste exército
   units: ArmyUnit[];
   createdAt: string;
 }
