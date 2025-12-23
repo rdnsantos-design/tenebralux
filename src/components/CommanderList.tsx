@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, TrendingUp, Search, Filter, Sword, Brain, Shield, Star, Crown } from 'lucide-react';
+import { Edit, Trash2, TrendingUp, Search, Filter, Sword, Brain, Shield, Star, Crown, CreditCard } from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { CommanderCardPreview } from '@/components/CommanderCardPreview';
 import { FieldCommander, SPECIALIZATIONS, CULTURES, calculateDerivedFields } from '@/types/FieldCommander';
 import { TacticalCulture } from '@/types/TacticalCard';
 import { Regent } from '@/types/Army';
@@ -199,6 +201,20 @@ export function CommanderList({ commanders, onEdit, onEvolve, onDelete }: Comman
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="Ver Card"
+                              >
+                                <CreditCard className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md p-0 overflow-hidden bg-transparent border-0">
+                              <CommanderCardPreview commander={commander} />
+                            </DialogContent>
+                          </Dialog>
                           <Button
                             size="sm"
                             variant="ghost"
