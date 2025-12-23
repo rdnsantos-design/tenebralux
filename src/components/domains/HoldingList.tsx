@@ -196,14 +196,14 @@ export function HoldingList({ selectedProvinceId }: HoldingListProps) {
               <div className="space-y-2">
                 <Label>Regente</Label>
                 <Select
-                  value={formData.regent_id}
-                  onValueChange={(value) => setFormData({ ...formData, regent_id: value })}
+                  value={formData.regent_id || 'none'}
+                  onValueChange={(value) => setFormData({ ...formData, regent_id: value === 'none' ? '' : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um regente" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sem regente</SelectItem>
+                    <SelectItem value="none">Sem regente</SelectItem>
                     {regents?.map(r => (
                       <SelectItem key={r.id} value={r.id}>
                         {r.code ? `[${r.code}] ` : ''}{r.name}
