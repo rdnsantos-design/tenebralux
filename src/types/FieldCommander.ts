@@ -3,20 +3,16 @@ import { TacticalCulture, CULTURES } from './TacticalCard';
 export type CommanderSpecialization = 
   | 'Infantaria' 
   | 'Cavalaria' 
-  | 'Arqueiro' 
+  | 'Tiro' 
   | 'Cerco' 
-  | 'Milicia' 
-  | 'Elite' 
-  | 'Naval';
+  | 'Magia';
 
 export const SPECIALIZATIONS: CommanderSpecialization[] = [
   'Infantaria',
   'Cavalaria',
-  'Arqueiro',
+  'Tiro',
   'Cerco',
-  'Milicia',
-  'Elite',
-  'Naval'
+  'Magia'
 ];
 
 export interface FieldCommander {
@@ -31,9 +27,19 @@ export interface FieldCommander {
   especializacoes_adicionais: CommanderSpecialization[];
   unidade_de_origem?: string;
   notas?: string;
-  regent_id?: string; // ID do regente associado
-  commander_photo_url?: string; // Foto do comandante
-  coat_of_arms_url?: string; // Brasão do reino
+  regent_id?: string;
+  commander_photo_url?: string;
+  coat_of_arms_url?: string;
+  // D&D Stats
+  classe?: string;
+  nivel?: number;
+  ataque?: string;
+  ac?: number;
+  hit_points?: number;
+  habilidades?: string;
+  // Bio
+  dominio?: string;
+  idade?: number;
   created_at?: string;
   updated_at?: string;
 }
