@@ -7,6 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Function to remove diacritics/accents from strings
+function removeDiacritics(str: string): string {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -111,7 +116,9 @@ serve(async (req) => {
     const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
     const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
     
-    const fileName = `terrain-${terrainName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.png`;
+    // Sanitize filename by removing diacritics
+    const sanitizedName = removeDiacritics(terrainName.toLowerCase().replace(/\s+/g, '-'));
+    const fileName = `terrain-${sanitizedName}-${Date.now()}.png`;
     const filePath = `terrains/${fileName}`;
 
     const { data: uploadData, error: uploadError } = await supabase.storage
