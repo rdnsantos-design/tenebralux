@@ -193,7 +193,7 @@ export const useBulkImportDomains = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (data: { realms: string[]; provinces: Array<{ name: string; realmName: string; development: number; magic: number }> }) => {
+    mutationFn: async (data: { realms: string[]; provinces: Array<{ name: string; realmName: string; development: number; magic: number; cultura: string }> }) => {
       // First, get or create all realms
       const realmMap = new Map<string, string>();
       
@@ -240,7 +240,11 @@ export const useBulkImportDomains = () => {
           // Update existing
           await supabase
             .from('provinces')
-            .update({ development: province.development, magic: province.magic })
+            .update({ 
+              development: province.development, 
+              magic: province.magic,
+              cultura: province.cultura || null
+            })
             .eq('id', existingProvince.id);
           updated++;
         } else {
@@ -252,6 +256,7 @@ export const useBulkImportDomains = () => {
               realm_id: realmId,
               development: province.development,
               magic: province.magic,
+              cultura: province.cultura || null,
             });
           created++;
         }
