@@ -172,7 +172,7 @@ export function TacticalCardPreview({ card }: TacticalCardPreviewProps) {
       {/* Rodapé */}
       <div className="px-4 pb-3 flex justify-between items-center text-white/80 text-xs">
         <span>Carta Tática</span>
-        <span>Birthright</span>
+        <span>Tenebra Lux</span>
       </div>
     </div>
   );

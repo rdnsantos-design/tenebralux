@@ -213,7 +213,7 @@ const Index = () => {
                 Voltar ao Dashboard
               </Button>
             </div>
-            <h1 className="text-4xl font-bold mb-2">Sistema de Cards Birthright</h1>
+            <h1 className="text-4xl font-bold mb-2">Sistema de Cards Tenebra Lux</h1>
             <p className="text-xl text-muted-foreground">Gerencie suas unidades militares e templates</p>
           </div>
           <div className="flex gap-2">
