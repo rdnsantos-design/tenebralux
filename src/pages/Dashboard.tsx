@@ -10,7 +10,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4">Sistema Birthright</h1>
+          <h1 className="text-5xl font-bold mb-4">Sistema Tenebra Lux</h1>
           <p className="text-xl text-muted-foreground">
             Gerencie seus cards e exércitos para suas campanhas
           </p>
@@ -244,7 +244,7 @@ const Dashboard = () => {
 
         <div className="text-center mt-12">
           <p className="text-sm text-muted-foreground">
-            Sistema de gerenciamento para campanhas de Birthright
+            Sistema de gerenciamento para campanhas de Tenebra Lux
           </p>
         </div>
       </div>

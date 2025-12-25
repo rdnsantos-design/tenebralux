@@ -65,7 +65,7 @@ export default function TacticalCards() {
             <div>
               <h1 className="text-2xl font-bold">Cartas Táticas</h1>
               <p className="text-muted-foreground">
-                Sistema de criação e balanceamento de cartas táticas para Birthright
+                Sistema de criação e balanceamento de cartas táticas para Tenebra Lux
               </p>
             </div>
           </div>
