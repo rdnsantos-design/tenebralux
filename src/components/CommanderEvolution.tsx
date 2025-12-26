@@ -203,7 +203,7 @@ export function CommanderEvolution({ commander, onEvolve, onBack }: CommanderEvo
           )}
 
           <p className="text-sm text-muted-foreground mt-4">
-            Especializações reduzem o custo de cartas táticas relacionadas ao tipo de unidade.
+            Especializações reduzem o custo de cartas de combate relacionadas ao tipo de unidade.
           </p>
         </CardContent>
       </Card>

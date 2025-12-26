@@ -87,11 +87,11 @@ const Dashboard = () => {
               <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-20 h-20 flex items-center justify-center">
                 <Swords className="w-10 h-10 text-primary" />
               </div>
-              <CardTitle className="text-xl">Cartas Táticas</CardTitle>
+              <CardTitle className="text-xl">Cartas de Combate</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <p className="text-muted-foreground text-sm">
-                Crie cartas táticas com cálculo automático de custo
+                Crie cartas de combate com cálculo automático de custo
               </p>
               <div className="space-y-2">
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -108,7 +108,7 @@ const Dashboard = () => {
                 className="w-full"
                 onClick={() => navigate('/tactical-cards')}
               >
-                Acessar Cartas Táticas
+                Acessar Cartas de Combate
               </Button>
             </CardContent>
           </Card>
