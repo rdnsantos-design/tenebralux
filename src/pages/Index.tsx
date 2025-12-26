@@ -213,8 +213,8 @@ const Index = () => {
                 Voltar ao Dashboard
               </Button>
             </div>
-            <h1 className="text-4xl font-bold mb-2">Sistema de Cards Tenebra Lux</h1>
-            <p className="text-xl text-muted-foreground">Gerencie suas unidades militares e templates</p>
+            <h1 className="text-4xl font-bold mb-2">Criador de Unidades</h1>
+            <p className="text-xl text-muted-foreground">Gerencie suas unidades militares</p>
           </div>
           <div className="flex gap-2">
             <Button onClick={() => setShowExcelManager(true)} variant="outline" size="lg" className="flex items-center gap-2">
@@ -229,10 +229,11 @@ const Index = () => {
         </div>
 
 
-        <Tabs defaultValue="templates" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="cards">Cards</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
+        <Tabs defaultValue="cards" className="w-full">
+          <TabsList className="grid w-full grid-cols-1">
+            <TabsTrigger value="cards">Unidades</TabsTrigger>
+            {/* Templates tab hidden temporarily */}
+            {/* <TabsTrigger value="templates">Templates</TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="cards" className="mt-6">
