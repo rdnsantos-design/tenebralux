@@ -10,6 +10,7 @@ import TacticalCards from "./pages/TacticalCards";
 import CharacterCards from "./pages/CharacterCards";
 import Domains from "./pages/Domains";
 import BattleMap from "./pages/BattleMap";
+import MassCombat from "./pages/MassCombat";
 import Travel from "./pages/Travel";
 import NotFound from "./pages/NotFound";
 
@@ -28,7 +29,9 @@ const App = () => (
           <Route path="/tactical-cards" element={<TacticalCards />} />
           <Route path="/characters" element={<CharacterCards />} />
           <Route path="/domains" element={<Domains />} />
+          <Route path="/battlemap" element={<BattleMap />} />
           <Route path="/battle-map" element={<BattleMap />} />
+          <Route path="/mass-combat" element={<MassCombat />} />
           <Route path="/travel" element={<Travel />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
