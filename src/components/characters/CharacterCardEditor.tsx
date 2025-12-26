@@ -103,13 +103,13 @@ export function CharacterCardEditor({
       const filePath = `character-${type}s/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('card-images')
+        .from('character-images')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('card-images')
+        .from('character-images')
         .getPublicUrl(filePath);
 
       setFormData(prev => ({ ...prev, [urlField]: publicUrl }));
