@@ -156,7 +156,7 @@ export default function FieldCommanders() {
                     <div className="p-3 border rounded-lg">
                       <h4 className="font-semibold text-red-600">Comando</h4>
                       <ul className="text-sm text-muted-foreground mt-1 space-y-1">
-                        <li>• Gera pontos de compra de cartas táticas</li>
+                        <li>• Gera pontos de compra de cartas de combate</li>
                         <li>• Define número de unidades lideradas</li>
                         <li>• Determina área de influência no campo</li>
                       </ul>
@@ -216,7 +216,7 @@ export default function FieldCommanders() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Especializações</CardTitle>
-                    <CardDescription>Reduzem o custo de cartas táticas relacionadas</CardDescription>
+                    <CardDescription>Reduzem o custo de cartas de combate relacionadas</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 gap-2">
@@ -229,7 +229,7 @@ export default function FieldCommanders() {
                       <div className="p-2 border rounded text-sm">Naval</div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-3">
-                      Cada especialização reduz em 1 o custo de cartas táticas 
+                      Cada especialização reduz em 1 o custo de cartas de combate 
                       que afetam o tipo de unidade correspondente.
                     </p>
                   </CardContent>

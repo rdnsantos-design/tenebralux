@@ -111,7 +111,7 @@ export function TacticalCardList({ cards, onEdit, onDelete }: TacticalCardListPr
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Cartas Táticas');
+    XLSX.utils.book_append_sheet(wb, ws, 'Cartas de Combate');
     XLSX.writeFile(wb, `cartas_taticas_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 

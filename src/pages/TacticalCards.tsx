@@ -63,9 +63,9 @@ export default function TacticalCards() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold">Cartas Táticas</h1>
+              <h1 className="text-2xl font-bold">Cartas de Combate</h1>
               <p className="text-muted-foreground">
-                Sistema de criação e balanceamento de cartas táticas para Tenebra Lux
+                Sistema de criação e balanceamento de cartas de combate para Tenebra Lux
               </p>
             </div>
           </div>
@@ -81,9 +81,9 @@ export default function TacticalCards() {
         {isEditing ? (
           <Card>
             <CardHeader>
-              <CardTitle>{editingCard ? 'Editar Carta' : 'Nova Carta Tática'}</CardTitle>
+              <CardTitle>{editingCard ? 'Editar Carta' : 'Nova Carta de Combate'}</CardTitle>
               <CardDescription>
-                Preencha os campos abaixo para {editingCard ? 'atualizar' : 'criar'} a carta tática.
+                Preencha os campos abaixo para {editingCard ? 'atualizar' : 'criar'} a carta de combate.
                 O custo será calculado automaticamente.
               </CardDescription>
             </CardHeader>
