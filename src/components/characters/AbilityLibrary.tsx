@@ -47,9 +47,9 @@ import { toast } from 'sonner';
 interface AbilityLibraryProps {
   abilities: CharacterAbility[];
   config: SystemConfig;
-  onCreateAbility: (ability: Omit<CharacterAbility, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
-  onUpdateAbility: (id: string, ability: Partial<CharacterAbility>) => Promise<void>;
-  onDeleteAbility: (id: string) => Promise<void>;
+  onCreateAbility: (ability: Omit<CharacterAbility, 'id' | 'created_at' | 'updated_at'>) => Promise<unknown>;
+  onUpdateAbility: (id: string, ability: Partial<CharacterAbility>) => Promise<unknown>;
+  onDeleteAbility: (id: string) => Promise<unknown>;
 }
 
 const AFFECTED_ATTRIBUTES = ['Ataque', 'Defesa', 'Mobilidade', 'Comando', 'Estratégia', 'Guarda'];
