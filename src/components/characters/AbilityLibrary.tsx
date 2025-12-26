@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Dialog,
   DialogContent,
@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Calculator } from 'lucide-react';
 import { 
   CharacterAbility,
   SystemConfig,
@@ -37,6 +37,7 @@ import {
   CONDITIONAL_TYPE_LABELS,
   RANGE_TYPE_LABELS,
   calculateAbilityCost,
+  calculateAbilityCostBreakdown,
   AbilityType,
   EffectType,
   ConditionalType,
@@ -63,6 +64,7 @@ export function AbilityLibrary({
 }: AbilityLibraryProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAbility, setEditingAbility] = useState<CharacterAbility | null>(null);
+  const [useManualCost, setUseManualCost] = useState(false);
   const [formData, setFormData] = useState<Partial<CharacterAbility>>({
     name: '',
     description: '',
@@ -90,6 +92,7 @@ export function AbilityLibrary({
       base_power_cost: 0,
     });
     setEditingAbility(null);
+    setUseManualCost(false);
   };
 
   const handleOpenCreate = () => {
@@ -100,6 +103,7 @@ export function AbilityLibrary({
   const handleOpenEdit = (ability: CharacterAbility) => {
     setEditingAbility(ability);
     setFormData({ ...ability });
+    setUseManualCost(ability.base_power_cost > 0);
     setIsDialogOpen(true);
   };
 
@@ -110,20 +114,26 @@ export function AbilityLibrary({
     }
 
     try {
+      // If not using manual cost, set base_power_cost to 0 to use auto calculation
+      const dataToSave = {
+        ...formData,
+        base_power_cost: useManualCost ? (formData.base_power_cost || 0) : 0
+      };
+
       if (editingAbility) {
-        await onUpdateAbility(editingAbility.id, formData);
+        await onUpdateAbility(editingAbility.id, dataToSave);
       } else {
         await onCreateAbility({
-          name: formData.name!,
-          description: formData.description,
-          ability_type: formData.ability_type as AbilityType,
-          effect_type: formData.effect_type as EffectType,
-          affected_attribute: formData.affected_attribute,
-          attribute_modifier: formData.attribute_modifier || 0,
-          conditional_type: formData.conditional_type as ConditionalType,
-          conditional_description: formData.conditional_description,
-          range_type: formData.range_type as RangeType,
-          base_power_cost: formData.base_power_cost || 0,
+          name: dataToSave.name!,
+          description: dataToSave.description,
+          ability_type: dataToSave.ability_type as AbilityType,
+          effect_type: dataToSave.effect_type as EffectType,
+          affected_attribute: dataToSave.affected_attribute,
+          attribute_modifier: dataToSave.attribute_modifier || 0,
+          conditional_type: dataToSave.conditional_type as ConditionalType,
+          conditional_description: dataToSave.conditional_description,
+          range_type: dataToSave.range_type as RangeType,
+          base_power_cost: dataToSave.base_power_cost || 0,
         });
       }
       setIsDialogOpen(false);
@@ -133,7 +143,14 @@ export function AbilityLibrary({
     }
   };
 
-  const effectiveCost = calculateAbilityCost(formData, config);
+  // Calculate cost breakdown for display
+  const costBreakdown = calculateAbilityCostBreakdown(
+    useManualCost ? { ...formData, base_power_cost: 0 } : formData, 
+    config
+  );
+  const effectiveCost = useManualCost 
+    ? Math.max(0, (formData.base_power_cost || 0) - (config.conditional_discounts[formData.conditional_type || 'none'] || 0))
+    : calculateAbilityCost(formData, config);
 
   return (
     <div className="space-y-6">
@@ -318,24 +335,63 @@ export function AbilityLibrary({
                 )}
               </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label>Custo Base em Poder</Label>
-                  <span className="text-sm text-muted-foreground">
-                    Custo efetivo: {effectiveCost} Poder
-                  </span>
+              {/* Power Cost Section */}
+              <div className="border-t pt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calculator className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-base font-medium">Custo de Poder</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="manual_cost"
+                      checked={useManualCost}
+                      onCheckedChange={checked => setUseManualCost(!!checked)}
+                    />
+                    <Label htmlFor="manual_cost" className="text-sm">Sobrescrever manualmente</Label>
+                  </div>
                 </div>
-                <Slider
-                  value={[formData.base_power_cost || 0]}
-                  onValueChange={([value]) => setFormData(prev => ({ 
-                    ...prev, 
-                    base_power_cost: value 
-                  }))}
-                  min={0}
-                  max={10}
-                  step={0.5}
-                />
-                <div className="text-center font-bold">{formData.base_power_cost}</div>
+
+                {/* Cost Breakdown */}
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-medium">
+                      {useManualCost ? 'Custo Manual' : 'Custo Calculado'}
+                    </span>
+                    <span className="text-2xl font-bold">{effectiveCost} Poder</span>
+                  </div>
+                  
+                  {!useManualCost && costBreakdown.breakdown.length > 0 && (
+                    <div className="space-y-1 text-sm border-t pt-2">
+                      {costBreakdown.breakdown.map((item, idx) => (
+                        <div key={idx} className="flex justify-between text-muted-foreground">
+                          <span>{item.label}</span>
+                          <span className={item.value >= 0 ? 'text-orange-500' : 'text-green-500'}>
+                            {item.value >= 0 ? '+' : ''}{item.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {useManualCost && (
+                    <div className="mt-2">
+                      <Input
+                        type="number"
+                        step="0.5"
+                        value={formData.base_power_cost || 0}
+                        onChange={e => setFormData(prev => ({ 
+                          ...prev, 
+                          base_power_cost: parseFloat(e.target.value) || 0 
+                        }))}
+                        className="w-32"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Desconto condicional: -{config.conditional_discounts[formData.conditional_type || 'none'] || 0}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">

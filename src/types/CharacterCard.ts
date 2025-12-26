@@ -67,6 +67,25 @@ export interface CharacterCard {
   updated_at?: string;
 }
 
+export interface AbilityCostRules {
+  per_modifier_point: number;
+  range_costs: {
+    self: number;
+    unit: number;
+    area: number;
+    enemy: number;
+  };
+  type_costs: {
+    'Passiva': number;
+    'Ativável': number;
+    'Uma vez por batalha': number;
+  };
+  effect_costs: {
+    buff_self: number;
+    debuff_enemy: number;
+  };
+}
+
 export interface SystemConfig {
   attribute_costs: {
     comando: number;
@@ -82,9 +101,29 @@ export interface SystemConfig {
     light: number;
     heavy: number;
   };
+  ability_cost_rules: AbilityCostRules;
   cultures: string[];
   specialties: string[];
 }
+
+export const DEFAULT_ABILITY_COST_RULES: AbilityCostRules = {
+  per_modifier_point: 1,
+  range_costs: {
+    self: 0,
+    unit: 0,
+    area: 1,
+    enemy: 0.5
+  },
+  type_costs: {
+    'Passiva': 1,
+    'Ativável': 0,
+    'Uma vez por batalha': -0.5
+  },
+  effect_costs: {
+    buff_self: 0,
+    debuff_enemy: 0.5
+  }
+};
 
 // Default configuration values
 export const DEFAULT_CONFIG: SystemConfig = {
@@ -104,6 +143,7 @@ export const DEFAULT_CONFIG: SystemConfig = {
     light: 1,
     heavy: 2
   },
+  ability_cost_rules: DEFAULT_ABILITY_COST_RULES,
   cultures: DEFAULT_CULTURES,
   specialties: DEFAULT_SPECIALTIES
 };
@@ -139,14 +179,74 @@ export function calculatePowerCost(
   return Math.max(0, cost);
 }
 
-// Calculate ability power cost with conditional discount
+// Calculate ability power cost automatically based on components
 export function calculateAbilityCost(
   ability: Partial<CharacterAbility>,
   config: SystemConfig = DEFAULT_CONFIG
 ): number {
-  const baseCost = ability.base_power_cost || 0;
+  const rules = config.ability_cost_rules || DEFAULT_ABILITY_COST_RULES;
+  
+  // Base cost from modifier
+  const modifierCost = Math.abs(ability.attribute_modifier || 0) * rules.per_modifier_point;
+  
+  // Range cost
+  const rangeCost = rules.range_costs[ability.range_type || 'self'] || 0;
+  
+  // Ability type cost
+  const typeCost = rules.type_costs[ability.ability_type || 'Ativável'] || 0;
+  
+  // Effect type cost
+  const effectCost = rules.effect_costs[ability.effect_type || 'buff_self'] || 0;
+  
+  // Conditional discount
   const discount = config.conditional_discounts[ability.conditional_type || 'none'] || 0;
-  return Math.max(0, baseCost - discount);
+  
+  // If there's a manual override, use it instead
+  if (ability.base_power_cost !== undefined && ability.base_power_cost > 0) {
+    // base_power_cost is now used as override
+    return Math.max(0, ability.base_power_cost - discount);
+  }
+  
+  const calculatedCost = modifierCost + rangeCost + typeCost + effectCost - discount;
+  return Math.max(0, calculatedCost);
+}
+
+// Calculate ability cost showing breakdown
+export function calculateAbilityCostBreakdown(
+  ability: Partial<CharacterAbility>,
+  config: SystemConfig = DEFAULT_CONFIG
+): { total: number; breakdown: { label: string; value: number }[] } {
+  const rules = config.ability_cost_rules || DEFAULT_ABILITY_COST_RULES;
+  const breakdown: { label: string; value: number }[] = [];
+  
+  const modifierCost = Math.abs(ability.attribute_modifier || 0) * rules.per_modifier_point;
+  if (modifierCost > 0) {
+    breakdown.push({ label: `Modificador (${Math.abs(ability.attribute_modifier || 0)} × ${rules.per_modifier_point})`, value: modifierCost });
+  }
+  
+  const rangeCost = rules.range_costs[ability.range_type || 'self'] || 0;
+  if (rangeCost !== 0) {
+    breakdown.push({ label: `Alcance (${RANGE_TYPE_LABELS[ability.range_type || 'self']})`, value: rangeCost });
+  }
+  
+  const typeCost = rules.type_costs[ability.ability_type || 'Ativável'] || 0;
+  if (typeCost !== 0) {
+    breakdown.push({ label: `Tipo (${ability.ability_type || 'Ativável'})`, value: typeCost });
+  }
+  
+  const effectCost = rules.effect_costs[ability.effect_type || 'buff_self'] || 0;
+  if (effectCost !== 0) {
+    breakdown.push({ label: `Efeito (${EFFECT_TYPE_LABELS[ability.effect_type || 'buff_self']})`, value: effectCost });
+  }
+  
+  const discount = config.conditional_discounts[ability.conditional_type || 'none'] || 0;
+  if (discount > 0) {
+    breakdown.push({ label: `Condicional (${CONDITIONAL_TYPE_LABELS[ability.conditional_type || 'none']})`, value: -discount });
+  }
+  
+  const total = Math.max(0, modifierCost + rangeCost + typeCost + effectCost - discount);
+  
+  return { total, breakdown };
 }
 
 // Label helpers
