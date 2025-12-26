@@ -53,6 +53,164 @@ export type Database = {
         }
         Relationships: []
       }
+      character_abilities: {
+        Row: {
+          ability_type: string
+          affected_attribute: string | null
+          attribute_modifier: number | null
+          base_power_cost: number
+          conditional_description: string | null
+          conditional_type: string | null
+          created_at: string
+          description: string | null
+          effect_type: string
+          id: string
+          name: string
+          range_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          ability_type?: string
+          affected_attribute?: string | null
+          attribute_modifier?: number | null
+          base_power_cost?: number
+          conditional_description?: string | null
+          conditional_type?: string | null
+          created_at?: string
+          description?: string | null
+          effect_type?: string
+          id?: string
+          name: string
+          range_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ability_type?: string
+          affected_attribute?: string | null
+          attribute_modifier?: number | null
+          base_power_cost?: number
+          conditional_description?: string | null
+          conditional_type?: string | null
+          created_at?: string
+          description?: string | null
+          effect_type?: string
+          id?: string
+          name?: string
+          range_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      character_cards: {
+        Row: {
+          ability_id: string | null
+          character_type: string[]
+          coat_of_arms_url: string | null
+          comando: number
+          created_at: string
+          culture: string
+          custom_ability_description: string | null
+          custom_ability_name: string | null
+          custom_ability_power_cost: number | null
+          domain: string | null
+          estrategia: number
+          guarda: number
+          id: string
+          name: string
+          notes: string | null
+          passive_affects_area: boolean | null
+          passive_bonus_type: string | null
+          passive_bonus_value: number | null
+          portrait_url: string | null
+          power_cost_override: number | null
+          specialties: string[]
+          total_power_cost: number
+          updated_at: string
+        }
+        Insert: {
+          ability_id?: string | null
+          character_type?: string[]
+          coat_of_arms_url?: string | null
+          comando?: number
+          created_at?: string
+          culture: string
+          custom_ability_description?: string | null
+          custom_ability_name?: string | null
+          custom_ability_power_cost?: number | null
+          domain?: string | null
+          estrategia?: number
+          guarda?: number
+          id?: string
+          name: string
+          notes?: string | null
+          passive_affects_area?: boolean | null
+          passive_bonus_type?: string | null
+          passive_bonus_value?: number | null
+          portrait_url?: string | null
+          power_cost_override?: number | null
+          specialties?: string[]
+          total_power_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          ability_id?: string | null
+          character_type?: string[]
+          coat_of_arms_url?: string | null
+          comando?: number
+          created_at?: string
+          culture?: string
+          custom_ability_description?: string | null
+          custom_ability_name?: string | null
+          custom_ability_power_cost?: number | null
+          domain?: string | null
+          estrategia?: number
+          guarda?: number
+          id?: string
+          name?: string
+          notes?: string | null
+          passive_affects_area?: boolean | null
+          passive_bonus_type?: string | null
+          passive_bonus_value?: number | null
+          portrait_url?: string | null
+          power_cost_override?: number | null
+          specialties?: string[]
+          total_power_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_cards_ability_id_fkey"
+            columns: ["ability_id"]
+            isOneToOne: false
+            referencedRelation: "character_abilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_system_config: {
+        Row: {
+          config_key: string
+          config_value: Json
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          config_key: string
+          config_value: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       field_commanders: {
         Row: {
           ac: number | null
