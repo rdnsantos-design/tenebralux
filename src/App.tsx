@@ -7,7 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
 import ArmyManagement from "./pages/ArmyManagement";
 import TacticalCards from "./pages/TacticalCards";
-import FieldCommanders from "./pages/FieldCommanders";
+import CharacterCards from "./pages/CharacterCards";
 import Domains from "./pages/Domains";
 import BattleMap from "./pages/BattleMap";
 import Travel from "./pages/Travel";
@@ -26,7 +26,7 @@ const App = () => (
           <Route path="/cards" element={<Index />} />
           <Route path="/army" element={<ArmyManagement />} />
           <Route path="/tactical-cards" element={<TacticalCards />} />
-          <Route path="/commanders" element={<FieldCommanders />} />
+          <Route path="/characters" element={<CharacterCards />} />
           <Route path="/domains" element={<Domains />} />
           <Route path="/battle-map" element={<BattleMap />} />
           <Route path="/travel" element={<Travel />} />

@@ -113,34 +113,34 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Comandantes de Campo */}
+          {/* Cartas de Personagem */}
           <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
             <CardHeader className="text-center pb-4">
               <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-20 h-20 flex items-center justify-center">
                 <Crown className="w-10 h-10 text-primary" />
               </div>
-              <CardTitle className="text-xl">Comandantes de Campo</CardTitle>
+              <CardTitle className="text-xl">Cartas de Personagem</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <p className="text-muted-foreground text-sm">
-                Crie e evolua comandantes para liderar suas tropas
+                Crie personagens com sistema de custo em Poder
               </p>
               <div className="space-y-2">
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                   <Crown className="w-3 h-3" />
-                  <span>Sistema de evolução com PP</span>
+                  <span>Heróis e Comandantes</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                   <Shield className="w-3 h-3" />
-                  <span>Especializações táticas</span>
+                  <span>Habilidades e Especialidades</span>
                 </div>
               </div>
               <Button 
                 size="sm" 
                 className="w-full"
-                onClick={() => navigate('/commanders')}
+                onClick={() => navigate('/characters')}
               >
-                Acessar Comandantes
+                Acessar Personagens
               </Button>
             </CardContent>
           </Card>
