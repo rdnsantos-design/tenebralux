@@ -88,6 +88,7 @@ export function CharacterCardEditor({
     formData.passive_affects_area,
     formData.custom_ability_power_cost,
     formData.power_cost_override,
+    formData.specialties,
     config
   ]);
 
@@ -449,7 +450,14 @@ export function CharacterCardEditor({
 
         {/* Specialties Section */}
         <div className="border-t pt-6">
-          <h3 className="text-lg font-semibold mb-4">Especialidades</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Especialidades</h3>
+            {(formData.specialties?.length || 0) > 1 && (
+              <span className="text-sm text-muted-foreground">
+                Custo: {((formData.specialties?.length || 0) - 1) * 3} Poder ({(formData.specialties?.length || 0) - 1} adicional × 3)
+              </span>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2">
             {config.specialties.map(specialty => (
               <Badge
@@ -463,7 +471,7 @@ export function CharacterCardEditor({
             ))}
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            Pré-requisito para uso de cartas de manobra específicas
+            Primeira especialidade é gratuita. Cada adicional custa 3 Poder.
           </p>
         </div>
 

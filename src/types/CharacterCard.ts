@@ -148,6 +148,9 @@ export const DEFAULT_CONFIG: SystemConfig = {
   specialties: DEFAULT_SPECIALTIES
 };
 
+// Cost per additional specialty (first one is free)
+export const SPECIALTY_ADDITIONAL_COST = 3;
+
 // Calculate power cost for a character card
 export function calculatePowerCost(
   card: Partial<CharacterCard>,
@@ -159,6 +162,12 @@ export function calculatePowerCost(
   cost += (card.comando || 0) * config.attribute_costs.comando;
   cost += (card.estrategia || 0) * config.attribute_costs.estrategia;
   cost += (card.guarda || 0) * config.attribute_costs.guarda;
+
+  // Specialty costs (first one is free, each additional costs 3)
+  const specialtyCount = card.specialties?.length || 0;
+  if (specialtyCount > 1) {
+    cost += (specialtyCount - 1) * SPECIALTY_ADDITIONAL_COST;
+  }
 
   // Passive bonus cost
   if (card.passive_bonus_value && card.passive_bonus_value > 0) {
