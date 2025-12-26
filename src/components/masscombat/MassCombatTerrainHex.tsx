@@ -35,10 +35,11 @@ const secondaryColors: Record<string, string> = {
   'Ventos Fortes': 'from-teal-400 to-teal-600',
 };
 
+// Regular hexagon: width = height * (2 / sqrt(3)) ≈ 1.1547
 const sizeClasses = {
-  sm: 'w-24 h-28',
-  md: 'w-32 h-36',
-  lg: 'w-40 h-44',
+  sm: 'w-28 h-28',
+  md: 'w-36 h-36',
+  lg: 'w-44 h-44',
 };
 
 const fontSizes = {
@@ -75,7 +76,8 @@ export function MassCombatTerrainHex({
           gradientClass
         )}
         style={{
-          clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+          // Regular hexagon with equal sides (flat-top)
+          clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
         }}
       >
         {/* Background image if available */}
@@ -84,7 +86,7 @@ export function MassCombatTerrainHex({
             className="absolute inset-0 bg-cover bg-center opacity-40"
             style={{ 
               backgroundImage: `url(${terrain.image_url})`,
-              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+              clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
             }}
           />
         )}
@@ -146,14 +148,14 @@ export function MassCombatTerrainHex({
         </div>
       </div>
       
-      {/* Hexagonal border overlay */}
+      {/* Hexagonal border overlay - regular hexagon */}
       <svg 
         className="absolute inset-0 w-full h-full pointer-events-none"
-        viewBox="0 0 100 115"
-        preserveAspectRatio="none"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="xMidYMid meet"
       >
         <polygon 
-          points="50,2 98,28 98,87 50,113 2,87 2,28" 
+          points="25,2 75,2 98,50 75,98 25,98 2,50" 
           fill="none" 
           stroke="rgba(255,255,255,0.4)" 
           strokeWidth="2"
