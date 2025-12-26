@@ -148,8 +148,16 @@ export const DEFAULT_CONFIG: SystemConfig = {
   specialties: DEFAULT_SPECIALTIES
 };
 
-// Cost per additional specialty (first one is free)
-export const SPECIALTY_ADDITIONAL_COST = 3;
+// Cost per additional specialty multiplier (2nd costs 1×3, 3rd costs 2×3, etc.)
+export const SPECIALTY_COST_MULTIPLIER = 3;
+
+// Calculate specialty cost: first is free, each next costs (current count × 3)
+// 1st: 0, 2nd: 3, 3rd: 6, 4th: 9 => Total for n specs = 3 * (0+1+2+...+(n-1)) = 3 * (n-1)*n/2
+export function calculateSpecialtyCost(specialtyCount: number): number {
+  if (specialtyCount <= 1) return 0;
+  // Sum of 1+2+...+(n-1) = (n-1)*n/2, then multiply by 3
+  return SPECIALTY_COST_MULTIPLIER * ((specialtyCount - 1) * specialtyCount) / 2;
+}
 
 // Calculate power cost for a character card
 export function calculatePowerCost(
@@ -163,11 +171,9 @@ export function calculatePowerCost(
   cost += (card.estrategia || 0) * config.attribute_costs.estrategia;
   cost += (card.guarda || 0) * config.attribute_costs.guarda;
 
-  // Specialty costs (first one is free, each additional costs 3)
+  // Specialty costs (progressive: 1st free, 2nd=3, 3rd=6, 4th=9)
   const specialtyCount = card.specialties?.length || 0;
-  if (specialtyCount > 1) {
-    cost += (specialtyCount - 1) * SPECIALTY_ADDITIONAL_COST;
-  }
+  cost += calculateSpecialtyCost(specialtyCount);
 
   // Passive bonus cost
   if (card.passive_bonus_value && card.passive_bonus_value > 0) {
