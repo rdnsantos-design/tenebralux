@@ -17,17 +17,17 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {/* Criador de Cards */}
+          {/* Criador de Unidades */}
           <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
             <CardHeader className="text-center pb-4">
               <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-20 h-20 flex items-center justify-center">
                 <Plus className="w-10 h-10 text-primary" />
               </div>
-              <CardTitle className="text-xl">Criador de Cards</CardTitle>
+              <CardTitle className="text-xl">Criador de Unidades</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <p className="text-muted-foreground text-sm">
-                Crie e gerencie templates e cards de unidades militares
+                Crie e gerencie unidades militares para suas campanhas
               </p>
               <div className="space-y-2">
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
