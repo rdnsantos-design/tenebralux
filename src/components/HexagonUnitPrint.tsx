@@ -1,6 +1,6 @@
 import React, { forwardRef, useState, useRef } from 'react';
 import { Unit } from '@/types/Unit';
-import { Sword, Shield, Target, Footprints, Heart, Sparkles, Upload, X, Image } from 'lucide-react';
+import { Sword, Shield, Target, Footprints, Heart, Sparkles, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -12,10 +12,10 @@ interface HexagonUnitPrintProps {
   showUploadControls?: boolean;
 }
 
-// 10cm corner-to-corner at 300 DPI = ~1181 pixels
-// For a regular hexagon: height = width * (√3/2) ≈ 1023 pixels
-export const HEX_WIDTH_PX = 1181;
-export const HEX_HEIGHT_PX = Math.round(HEX_WIDTH_PX * (Math.sqrt(3) / 2));
+// 9cm corner-to-corner at 300 DPI = 9 * (300 / 2.54) ≈ 1063 pixels
+// For a regular hexagon: height = width * (√3/2) ≈ 921 pixels
+export const HEX_WIDTH_PX = 1063;
+export const HEX_HEIGHT_PX = 921; // Math.round(1063 * (√3/2))
 
 export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps>(
   ({ unit, copies = 1, backgroundImage, onBackgroundChange, showUploadControls = false }, ref) => {
@@ -39,13 +39,11 @@ export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps
       const file = event.target.files?.[0];
       if (!file) return;
 
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast.error('Por favor, selecione uma imagem válida');
         return;
       }
 
-      // Validate dimensions
       const img = new window.Image();
       const objectUrl = URL.createObjectURL(file);
       
@@ -60,7 +58,6 @@ export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps
           return;
         }
 
-        // Convert to base64 for display
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = reader.result as string;
@@ -122,13 +119,12 @@ export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps
           }
         `}</style>
 
-        {/* Upload controls */}
         {showUploadControls && (
           <div className="mb-4 p-4 border rounded-lg bg-muted/30 no-print">
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <label className="text-sm font-medium mb-2 block">
-                  Imagem de Fundo do Hexágono
+                  Imagem de Fundo do Hexágono (9cm de largura)
                 </label>
                 <p className="text-xs text-muted-foreground mb-2">
                   Dimensões exatas: {HEX_WIDTH_PX}×{HEX_HEIGHT_PX}px (PNG ou JPG, 300 DPI)
@@ -185,11 +181,10 @@ export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps
               key={index}
               className="hex-unit relative"
               style={{
-                width: `${HEX_WIDTH_PX / 3}px`, // Scale down for screen display
+                width: `${HEX_WIDTH_PX / 3}px`,
                 height: `${HEX_HEIGHT_PX / 3}px`,
               }}
             >
-              {/* Outer border hexagon */}
               <div
                 className="absolute inset-0"
                 style={{
@@ -198,7 +193,6 @@ export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps
                 }}
               />
 
-              {/* Background image or gradient */}
               <div
                 className="absolute inset-[3px]"
                 style={{
@@ -209,7 +203,6 @@ export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps
                 }}
               />
 
-              {/* Dark overlay for better text readability when using background image */}
               {currentBackground && (
                 <div
                   className="absolute inset-[3px]"
@@ -220,14 +213,12 @@ export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps
                 />
               )}
 
-              {/* Inner content hexagon */}
               <div
                 className="absolute inset-[3px] flex flex-col items-center justify-between p-4"
                 style={{
                   clipPath: hexClipPath,
                 }}
               >
-                {/* Unit name */}
                 <div className="text-center pt-6 z-10">
                   <h3 
                     className="text-lg font-bold text-white leading-tight"
@@ -243,7 +234,6 @@ export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps
                   </span>
                 </div>
 
-                {/* Stats grid - center */}
                 <div 
                   className="grid grid-cols-3 gap-2 text-white z-10"
                   style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}
@@ -256,7 +246,6 @@ export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps
                   {renderStat(<Sparkles className="w-4 h-4 text-purple-400 drop-shadow" />, u.totalForce, 'POD')}
                 </div>
 
-                {/* Special abilities - bottom */}
                 <div className="text-center pb-4 z-10">
                   {u.specialAbilities.length > 0 && (
                     <div className="flex flex-wrap justify-center gap-1 max-w-[200px]">
@@ -281,10 +270,9 @@ export const HexagonUnitPrint = forwardRef<HTMLDivElement, HexagonUnitPrintProps
           ))}
         </div>
 
-        {/* Print dimensions info */}
         <div className="mt-4 text-center text-sm text-gray-500 print:hidden no-print">
-          <p>Dimensão de impressão: 10cm × {(10 * Math.sqrt(3) / 2).toFixed(2)}cm (largura × altura)</p>
-          <p className="text-xs">Hexágono regular com 10cm de canto a canto</p>
+          <p>Dimensão de impressão: 9cm × {(9 * Math.sqrt(3) / 2).toFixed(2)}cm (largura × altura)</p>
+          <p className="text-xs">Hexágono regular com 9cm de canto a canto</p>
         </div>
       </div>
     );

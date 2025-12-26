@@ -230,10 +230,9 @@ const Index = () => {
 
 
         <Tabs defaultValue="cards" className="w-full">
-          <TabsList className="grid w-full grid-cols-1">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="cards">Unidades</TabsTrigger>
-            {/* Templates tab hidden temporarily */}
-            {/* <TabsTrigger value="templates">Templates</TabsTrigger> */}
+            <TabsTrigger value="templates">Templates Hexagonais</TabsTrigger>
           </TabsList>
 
           <TabsContent value="cards" className="mt-6">
