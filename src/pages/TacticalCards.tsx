@@ -2,17 +2,19 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Loader2, ArrowLeft } from 'lucide-react';
+import { Plus, Loader2, ArrowLeft, Swords, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTacticalCards } from '@/hooks/useTacticalCards';
 import { TacticalCardEditor } from '@/components/TacticalCardEditor';
 import { TacticalCardList } from '@/components/TacticalCardList';
 import { TacticalCard } from '@/types/TacticalCard';
+import { MassCombatTacticalCardList } from '@/components/masscombat/MassCombatTacticalCardList';
 
 export default function TacticalCards() {
   const { cards, loading, createCard, updateCard, deleteCard } = useTacticalCards();
   const [isEditing, setIsEditing] = useState(false);
   const [editingCard, setEditingCard] = useState<TacticalCard | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState('manobra');
 
   const handleNewCard = () => {
     setEditingCard(undefined);
@@ -65,11 +67,11 @@ export default function TacticalCards() {
             <div>
               <h1 className="text-2xl font-bold">Cartas de Combate</h1>
               <p className="text-muted-foreground">
-                Sistema de criação e balanceamento de cartas de combate para Tenebra Lux
+                Sistema de criação de cartas para Tenebra Lux
               </p>
             </div>
           </div>
-          {!isEditing && (
+          {!isEditing && activeTab === 'manobra' && (
             <Button onClick={handleNewCard}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Carta
@@ -77,86 +79,104 @@ export default function TacticalCards() {
           )}
         </div>
 
-        {/* Conteúdo */}
-        {isEditing ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>{editingCard ? 'Editar Carta' : 'Nova Carta de Combate'}</CardTitle>
-              <CardDescription>
-                Preencha os campos abaixo para {editingCard ? 'atualizar' : 'criar'} a carta de combate.
-                O custo será calculado automaticamente.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TacticalCardEditor
-                card={editingCard}
-                onSave={handleSaveCard}
-                onCancel={handleCancel}
-              />
-            </CardContent>
-          </Card>
-        ) : (
-          <Tabs defaultValue="list" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="list">Lista de Cartas</TabsTrigger>
-              <TabsTrigger value="info">Regras de Custo</TabsTrigger>
-            </TabsList>
+        {/* Main Tabs: Manobra vs Táticas */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="manobra" className="flex items-center gap-2">
+              <Swords className="h-4 w-4" />
+              Cartas de Manobra
+            </TabsTrigger>
+            <TabsTrigger value="taticas" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Cartas Táticas
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="list">
-              <TacticalCardList
-                cards={cards}
-                onEdit={handleEditCard}
-                onDelete={deleteCard}
-              />
-            </TabsContent>
-
-            <TabsContent value="info">
+          {/* Cartas de Manobra (Tabuleiro) */}
+          <TabsContent value="manobra">
+            {isEditing ? (
               <Card>
                 <CardHeader>
-                  <CardTitle>Fórmula de Cálculo de Custo</CardTitle>
+                  <CardTitle>{editingCard ? 'Editar Carta' : 'Nova Carta de Manobra'}</CardTitle>
                   <CardDescription>
-                    O custo base de cada carta é calculado automaticamente com base nos seguintes modificadores:
+                    Cartas para o jogo de tabuleiro. O custo é calculado automaticamente.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-semibold text-green-600 mb-2">Aumentam o Custo (+)</h4>
-                      <ul className="space-y-1 text-sm">
-                        <li>• +1 por cada bônus em atributo (Ataque, Defesa, Tiro, Moral)</li>
-                        <li>• +1 se causa dano extra de pressão</li>
-                        <li>• +2 se causa dano letal extra (Hit)</li>
-                        <li>• +2 se ignora pressão</li>
-                        <li>• +1 se afeta unidade fora da unidade do comandante</li>
-                        <li>• +1 se afeta unidade inimiga</li>
-                        <li>• +1 por cada cultura com penalidade</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-red-600 mb-2">Reduzem o Custo (-)</h4>
-                      <ul className="space-y-1 text-sm">
-                        <li>• -1 se exigir especialização</li>
-                        <li>• -0.5 por cada ponto de comando exigido (arredonda para baixo)</li>
-                        <li>• -1 por cada cultura com bônus</li>
-                      </ul>
-                    </div>
-                  </div>
-                  <div className="mt-6 p-4 bg-muted rounded-lg">
-                    <h4 className="font-semibold mb-2">Exemplo de Cálculo</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Uma carta com +1 ataque, +1 dano de pressão, exige especialização, 
-                      requer comando 2, afeta inimigo, é fora da unidade do comandante, 
-                      e tem bônus para Brecht:
-                    </p>
-                    <p className="text-sm mt-2 font-mono">
-                      +1 (ataque) +1 (pressão) +1 (fora da unidade) +1 (inimigo) -1 (especialização) -1 (comando 2×0.5) -1 (bônus cultural) = <strong>1</strong>
-                    </p>
-                  </div>
+                  <TacticalCardEditor
+                    card={editingCard}
+                    onSave={handleSaveCard}
+                    onCancel={handleCancel}
+                  />
                 </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
-        )}
+            ) : (
+              <Tabs defaultValue="list" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="list">Lista de Cartas</TabsTrigger>
+                  <TabsTrigger value="info">Regras de Custo</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="list">
+                  <TacticalCardList
+                    cards={cards}
+                    onEdit={handleEditCard}
+                    onDelete={deleteCard}
+                  />
+                </TabsContent>
+
+                <TabsContent value="info">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Fórmula de Cálculo de Custo</CardTitle>
+                      <CardDescription>
+                        O custo base de cada carta é calculado automaticamente.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-green-600 mb-2">Aumentam o Custo (+)</h4>
+                          <ul className="space-y-1 text-sm">
+                            <li>• +1 por cada bônus em atributo</li>
+                            <li>• +1 se causa dano extra de pressão</li>
+                            <li>• +2 se causa dano letal extra</li>
+                            <li>• +2 se ignora pressão</li>
+                            <li>• +1 se afeta unidade fora do comandante</li>
+                            <li>• +1 se afeta unidade inimiga</li>
+                            <li>• +1 por cada cultura com penalidade</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-red-600 mb-2">Reduzem o Custo (-)</h4>
+                          <ul className="space-y-1 text-sm">
+                            <li>• -1 se exigir especialização</li>
+                            <li>• -0.5 por ponto de comando exigido</li>
+                            <li>• -1 por cada cultura com bônus</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            )}
+          </TabsContent>
+
+          {/* Cartas Táticas (Combate em Massa) */}
+          <TabsContent value="taticas">
+            <Card className="mb-4">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Cartas Táticas — Combate em Massa</CardTitle>
+                <CardDescription>
+                  Cartas para o sistema de resolução rápida. Custo em VET = soma dos bônus.
+                  Comando e Estratégia mínimos = maior bônus da carta.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            <MassCombatTacticalCardList />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
