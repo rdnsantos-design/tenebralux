@@ -115,9 +115,9 @@ export const DEFAULT_ABILITY_COST_RULES: AbilityCostRules = {
     enemy: 0.5
   },
   type_costs: {
-    'Passiva': 1,
-    'Ativável': 0,
-    'Uma vez por batalha': -0.5
+    'Passiva': 2,
+    'Ativável': 1,
+    'Uma vez por batalha': 0
   },
   effect_costs: {
     buff_self: 0,
