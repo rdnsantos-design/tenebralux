@@ -7,7 +7,7 @@ import { Plus, Edit, Eye, Settings, Image, Trash2, FileSpreadsheet, RotateCcw, X
 import { CardEditor } from "@/components/CardEditor";
 import { CardPreview } from "@/components/CardPreview";
 import { TemplateCreator } from "@/components/TemplateCreator";
-import { TemplateMapper } from "@/components/TemplateMapper";
+import { HexTemplateMapper } from "@/components/HexTemplateMapper";
 import { ExcelImportManager } from "@/components/ExcelImportManager";
 import { UnitCard } from "@/types/UnitCard";
 import { CardTemplate } from "@/types/CardTemplate";
@@ -153,13 +153,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Mapeando: {editingTemplate.name}</h1>
-            <Button onClick={() => setEditingTemplate(null)}>
-              Voltar aos Templates
-            </Button>
-          </div>
-          <TemplateMapper 
+          <HexTemplateMapper 
             template={editingTemplate}
             onTemplateUpdate={handleTemplateUpdate}
             onFinish={() => setEditingTemplate(null)}
