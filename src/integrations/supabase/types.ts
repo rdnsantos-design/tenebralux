@@ -340,6 +340,81 @@ export type Database = {
           },
         ]
       }
+      mass_combat_climates: {
+        Row: {
+          created_at: string
+          description: string | null
+          has_all_levels: boolean
+          id: string
+          level1_attack_mod: number
+          level1_defense_mod: number
+          level1_description: string | null
+          level1_mobility_mod: number
+          level1_strategy_mod: number
+          level2_attack_mod: number
+          level2_defense_mod: number
+          level2_description: string | null
+          level2_mobility_mod: number
+          level2_strategy_mod: number
+          level3_attack_mod: number
+          level3_defense_mod: number
+          level3_description: string | null
+          level3_mobility_mod: number
+          level3_strategy_mod: number
+          name: string
+          special_effects: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          has_all_levels?: boolean
+          id?: string
+          level1_attack_mod?: number
+          level1_defense_mod?: number
+          level1_description?: string | null
+          level1_mobility_mod?: number
+          level1_strategy_mod?: number
+          level2_attack_mod?: number
+          level2_defense_mod?: number
+          level2_description?: string | null
+          level2_mobility_mod?: number
+          level2_strategy_mod?: number
+          level3_attack_mod?: number
+          level3_defense_mod?: number
+          level3_description?: string | null
+          level3_mobility_mod?: number
+          level3_strategy_mod?: number
+          name: string
+          special_effects?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          has_all_levels?: boolean
+          id?: string
+          level1_attack_mod?: number
+          level1_defense_mod?: number
+          level1_description?: string | null
+          level1_mobility_mod?: number
+          level1_strategy_mod?: number
+          level2_attack_mod?: number
+          level2_defense_mod?: number
+          level2_description?: string | null
+          level2_mobility_mod?: number
+          level2_strategy_mod?: number
+          level3_attack_mod?: number
+          level3_defense_mod?: number
+          level3_description?: string | null
+          level3_mobility_mod?: number
+          level3_strategy_mod?: number
+          name?: string
+          special_effects?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mass_combat_primary_terrains: {
         Row: {
           allowed_climates: string[]
@@ -382,6 +457,39 @@ export type Database = {
           name?: string
           updated_at?: string
           visibility?: string
+        }
+        Relationships: []
+      }
+      mass_combat_seasons: {
+        Row: {
+          blocked_climates: string[]
+          common_climates: string[]
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          rare_climates: string[]
+          updated_at: string
+        }
+        Insert: {
+          blocked_climates?: string[]
+          common_climates?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          rare_climates?: string[]
+          updated_at?: string
+        }
+        Update: {
+          blocked_climates?: string[]
+          common_climates?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          rare_climates?: string[]
+          updated_at?: string
         }
         Relationships: []
       }
