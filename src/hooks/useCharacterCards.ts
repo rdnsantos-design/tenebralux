@@ -120,6 +120,7 @@ export function useCharacterCards() {
           passive_bonus_costs: configMap.passive_bonus_costs as SystemConfig['passive_bonus_costs'] || DEFAULT_CONFIG.passive_bonus_costs,
           passive_area_cost: Number(configMap.passive_area_cost) || DEFAULT_CONFIG.passive_area_cost,
           conditional_discounts: configMap.conditional_discounts as SystemConfig['conditional_discounts'] || DEFAULT_CONFIG.conditional_discounts,
+          ability_cost_rules: configMap.ability_cost_rules as SystemConfig['ability_cost_rules'] || DEFAULT_CONFIG.ability_cost_rules,
           cultures: (configMap.cultures as string[]) || DEFAULT_CONFIG.cultures,
           specialties: (configMap.specialties as string[]) || DEFAULT_CONFIG.specialties,
         });
