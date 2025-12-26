@@ -1,10 +1,13 @@
-import React from 'react';
-import { useMassCombatClimates, useMassCombatSeasons } from '@/hooks/useMassCombatClimates';
+import React, { useState } from 'react';
+import { useMassCombatClimates, useMassCombatSeasons, useUpdateMassCombatClimate } from '@/hooks/useMassCombatClimates';
+import { MassCombatClimate } from '@/types/MassCombatClimate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Sun, Cloud, CloudSnow, Thermometer, Wind, Droplets, Zap } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Sun, Cloud, CloudSnow, Thermometer, Wind, Droplets, Zap, Flame, Snowflake } from 'lucide-react';
+import { toast } from 'sonner';
 
 const formatMod = (mod: number) => {
   if (mod === 0) return '—';
@@ -16,6 +19,8 @@ const getClimateIcon = (name: string) => {
   if (lowerName.includes('céu') || lowerName.includes('aberto')) return <Sun className="h-4 w-4" />;
   if (lowerName.includes('neve') || lowerName.includes('nevasca') || lowerName.includes('geada')) return <CloudSnow className="h-4 w-4" />;
   if (lowerName.includes('calor') || lowerName.includes('escaldante')) return <Thermometer className="h-4 w-4" />;
+  if (lowerName.includes('desértico') || lowerName.includes('desertico')) return <Flame className="h-4 w-4" />;
+  if (lowerName.includes('ártico') || lowerName.includes('artico')) return <Snowflake className="h-4 w-4" />;
   if (lowerName.includes('vento')) return <Wind className="h-4 w-4" />;
   if (lowerName.includes('chuva') || lowerName.includes('névoa')) return <Droplets className="h-4 w-4" />;
   if (lowerName.includes('tempestade') && lowerName.includes('elétrica')) return <Zap className="h-4 w-4" />;
@@ -29,9 +34,89 @@ const getModifierColor = (mod: number) => {
   return 'text-muted-foreground';
 };
 
+type ModifierField = 
+  | 'level1_attack_mod' | 'level1_defense_mod' | 'level1_mobility_mod' | 'level1_strategy_mod'
+  | 'level2_attack_mod' | 'level2_defense_mod' | 'level2_mobility_mod' | 'level2_strategy_mod'
+  | 'level3_attack_mod' | 'level3_defense_mod' | 'level3_mobility_mod' | 'level3_strategy_mod';
+
+interface EditableCellProps {
+  value: number;
+  climateId: string;
+  field: ModifierField;
+  disabled?: boolean;
+  onUpdate: (id: string, field: ModifierField, value: number) => void;
+}
+
+function EditableCell({ value, climateId, field, disabled, onUpdate }: EditableCellProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value.toString());
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    const newValue = parseInt(editValue, 10);
+    if (!isNaN(newValue) && newValue !== value) {
+      onUpdate(climateId, field, newValue);
+    } else {
+      setEditValue(value.toString());
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    } else if (e.key === 'Escape') {
+      setEditValue(value.toString());
+      setIsEditing(false);
+    }
+  };
+
+  if (disabled) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  if (isEditing) {
+    return (
+      <Input
+        type="number"
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        className="w-12 h-6 text-center text-xs p-1"
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <span 
+      className={`cursor-pointer hover:bg-muted/50 px-2 py-1 rounded ${getModifierColor(value)}`}
+      onClick={() => setIsEditing(true)}
+      title="Clique para editar"
+    >
+      {formatMod(value)}
+    </span>
+  );
+}
+
 export function ClimateViewer() {
   const { data: climates, isLoading: loadingClimates } = useMassCombatClimates();
   const { data: seasons, isLoading: loadingSeasons } = useMassCombatSeasons();
+  const updateClimate = useUpdateMassCombatClimate();
+
+  const handleUpdateModifier = (climateId: string, field: ModifierField, value: number) => {
+    updateClimate.mutate(
+      { id: climateId, [field]: value },
+      {
+        onSuccess: () => {
+          toast.success('Modificador atualizado');
+        },
+        onError: () => {
+          toast.error('Erro ao atualizar modificador');
+        },
+      }
+    );
+  };
 
   if (loadingClimates || loadingSeasons) {
     return (
@@ -54,7 +139,7 @@ export function ClimateViewer() {
             <CardHeader>
               <CardTitle className="text-lg">Tabela de Modificadores de Clima</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Níveis progressivos: Leve → Moderado → Severo
+                Níveis progressivos: Leve → Moderado → Severo (clique para editar)
               </p>
             </CardHeader>
             <CardContent>
@@ -93,43 +178,111 @@ export function ClimateViewer() {
                           </div>
                         </TableCell>
                         {/* Level 1 */}
-                        <TableCell className={`text-center border-l ${getModifierColor(climate.level1_attack_mod)}`}>
-                          {formatMod(climate.level1_attack_mod)}
+                        <TableCell className="text-center border-l">
+                          <EditableCell
+                            value={climate.level1_attack_mod}
+                            climateId={climate.id}
+                            field="level1_attack_mod"
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
-                        <TableCell className={`text-center ${getModifierColor(climate.level1_defense_mod)}`}>
-                          {formatMod(climate.level1_defense_mod)}
+                        <TableCell className="text-center">
+                          <EditableCell
+                            value={climate.level1_defense_mod}
+                            climateId={climate.id}
+                            field="level1_defense_mod"
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
-                        <TableCell className={`text-center ${getModifierColor(climate.level1_mobility_mod)}`}>
-                          {formatMod(climate.level1_mobility_mod)}
+                        <TableCell className="text-center">
+                          <EditableCell
+                            value={climate.level1_mobility_mod}
+                            climateId={climate.id}
+                            field="level1_mobility_mod"
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
-                        <TableCell className={`text-center ${getModifierColor(climate.level1_strategy_mod)}`}>
-                          {formatMod(climate.level1_strategy_mod)}
+                        <TableCell className="text-center">
+                          <EditableCell
+                            value={climate.level1_strategy_mod}
+                            climateId={climate.id}
+                            field="level1_strategy_mod"
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
                         {/* Level 2 */}
-                        <TableCell className={`text-center border-l ${getModifierColor(climate.level2_attack_mod)}`}>
-                          {climate.has_all_levels ? formatMod(climate.level2_attack_mod) : '—'}
+                        <TableCell className="text-center border-l">
+                          <EditableCell
+                            value={climate.level2_attack_mod}
+                            climateId={climate.id}
+                            field="level2_attack_mod"
+                            disabled={!climate.has_all_levels}
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
-                        <TableCell className={`text-center ${getModifierColor(climate.level2_defense_mod)}`}>
-                          {climate.has_all_levels ? formatMod(climate.level2_defense_mod) : '—'}
+                        <TableCell className="text-center">
+                          <EditableCell
+                            value={climate.level2_defense_mod}
+                            climateId={climate.id}
+                            field="level2_defense_mod"
+                            disabled={!climate.has_all_levels}
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
-                        <TableCell className={`text-center ${getModifierColor(climate.level2_mobility_mod)}`}>
-                          {climate.has_all_levels ? formatMod(climate.level2_mobility_mod) : '—'}
+                        <TableCell className="text-center">
+                          <EditableCell
+                            value={climate.level2_mobility_mod}
+                            climateId={climate.id}
+                            field="level2_mobility_mod"
+                            disabled={!climate.has_all_levels}
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
-                        <TableCell className={`text-center ${getModifierColor(climate.level2_strategy_mod)}`}>
-                          {climate.has_all_levels ? formatMod(climate.level2_strategy_mod) : '—'}
+                        <TableCell className="text-center">
+                          <EditableCell
+                            value={climate.level2_strategy_mod}
+                            climateId={climate.id}
+                            field="level2_strategy_mod"
+                            disabled={!climate.has_all_levels}
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
                         {/* Level 3 */}
-                        <TableCell className={`text-center border-l ${getModifierColor(climate.level3_attack_mod)}`}>
-                          {climate.has_all_levels ? formatMod(climate.level3_attack_mod) : '—'}
+                        <TableCell className="text-center border-l">
+                          <EditableCell
+                            value={climate.level3_attack_mod}
+                            climateId={climate.id}
+                            field="level3_attack_mod"
+                            disabled={!climate.has_all_levels}
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
-                        <TableCell className={`text-center ${getModifierColor(climate.level3_defense_mod)}`}>
-                          {climate.has_all_levels ? formatMod(climate.level3_defense_mod) : '—'}
+                        <TableCell className="text-center">
+                          <EditableCell
+                            value={climate.level3_defense_mod}
+                            climateId={climate.id}
+                            field="level3_defense_mod"
+                            disabled={!climate.has_all_levels}
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
-                        <TableCell className={`text-center ${getModifierColor(climate.level3_mobility_mod)}`}>
-                          {climate.has_all_levels ? formatMod(climate.level3_mobility_mod) : '—'}
+                        <TableCell className="text-center">
+                          <EditableCell
+                            value={climate.level3_mobility_mod}
+                            climateId={climate.id}
+                            field="level3_mobility_mod"
+                            disabled={!climate.has_all_levels}
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
-                        <TableCell className={`text-center ${getModifierColor(climate.level3_strategy_mod)}`}>
-                          {climate.has_all_levels ? formatMod(climate.level3_strategy_mod) : '—'}
+                        <TableCell className="text-center">
+                          <EditableCell
+                            value={climate.level3_strategy_mod}
+                            climateId={climate.id}
+                            field="level3_strategy_mod"
+                            disabled={!climate.has_all_levels}
+                            onUpdate={handleUpdateModifier}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
