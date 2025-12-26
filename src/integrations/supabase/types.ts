@@ -580,6 +580,54 @@ export type Database = {
         }
         Relationships: []
       }
+      mass_combat_tactical_cards: {
+        Row: {
+          attack_bonus: number
+          command_required: number
+          created_at: string
+          culture: string | null
+          defense_bonus: number
+          description: string | null
+          id: string
+          mobility_bonus: number
+          name: string
+          strategy_required: number
+          unit_type: string
+          updated_at: string
+          vet_cost: number
+        }
+        Insert: {
+          attack_bonus?: number
+          command_required?: number
+          created_at?: string
+          culture?: string | null
+          defense_bonus?: number
+          description?: string | null
+          id?: string
+          mobility_bonus?: number
+          name: string
+          strategy_required?: number
+          unit_type: string
+          updated_at?: string
+          vet_cost?: number
+        }
+        Update: {
+          attack_bonus?: number
+          command_required?: number
+          created_at?: string
+          culture?: string | null
+          defense_bonus?: number
+          description?: string | null
+          id?: string
+          mobility_bonus?: number
+          name?: string
+          strategy_required?: number
+          unit_type?: string
+          updated_at?: string
+          vet_cost?: number
+        }
+        Relationships: []
+      }
       mass_combat_terrain_compatibility: {
         Row: {
           created_at: string
