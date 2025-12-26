@@ -588,6 +588,8 @@ export type Database = {
           culture: string | null
           defense_bonus: number
           description: string | null
+          effect_tag: string | null
+          effect_type: string | null
           id: string
           mobility_bonus: number
           name: string
@@ -603,6 +605,8 @@ export type Database = {
           culture?: string | null
           defense_bonus?: number
           description?: string | null
+          effect_tag?: string | null
+          effect_type?: string | null
           id?: string
           mobility_bonus?: number
           name: string
@@ -618,6 +622,8 @@ export type Database = {
           culture?: string | null
           defense_bonus?: number
           description?: string | null
+          effect_tag?: string | null
+          effect_type?: string | null
           id?: string
           mobility_bonus?: number
           name?: string
