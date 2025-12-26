@@ -454,24 +454,36 @@ export function CharacterCardEditor({
             <h3 className="text-lg font-semibold">Especialidades</h3>
             {(formData.specialties?.length || 0) > 1 && (
               <span className="text-sm text-muted-foreground">
-                Custo: {((formData.specialties?.length || 0) - 1) * 3} Poder ({(formData.specialties?.length || 0) - 1} adicional × 3)
+                Custo total: {((formData.specialties?.length || 0) - 1) * (formData.specialties?.length || 0) / 2 * 3} Poder
               </span>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            {config.specialties.map(specialty => (
-              <Badge
-                key={specialty}
-                variant={formData.specialties?.includes(specialty as Specialty) ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() => toggleSpecialty(specialty as Specialty)}
-              >
-                {specialty}
-              </Badge>
-            ))}
+            {config.specialties.map((specialty, idx) => {
+              const currentCount = formData.specialties?.length || 0;
+              const isSelected = formData.specialties?.includes(specialty as Specialty);
+              const nextCost = isSelected ? null : (currentCount * 3);
+              
+              return (
+                <Badge
+                  key={specialty}
+                  variant={isSelected ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() => toggleSpecialty(specialty as Specialty)}
+                  title={isSelected ? 'Clique para remover' : `Custo: ${nextCost === 0 ? 'Grátis' : `${nextCost} Poder`}`}
+                >
+                  {specialty}
+                  {!isSelected && nextCost !== null && (
+                    <span className="ml-1 text-xs opacity-70">
+                      ({nextCost === 0 ? 'grátis' : `+${nextCost}`})
+                    </span>
+                  )}
+                </Badge>
+              );
+            })}
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            Primeira especialidade é gratuita. Cada adicional custa 3 Poder.
+            1ª grátis, 2ª custa 3, 3ª custa 6, 4ª custa 9 Poder
           </p>
         </div>
 
