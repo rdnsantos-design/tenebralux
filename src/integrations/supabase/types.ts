@@ -340,6 +340,135 @@ export type Database = {
           },
         ]
       }
+      mass_combat_primary_terrains: {
+        Row: {
+          allowed_climates: string[]
+          attack_mod: number
+          created_at: string
+          default_climate: string
+          defense_mod: number
+          description: string | null
+          id: string
+          image_url: string | null
+          mobility_mod: number
+          name: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          allowed_climates?: string[]
+          attack_mod?: number
+          created_at?: string
+          default_climate?: string
+          defense_mod?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          mobility_mod?: number
+          name: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          allowed_climates?: string[]
+          attack_mod?: number
+          created_at?: string
+          default_climate?: string
+          defense_mod?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          mobility_mod?: number
+          name?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
+      mass_combat_secondary_terrains: {
+        Row: {
+          attack_mod: number
+          created_at: string
+          defense_mod: number
+          description: string | null
+          effect_description: string | null
+          id: string
+          image_url: string | null
+          is_universal: boolean
+          mobility_mod: number
+          name: string
+          special_effects: string | null
+          strategy_mod: number
+          updated_at: string
+        }
+        Insert: {
+          attack_mod?: number
+          created_at?: string
+          defense_mod?: number
+          description?: string | null
+          effect_description?: string | null
+          id?: string
+          image_url?: string | null
+          is_universal?: boolean
+          mobility_mod?: number
+          name: string
+          special_effects?: string | null
+          strategy_mod?: number
+          updated_at?: string
+        }
+        Update: {
+          attack_mod?: number
+          created_at?: string
+          defense_mod?: number
+          description?: string | null
+          effect_description?: string | null
+          id?: string
+          image_url?: string | null
+          is_universal?: boolean
+          mobility_mod?: number
+          name?: string
+          special_effects?: string | null
+          strategy_mod?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mass_combat_terrain_compatibility: {
+        Row: {
+          created_at: string
+          id: string
+          primary_terrain_id: string
+          secondary_terrain_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          primary_terrain_id: string
+          secondary_terrain_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          primary_terrain_id?: string
+          secondary_terrain_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mass_combat_terrain_compatibility_primary_terrain_id_fkey"
+            columns: ["primary_terrain_id"]
+            isOneToOne: false
+            referencedRelation: "mass_combat_primary_terrains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mass_combat_terrain_compatibility_secondary_terrain_id_fkey"
+            columns: ["secondary_terrain_id"]
+            isOneToOne: false
+            referencedRelation: "mass_combat_secondary_terrains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       province_distances: {
         Row: {
           created_at: string
