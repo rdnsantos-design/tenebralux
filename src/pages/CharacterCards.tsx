@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Crown } from 'lucide-react';
 import { useCharacterCards } from '@/hooks/useCharacterCards';
 import { CharacterCardEditor } from '@/components/characters/CharacterCardEditor';
 import { CharacterList } from '@/components/characters/CharacterList';
 import { SystemConfigurator } from '@/components/characters/SystemConfigurator';
 import { AbilityLibrary } from '@/components/characters/AbilityLibrary';
+import { RegentList } from '@/components/domains/RegentList';
 import { CharacterCard } from '@/types/CharacterCard';
 
 type ViewMode = 'list' | 'create' | 'edit';
@@ -93,6 +94,10 @@ export default function CharacterCards() {
         <Tabs defaultValue="characters" className="space-y-6">
           <TabsList>
             <TabsTrigger value="characters">Personagens</TabsTrigger>
+            <TabsTrigger value="regents" className="flex items-center gap-2">
+              <Crown className="w-4 h-4" />
+              Regentes
+            </TabsTrigger>
             <TabsTrigger value="abilities">Habilidades</TabsTrigger>
             <TabsTrigger value="config">Configuração</TabsTrigger>
           </TabsList>
@@ -104,6 +109,10 @@ export default function CharacterCards() {
               onEdit={handleEditCharacter}
               onDelete={deleteCard}
             />
+          </TabsContent>
+
+          <TabsContent value="regents">
+            <RegentList />
           </TabsContent>
 
           <TabsContent value="abilities">
