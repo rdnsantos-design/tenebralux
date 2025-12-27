@@ -13,7 +13,7 @@ export default function MassCombat() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
-              <Link to="/battlemap">
+              <Link to="/strategic-game">
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>

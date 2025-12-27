@@ -76,7 +76,7 @@ export default function FieldCommanders() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/tactical-game')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>

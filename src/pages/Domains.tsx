@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
-import { Home, FileSpreadsheet, Map, Crown, Building, Upload } from 'lucide-react';
+import { Home, FileSpreadsheet, Map, Building, Upload } from 'lucide-react';
 import { RealmList } from '@/components/domains/RealmList';
 import { ProvinceList } from '@/components/domains/ProvinceList';
-import { RegentList } from '@/components/domains/RegentList';
 import { HoldingList } from '@/components/domains/HoldingList';
 import { DomainImporter } from '@/components/domains/DomainImporter';
 import { HoldingsImporter } from '@/components/domains/HoldingsImporter';
@@ -81,14 +80,10 @@ const Domains = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+          <TabsList className="grid w-full grid-cols-2 lg:w-[300px]">
             <TabsTrigger value="provinces" className="flex items-center gap-2">
               <Map className="w-4 h-4" />
               Províncias
-            </TabsTrigger>
-            <TabsTrigger value="regents" className="flex items-center gap-2">
-              <Crown className="w-4 h-4" />
-              Regentes
             </TabsTrigger>
             <TabsTrigger value="holdings" className="flex items-center gap-2">
               <Building className="w-4 h-4" />
@@ -127,12 +122,6 @@ const Domains = () => {
             </div>
           </TabsContent>
 
-          {/* Regents Tab */}
-          <TabsContent value="regents">
-            <RegentList />
-          </TabsContent>
-
-          {/* Holdings Tab */}
           <TabsContent value="holdings">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Province selector */}

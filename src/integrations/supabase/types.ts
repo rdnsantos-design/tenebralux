@@ -114,6 +114,7 @@ export type Database = {
           custom_ability_power_cost: number | null
           domain: string | null
           estrategia: number
+          game_mode: string
           guarda: number
           id: string
           name: string
@@ -139,6 +140,7 @@ export type Database = {
           custom_ability_power_cost?: number | null
           domain?: string | null
           estrategia?: number
+          game_mode?: string
           guarda?: number
           id?: string
           name: string
@@ -164,6 +166,7 @@ export type Database = {
           custom_ability_power_cost?: number | null
           domain?: string | null
           estrategia?: number
+          game_mode?: string
           guarda?: number
           id?: string
           name?: string
@@ -590,6 +593,7 @@ export type Database = {
           description: string | null
           effect_tag: string | null
           effect_type: string | null
+          game_mode: string
           id: string
           mobility_bonus: number
           name: string
@@ -607,6 +611,7 @@ export type Database = {
           description?: string | null
           effect_tag?: string | null
           effect_type?: string | null
+          game_mode?: string
           id?: string
           mobility_bonus?: number
           name: string
@@ -624,6 +629,7 @@ export type Database = {
           description?: string | null
           effect_tag?: string | null
           effect_type?: string | null
+          game_mode?: string
           id?: string
           mobility_bonus?: number
           name?: string
@@ -819,6 +825,7 @@ export type Database = {
           description: string | null
           extra_lethal_damage: number
           extra_pressure_damage: number
+          game_mode: string
           id: string
           ignores_pressure: boolean
           morale_bonus: number
@@ -842,6 +849,7 @@ export type Database = {
           description?: string | null
           extra_lethal_damage?: number
           extra_pressure_damage?: number
+          game_mode?: string
           id?: string
           ignores_pressure?: boolean
           morale_bonus?: number
@@ -865,6 +873,7 @@ export type Database = {
           description?: string | null
           extra_lethal_damage?: number
           extra_pressure_damage?: number
+          game_mode?: string
           id?: string
           ignores_pressure?: boolean
           morale_bonus?: number
