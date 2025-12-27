@@ -293,7 +293,15 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                       <SelectValue placeholder="Escolha uma unidade militar" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableCards.map((card) => (
+                      {/* Ordenar: unidades criadas manualmente primeiro (IDs mais recentes) */}
+                      {[...availableCards]
+                        .sort((a, b) => {
+                          // IDs numéricos maiores = mais recentes = primeiro
+                          const aNum = parseInt(a.id) || 0;
+                          const bNum = parseInt(b.id) || 0;
+                          return bNum - aNum;
+                        })
+                        .map((card) => (
                         <SelectItem key={card.id} value={card.id}>
                           {card.name} - Força: {card.totalForce} - Manutenção: {card.maintenanceCost}
                         </SelectItem>
