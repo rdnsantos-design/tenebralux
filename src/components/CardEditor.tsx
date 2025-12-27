@@ -417,19 +417,83 @@ export const CardEditor: React.FC<CardEditorProps> = ({
               </Card>
             )}
             
-            {/* Selecionar Unidade Importada */}
+            {/* Selecionar Unidade Importada ou Criar do Zero */}
             {!card && (
               <Card>
                 <CardHeader>
                   <CardTitle>1. Selecionar Unidade Base</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {availableUnits.length > 0 ? (
+                  {/* Opção para criar do zero */}
+                  <div
+                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                      selectedUnitId === '__scratch__'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => {
+                      setSelectedUnitId('__scratch__');
+                      const defaultBaseAttributes = {
+                        attack: 1,
+                        defense: 1,
+                        ranged: 1,
+                        movement: 1,
+                        morale: 1
+                      };
+                      setBaseAttributes(defaultBaseAttributes);
+                      setUnitData({
+                        id: '',
+                        name: '',
+                        attack: 1,
+                        defense: 1,
+                        ranged: 1,
+                        movement: 1,
+                        morale: 1,
+                        experience: 'Profissional',
+                        totalForce: 0,
+                        maintenanceCost: 0,
+                        specialAbilities: [],
+                        backgroundImage: '',
+                        customBackgroundImage: '',
+                        images: {},
+                        countryId: '',
+                        provinceId: ''
+                      });
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                        <span className="text-xl">✨</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Criar do Zero</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Definir todos os atributos manualmente
+                        </p>
+                      </div>
+                      {selectedUnitId === '__scratch__' && (
+                        <div className="ml-auto text-primary">✓</div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {availableUnits.length > 0 && (
                     <>
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-card px-2 text-muted-foreground">
+                            ou usar unidade importada
+                          </span>
+                        </div>
+                      </div>
+                      
                       <div>
                         <Label htmlFor="importedUnit">Escolher Unidade da Planilha</Label>
                          <Select 
-                           value={selectedUnitId}
+                           value={selectedUnitId === '__scratch__' ? '' : selectedUnitId}
                            onValueChange={(value) => {
                              const selectedUnit = availableUnits.find(unit => unit.id === value);
                              if (selectedUnit) {
@@ -478,13 +542,6 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                         Selecione uma unidade como base e depois ajuste a experiência e distribua pontos
                       </p>
                     </>
-                  ) : (
-                    <div className="text-center py-8 border-2 border-dashed border-muted rounded-lg">
-                      <p className="text-muted-foreground mb-2">Nenhuma unidade importada encontrada</p>
-                      <p className="text-sm text-muted-foreground">
-                        Vá para "Gerenciar Excel" para importar planilhas com unidades, ou preencha manualmente os campos abaixo
-                      </p>
-                    </div>
                   )}
                 </CardContent>
               </Card>
