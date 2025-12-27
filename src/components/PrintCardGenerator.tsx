@@ -30,6 +30,7 @@ interface CardToPrint {
 export const PrintCardGenerator = ({ units, templates, onClose }: PrintCardGeneratorProps) => {
   const [backgroundImages, setBackgroundImages] = useState<CardBackgroundImage[]>([]);
   const [loadingImages, setLoadingImages] = useState(true);
+  const [allUnits, setAllUnits] = useState<Unit[]>([]);
   
   const [selectedUnitId, setSelectedUnitId] = useState<string>('');
   const [selectedImageId, setSelectedImageId] = useState<string>('');
@@ -38,10 +39,50 @@ export const PrintCardGenerator = ({ units, templates, onClose }: PrintCardGener
   
   const printContainerRef = useRef<HTMLDivElement>(null);
 
-  // Carregar imagens do banco
+  // Carregar imagens do banco e unidades do localStorage
   useEffect(() => {
     loadBackgroundImages();
-  }, []);
+    loadAllUnits();
+  }, [units]);
+  
+  // Combinar units (do ArmyManagement) com unitCards (do CardEditor)
+  const loadAllUnits = () => {
+    const savedCards = localStorage.getItem('unitCards');
+    let cardUnits: Unit[] = [];
+    
+    if (savedCards) {
+      try {
+        const cards = JSON.parse(savedCards);
+        // Converter UnitCard para Unit format
+        cardUnits = cards.map((card: any) => ({
+          id: card.id,
+          templateId: '',
+          regentId: '',
+          name: card.name,
+          attack: card.attack,
+          defense: card.defense,
+          ranged: card.ranged,
+          movement: card.movement,
+          morale: card.morale,
+          experience: card.experience,
+          totalForce: card.totalForce,
+          maintenanceCost: card.maintenanceCost,
+          specialAbilities: card.specialAbilities || [],
+          currentXP: 0,
+          kills: 0,
+          battlesWon: 0,
+          createdAt: card.id,
+          updatedAt: card.id
+        }));
+      } catch (error) {
+        console.error('Erro ao carregar cards:', error);
+      }
+    }
+    
+    // Combinar: cards criados primeiro, depois units do Army
+    const combinedUnits = [...cardUnits, ...units.filter(u => !cardUnits.find(c => c.id === u.id))];
+    setAllUnits(combinedUnits);
+  };
 
   const loadBackgroundImages = async () => {
     setLoadingImages(true);
@@ -61,7 +102,7 @@ export const PrintCardGenerator = ({ units, templates, onClose }: PrintCardGener
     }
   };
 
-  const selectedUnit = units.find(u => u.id === selectedUnitId);
+  const selectedUnit = allUnits.find(u => u.id === selectedUnitId);
   const selectedImage = backgroundImages.find(i => i.id === selectedImageId);
   const selectedTemplate = templates[0]; // Usa o primeiro template disponível
 
@@ -327,7 +368,7 @@ export const PrintCardGenerator = ({ units, templates, onClose }: PrintCardGener
                     <SelectValue placeholder="Selecione uma unidade" />
                   </SelectTrigger>
                   <SelectContent>
-                    {units.map((unit) => (
+                    {allUnits.map((unit) => (
                       <SelectItem key={unit.id} value={unit.id}>
                         {unit.name} - {unit.experience}
                       </SelectItem>

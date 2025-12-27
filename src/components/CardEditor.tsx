@@ -477,6 +477,89 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                     </div>
                   </div>
                   
+                  {/* Listar primeiro as unidades criadas manualmente (unitCards) */}
+                  {(() => {
+                    // Carregar unidades criadas manualmente do localStorage
+                    const savedCards = localStorage.getItem('unitCards');
+                    const createdUnits: UnitCard[] = savedCards ? JSON.parse(savedCards) : [];
+                    
+                    if (createdUnits.length > 0) {
+                      return (
+                        <>
+                          <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                              <span className="bg-card px-2 text-muted-foreground">
+                                Unidades Criadas
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {createdUnits.map(unit => (
+                              <div
+                                key={unit.id}
+                                className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                                  selectedUnitId === unit.id
+                                    ? 'border-primary bg-primary/5'
+                                    : 'border-border hover:border-primary/50'
+                                }`}
+                                onClick={() => {
+                                  setSelectedUnitId(unit.id);
+                                  const newBaseAttributes = {
+                                    attack: unit.attack,
+                                    defense: unit.defense,
+                                    ranged: unit.ranged,
+                                    movement: unit.movement,
+                                    morale: unit.morale
+                                  };
+                                  setBaseAttributes(newBaseAttributes);
+                                  setUnitData({
+                                    id: card?.id || '',
+                                    name: unit.name,
+                                    attack: unit.attack,
+                                    defense: unit.defense,
+                                    ranged: unit.ranged,
+                                    movement: unit.movement,
+                                    morale: unit.morale,
+                                    experience: unit.experience || 'Profissional',
+                                    totalForce: unit.totalForce,
+                                    maintenanceCost: unit.maintenanceCost,
+                                    specialAbilities: unit.specialAbilities || [],
+                                    backgroundImage: unit.backgroundImage || '',
+                                    customBackgroundImage: unit.customBackgroundImage || '',
+                                    images: unit.images || {},
+                                    countryId: unit.countryId || '',
+                                    provinceId: unit.provinceId || ''
+                                  });
+                                  setAvailablePoints(experienceModifiers[unit.experience || 'Profissional'].points);
+                                }}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center">
+                                    <span className="text-sm">⚔️</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-medium truncate">{unit.name}</h4>
+                                    <p className="text-xs text-muted-foreground">
+                                      Força: {unit.totalForce} • {unit.experience}
+                                    </p>
+                                  </div>
+                                  {selectedUnitId === unit.id && (
+                                    <div className="text-primary">✓</div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      );
+                    }
+                    return null;
+                  })()}
+                  
                   {availableUnits.length > 0 && (
                     <>
                       <div className="relative">
@@ -485,7 +568,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
                           <span className="bg-card px-2 text-muted-foreground">
-                            ou usar unidade importada
+                            Unidades Importadas (Excel)
                           </span>
                         </div>
                       </div>
@@ -493,7 +576,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                       <div>
                         <Label htmlFor="importedUnit">Escolher Unidade da Planilha</Label>
                          <Select 
-                           value={selectedUnitId === '__scratch__' ? '' : selectedUnitId}
+                           value={selectedUnitId === '__scratch__' ? '' : (availableUnits.find(u => u.id === selectedUnitId) ? selectedUnitId : '')}
                            onValueChange={(value) => {
                              const selectedUnit = availableUnits.find(unit => unit.id === value);
                              if (selectedUnit) {
