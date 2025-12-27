@@ -208,7 +208,7 @@ export const HexTemplateMapper: React.FC<HexTemplateMapperProps> = ({
         </CardHeader>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Campos disponíveis */}
         <Card>
           <CardHeader className="pb-3">
@@ -361,6 +361,92 @@ export const HexTemplateMapper: React.FC<HexTemplateMapperProps> = ({
             {/* Dimension info */}
             <p className="text-center text-xs text-muted-foreground mt-4">
               Dimensões: {HEX_TEMPLATE_WIDTH}×{HEX_TEMPLATE_HEIGHT}px (9cm a 300 DPI)
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Live Preview */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Eye className="w-4 h-4" />
+              Preview Final
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div 
+              className="relative mx-auto"
+              style={{ 
+                width: displayWidth * 0.85, 
+                height: displayHeight * 0.85,
+              }}
+            >
+              {/* Hexagon background */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  clipPath: hexClipPath,
+                  background: template.templateImage 
+                    ? `url(${template.templateImage}) center/cover`
+                    : 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                }}
+              />
+
+              {/* Dark overlay when using background image */}
+              {template.templateImage && (
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    clipPath: hexClipPath,
+                    background: 'rgba(0, 0, 0, 0.3)',
+                  }}
+                />
+              )}
+
+              {/* Render fields as they would appear in final card */}
+              {template.fields.map(field => {
+                const fieldConfig = HEX_FIELD_OPTIONS.find(o => o.id === field.id);
+                const previewScale = 0.85;
+                const left = field.x * scaleX * previewScale;
+                const top = field.y * scaleY * previewScale;
+                const width = (field.width || 100) * scaleX * previewScale;
+                const height = (field.height || 30) * scaleY * previewScale;
+                const fontSize = field.fontSize * Math.min(scaleX, scaleY) * previewScale;
+
+                return (
+                  <div
+                    key={field.id}
+                    className="absolute flex items-center overflow-hidden"
+                    style={{
+                      left,
+                      top,
+                      width,
+                      height,
+                      fontSize: Math.max(6, fontSize),
+                      fontFamily: field.fontFamily,
+                      color: field.color,
+                      textAlign: field.textAlign || 'center',
+                      justifyContent: field.textAlign === 'left' ? 'flex-start' : field.textAlign === 'right' ? 'flex-end' : 'center',
+                      textShadow: field.textShadow ? '0 1px 2px rgba(0,0,0,0.8)' : 'none',
+                      fontWeight: field.fontWeight || 'normal',
+                    }}
+                  >
+                    {fieldConfig?.preview}
+                  </div>
+                );
+              })}
+
+              {/* Hexagon border */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  clipPath: hexClipPath,
+                  boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.2)',
+                }}
+              />
+            </div>
+            <p className="text-center text-xs text-muted-foreground mt-4">
+              Visualização em tempo real
             </p>
           </CardContent>
         </Card>
