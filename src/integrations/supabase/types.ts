@@ -117,13 +117,16 @@ export type Database = {
           game_mode: string
           guarda: number
           id: string
+          is_pc: boolean
           name: string
           notes: string | null
           passive_affects_area: boolean | null
           passive_bonus_type: string | null
           passive_bonus_value: number | null
+          player_name: string | null
           portrait_url: string | null
           power_cost_override: number | null
+          regent_id: string | null
           specialties: string[]
           total_power_cost: number
           updated_at: string
@@ -143,13 +146,16 @@ export type Database = {
           game_mode?: string
           guarda?: number
           id?: string
+          is_pc?: boolean
           name: string
           notes?: string | null
           passive_affects_area?: boolean | null
           passive_bonus_type?: string | null
           passive_bonus_value?: number | null
+          player_name?: string | null
           portrait_url?: string | null
           power_cost_override?: number | null
+          regent_id?: string | null
           specialties?: string[]
           total_power_cost?: number
           updated_at?: string
@@ -169,13 +175,16 @@ export type Database = {
           game_mode?: string
           guarda?: number
           id?: string
+          is_pc?: boolean
           name?: string
           notes?: string | null
           passive_affects_area?: boolean | null
           passive_bonus_type?: string | null
           passive_bonus_value?: number | null
+          player_name?: string | null
           portrait_url?: string | null
           power_cost_override?: number | null
+          regent_id?: string | null
           specialties?: string[]
           total_power_cost?: number
           updated_at?: string
@@ -186,6 +195,13 @@ export type Database = {
             columns: ["ability_id"]
             isOneToOne: false
             referencedRelation: "character_abilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_cards_regent_id_fkey"
+            columns: ["regent_id"]
+            isOneToOne: false
+            referencedRelation: "regents"
             referencedColumns: ["id"]
           },
         ]
