@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
-import { Home, FileSpreadsheet, Map, Building, Upload } from 'lucide-react';
+import { Home, FileSpreadsheet, Map, Building, Upload, Crown } from 'lucide-react';
 import { RealmList } from '@/components/domains/RealmList';
 import { ProvinceList } from '@/components/domains/ProvinceList';
 import { HoldingList } from '@/components/domains/HoldingList';
 import { DomainImporter } from '@/components/domains/DomainImporter';
 import { HoldingsImporter } from '@/components/domains/HoldingsImporter';
+import { RegentDomainList } from '@/components/domains/RegentDomainList';
 import { Realm, Province } from '@/types/Domain';
 
 const Domains = () => {
@@ -80,7 +81,7 @@ const Domains = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[300px]">
+          <TabsList className="grid w-full grid-cols-3 lg:w-[450px]">
             <TabsTrigger value="provinces" className="flex items-center gap-2">
               <Map className="w-4 h-4" />
               Províncias
@@ -88,6 +89,10 @@ const Domains = () => {
             <TabsTrigger value="holdings" className="flex items-center gap-2">
               <Building className="w-4 h-4" />
               Holdings
+            </TabsTrigger>
+            <TabsTrigger value="dominios" className="flex items-center gap-2">
+              <Crown className="w-4 h-4" />
+              Domínios
             </TabsTrigger>
           </TabsList>
 
@@ -138,6 +143,10 @@ const Domains = () => {
                 <HoldingList selectedProvinceId={selectedProvince?.id} />
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="dominios">
+            <RegentDomainList />
           </TabsContent>
         </Tabs>
       </div>
