@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -28,12 +28,27 @@ interface RegentWithPower extends Regent {
   holdingsCount: number;
 }
 
-export const RegentDomainList = () => {
+interface RegentDomainListProps {
+  selectedRegentId?: string | null;
+  onClearSelection?: () => void;
+}
+
+export const RegentDomainList = ({ selectedRegentId, onClearSelection }: RegentDomainListProps) => {
   const { data: regents, isLoading: isLoadingRegents } = useRegents();
   const { data: holdings, isLoading: isLoadingHoldings } = useHoldings();
   const { data: provinces } = useProvinces();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegent, setSelectedRegent] = useState<Regent | null>(null);
+
+  // Auto-select regent when selectedRegentId changes
+  useEffect(() => {
+    if (selectedRegentId && regents) {
+      const regent = regents.find(r => r.id === selectedRegentId);
+      if (regent) {
+        setSelectedRegent(regent);
+      }
+    }
+  }, [selectedRegentId, regents]);
 
   // Calculate power for each regent
   const regentsWithPower = useMemo(() => {
