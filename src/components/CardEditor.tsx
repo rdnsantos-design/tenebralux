@@ -58,6 +58,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   const [availableUnits, setAvailableUnits] = useState<Array<{id: string, name: string, importName: string} & UnitCard>>([]);
   const [combinedUnits, setCombinedUnits] = useState<CombinedUnit[]>([]);
   const [sortOption, setSortOption] = useState<SortOption>('date-desc');
+  const [searchQuery, setSearchQuery] = useState('');
   const [countries, setCountries] = useState<Country[]>([]);
   const [selectedCountryId, setSelectedCountryId] = useState<string>('');
   const [availableProvinces, setAvailableProvinces] = useState<Province[]>([]);
@@ -196,7 +197,14 @@ export const CardEditor: React.FC<CardEditorProps> = ({
     }
   }, []);
 
-  const sortedUnits = sortUnits(combinedUnits, sortOption);
+  const filteredAndSortedUnits = (() => {
+    let filtered = combinedUnits;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = combinedUnits.filter(unit => unit.name.toLowerCase().includes(query));
+    }
+    return sortUnits(filtered, sortOption);
+  })();
 
   // Carregar países das importações de localização
   useEffect(() => {
@@ -582,8 +590,26 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                         </Select>
                       </div>
                       
+                      {/* Campo de busca */}
+                      <div>
+                        <Label htmlFor="searchQuery">Buscar por nome</Label>
+                        <Input
+                          id="searchQuery"
+                          type="text"
+                          placeholder="Digite o nome da unidade..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="bg-background"
+                        />
+                      </div>
+                      
                       <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-2">
-                        {sortedUnits.map(unit => (
+                        {filteredAndSortedUnits.length === 0 ? (
+                          <p className="text-center text-muted-foreground py-4">
+                            Nenhuma unidade encontrada
+                          </p>
+                        ) : (
+                          filteredAndSortedUnits.map(unit => (
                           <div
                             key={unit.id}
                             className={`border rounded-lg p-3 cursor-pointer transition-all ${
@@ -642,7 +668,8 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                               )}
                             </div>
                           </div>
-                        ))}
+                        ))
+                        )}
                       </div>
                       
                       <p className="text-sm text-muted-foreground">
