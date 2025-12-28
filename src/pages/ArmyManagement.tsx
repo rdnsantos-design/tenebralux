@@ -2,15 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Crown, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout, Swords, Images, Printer } from "lucide-react";
+import { Plus, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout, Swords, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Regent, Army } from "@/types/Army";
 import { UnitCard } from "@/types/UnitCard";
 import { Unit } from "@/types/Unit";
-import { UnitTemplate } from "@/types/UnitTemplate";
 import { CardTemplate } from "@/types/CardTemplate";
-import { RegentEditor } from "@/components/RegentEditor";
-import { RegentList } from "@/components/RegentList";
 import { ArmyEditor } from "@/components/ArmyEditor";
 import { ArmyList } from "@/components/ArmyList";
 import { UnitEditor } from "@/components/UnitEditor";
@@ -22,8 +19,6 @@ import { TemplateCreator } from "@/components/TemplateCreator";
 import { useFieldCommanders } from "@/hooks/useFieldCommanders";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ImageUploader } from "@/components/ImageUploader";
-import { ImageBank } from "@/components/ImageBank";
 import { PrintCardGenerator } from "@/components/PrintCardGenerator";
 import { ArmyExporter } from "@/components/ArmyExporter";
 
@@ -34,10 +29,8 @@ const ArmyManagement = () => {
   const [armies, setArmies] = useState<Army[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [legacyCards, setLegacyCards] = useState<UnitCard[]>([]);
-  const [editingRegent, setEditingRegent] = useState<Regent | null>(null);
   const [editingArmy, setEditingArmy] = useState<Army | null>(null);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
-  const [showRegentEditor, setShowRegentEditor] = useState(false);
   const [showArmyEditor, setShowArmyEditor] = useState(false);
   const [showUnitEditor, setShowUnitEditor] = useState(false);
   const [selectedRegentIdForUnits, setSelectedRegentIdForUnits] = useState<string>('');
@@ -47,7 +40,6 @@ const ArmyManagement = () => {
   const [showPrintGenerator, setShowPrintGenerator] = useState(false);
   const [cardTemplates, setCardTemplates] = useState<CardTemplate[]>([]);
   const [initialLoaded, setInitialLoaded] = useState(false);
-  const [imageRefreshTrigger, setImageRefreshTrigger] = useState(0);
 
   // Carregar dados do localStorage
   useEffect(() => {
@@ -117,28 +109,6 @@ const ArmyManagement = () => {
     localStorage.setItem('armyUnits', JSON.stringify(units));
   }, [units, initialLoaded]);
 
-  const handleSaveRegent = (regent: Regent) => {
-    if (editingRegent) {
-      setRegents(regents.map(r => r.id === regent.id ? regent : r));
-    } else {
-      setRegents([...regents, regent]);
-    }
-    setEditingRegent(null);
-    setShowRegentEditor(false);
-  };
-
-  const handleEditRegent = (regent: Regent) => {
-    setEditingRegent(regent);
-    setShowRegentEditor(true);
-  };
-
-  const handleDeleteRegent = (regentId: string) => {
-    // Também remover exércitos e unidades deste regente
-    setArmies(armies.filter(a => a.regentId !== regentId));
-    setUnits(units.filter(u => u.regentId !== regentId));
-    setRegents(regents.filter(r => r.id !== regentId));
-  };
-
   // Handlers para unidades
   const handleSaveUnit = (unitData: Omit<Unit, 'id' | 'createdAt' | 'updatedAt'>) => {
     const now = new Date().toISOString();
@@ -182,11 +152,6 @@ const ArmyManagement = () => {
   // Filtrar unidades pelo regente selecionado
   const regentUnits = units.filter(u => u.regentId === selectedRegentIdForUnits);
   const regentCommanders = commanders.filter(c => c.regent_id === selectedRegentIdForUnits);
-
-  const handleNewRegent = () => {
-    setEditingRegent(null);
-    setShowRegentEditor(true);
-  };
 
   const handleSaveArmy = (army: Army) => {
     if (editingArmy) {
@@ -270,19 +235,6 @@ const ArmyManagement = () => {
     );
   }
 
-  if (showRegentEditor) {
-    return (
-      <RegentEditor
-        regent={editingRegent}
-        onSave={handleSaveRegent}
-        onCancel={() => {
-          setEditingRegent(null);
-          setShowRegentEditor(false);
-        }}
-      />
-    );
-  }
-
   if (showArmyEditor) {
     return (
       <ArmyEditor
@@ -334,7 +286,7 @@ const ArmyManagement = () => {
               </Button>
             </div>
             <h1 className="text-4xl font-bold mb-2">Gestão de Exército</h1>
-            <p className="text-xl text-muted-foreground">Gerencie regentes, exércitos e importe dados via Excel</p>
+            <p className="text-xl text-muted-foreground">Gerencie exércitos e importe dados via Excel</p>
           </div>
           <div className="flex gap-2">
             <Button 
@@ -353,19 +305,11 @@ const ArmyManagement = () => {
               <Settings className="w-4 h-4" />
               Templates
             </Button>
-            <Button onClick={handleNewRegent} size="lg" className="flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Novo Regente
-            </Button>
           </div>
         </div>
 
-        <Tabs defaultValue="regents" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="regents" className="flex items-center gap-2">
-              <Crown className="w-4 h-4" />
-              Regentes
-            </TabsTrigger>
+        <Tabs defaultValue="units" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="units" className="flex items-center gap-2">
               <Swords className="w-4 h-4" />
               Unidades
@@ -373,10 +317,6 @@ const ArmyManagement = () => {
             <TabsTrigger value="armies" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
               Exércitos
-            </TabsTrigger>
-            <TabsTrigger value="images" className="flex items-center gap-2">
-              <Images className="w-4 h-4" />
-              Imagens
             </TabsTrigger>
             <TabsTrigger value="print" className="flex items-center gap-2">
               <Printer className="w-4 h-4" />
@@ -387,30 +327,6 @@ const ArmyManagement = () => {
               Importações
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="regents" className="mt-6">
-            {regents.length === 0 ? (
-              <Card className="text-center py-12">
-                <CardContent className="pt-6">
-                  <Crown className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-2xl font-semibold mb-4">Nenhum regente cadastrado</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Comece cadastrando seu primeiro regente para gerenciar exércitos
-                  </p>
-                  <Button onClick={handleNewRegent} size="lg">
-                    <Plus className="w-5 h-5 mr-2" />
-                    Cadastrar Primeiro Regente
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <RegentList
-                regents={regents}
-                onEdit={handleEditRegent}
-                onDelete={handleDeleteRegent}
-              />
-            )}
-          </TabsContent>
 
           <TabsContent value="units" className="mt-6">
             <div className="space-y-4">
@@ -446,7 +362,7 @@ const ArmyManagement = () => {
               {!selectedRegentIdForUnits ? (
                 <Card className="text-center py-12">
                   <CardContent className="pt-6">
-                    <Crown className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                    <Swords className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                     <h3 className="text-2xl font-semibold mb-4">Selecione um regente</h3>
                     <p className="text-muted-foreground">
                       Escolha um regente acima para ver e gerenciar suas unidades
@@ -502,15 +418,11 @@ const ArmyManagement = () => {
             {regents.length === 0 ? (
               <Card className="text-center py-12">
                 <CardContent className="pt-6">
-                  <Crown className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-2xl font-semibold mb-4">Cadastre regentes primeiro</h3>
                   <p className="text-muted-foreground mb-6">
-                    Você precisa cadastrar pelo menos um regente antes de criar exércitos
+                    Você precisa cadastrar pelo menos um regente na seção de Personagens antes de criar exércitos
                   </p>
-                  <Button onClick={handleNewRegent} size="lg">
-                    <Plus className="w-5 h-5 mr-2" />
-                    Cadastrar Regente
-                  </Button>
                 </CardContent>
               </Card>
             ) : armies.length === 0 ? (
@@ -537,24 +449,12 @@ const ArmyManagement = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="images" className="mt-6 space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Banco de Imagens de Fundo</h2>
-              <p className="text-muted-foreground mb-6">
-                Faça upload de imagens com dimensões exatas de 750×1050px para usar como fundo dos cards
-              </p>
-            </div>
-            
-            <ImageUploader onUploadSuccess={() => setImageRefreshTrigger(prev => prev + 1)} />
-            <ImageBank refreshTrigger={imageRefreshTrigger} />
-          </TabsContent>
-
           <TabsContent value="print" className="mt-6">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-bold">Gerador de Cards para Impressão</h2>
                 <p className="text-muted-foreground">
-                  Selecione unidades e imagens de fundo para gerar cards prontos para impressão
+                  Selecione unidades para gerar cards prontos para impressão
                 </p>
               </div>
               <Button onClick={() => setShowPrintGenerator(true)} size="lg">
@@ -585,19 +485,6 @@ const ArmyManagement = () => {
                   <CardContent>
                     <p className="text-3xl font-bold">{units.length}</p>
                     <p className="text-muted-foreground text-sm">unidades para gerar cards</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Images className="w-5 h-5" />
-                      Imagens de Fundo
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-bold" id="image-count">-</p>
-                    <p className="text-muted-foreground text-sm">imagens no banco</p>
                   </CardContent>
                 </Card>
 
