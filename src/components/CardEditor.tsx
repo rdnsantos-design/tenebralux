@@ -37,6 +37,14 @@ const experienceModifiers = {
   'Lendário': { moral: 3, points: 8 }
 };
 
+type SortOption = 'name-asc' | 'name-desc' | 'force-asc' | 'force-desc' | 'date-asc' | 'date-desc' | 'attack' | 'defense' | 'morale';
+
+interface CombinedUnit extends UnitCard {
+  source: 'created' | 'imported';
+  importName?: string;
+  createdAt?: number;
+}
+
 export const CardEditor: React.FC<CardEditorProps> = ({ 
   card, 
   templates = [],
@@ -48,6 +56,8 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   const [selectedSkin, setSelectedSkin] = useState<string>('');
   const [selectedUnitId, setSelectedUnitId] = useState<string>('');
   const [availableUnits, setAvailableUnits] = useState<Array<{id: string, name: string, importName: string} & UnitCard>>([]);
+  const [combinedUnits, setCombinedUnits] = useState<CombinedUnit[]>([]);
+  const [sortOption, setSortOption] = useState<SortOption>('date-desc');
   const [countries, setCountries] = useState<Country[]>([]);
   const [selectedCountryId, setSelectedCountryId] = useState<string>('');
   const [availableProvinces, setAvailableProvinces] = useState<Province[]>([]);
@@ -80,55 +90,113 @@ export const CardEditor: React.FC<CardEditorProps> = ({
 
   const [imageProcessing, setImageProcessing] = useState(false);
 
-  // Carregar unidades das importações salvas
+  // Carregar e combinar todas as unidades (criadas + importadas)
   useEffect(() => {
-    const savedImports = localStorage.getItem('excelImports');
-    if (savedImports) {
-      try {
-        const imports: ExcelImport[] = JSON.parse(savedImports);
-        const allUnits: Array<{id: string, name: string, importName: string} & UnitCard> = [];
-        
-        imports.forEach(importData => {
-          importData.units.forEach((unit, index) => {
-            // Mapear experiência do Excel para ExperienceLevel
-            const experienceMap: { [key: string]: ExperienceLevel } = {
-              'Amador': 'Amador',
-              'Recruta': 'Recruta',
-              'Profissional': 'Profissional',
-              'Veterano': 'Veterano',
-              'Elite': 'Elite',
-              'Lendário': 'Lendário'
-            };
-            const mappedExperience = experienceMap[unit.experience] || 'Profissional';
-            
-            const unitCard: UnitCard = {
-              id: `${importData.id}-${index}`,
-              name: unit.name,
-              attack: unit.attack,
-              defense: unit.defense,
-              ranged: unit.ranged,
-              movement: unit.movement,
-              morale: unit.morale,
-              experience: mappedExperience,
-              totalForce: unit.power || (unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale),
-              maintenanceCost: unit.maintenance || Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
-              specialAbilities: unit.ability ? [{ id: `ability-${index}`, name: unit.ability, level: 1 as const, cost: 0, description: '' }] : [],
-              backgroundImage: ''
-            };
-            
-            allUnits.push({
-              ...unitCard,
-              importName: importData.fileName
+    const loadAllUnits = () => {
+      const allCombined: CombinedUnit[] = [];
+      
+      // 1. Carregar unidades criadas manualmente (unitCards)
+      const savedCards = localStorage.getItem('unitCards');
+      if (savedCards) {
+        try {
+          const createdCards: UnitCard[] = JSON.parse(savedCards);
+          createdCards.forEach(unit => {
+            allCombined.push({
+              ...unit,
+              source: 'created',
+              createdAt: parseInt(unit.id) || Date.now()
             });
           });
-        });
-        
-        setAvailableUnits(allUnits);
-      } catch (error) {
-        console.error('Erro ao carregar importações:', error);
+        } catch (error) {
+          console.error('Erro ao carregar cards criados:', error);
+        }
       }
+      
+      // 2. Carregar unidades importadas do Excel
+      const savedImports = localStorage.getItem('excelImports');
+      if (savedImports) {
+        try {
+          const imports: ExcelImport[] = JSON.parse(savedImports);
+          const importedUnitsArray: Array<{id: string, name: string, importName: string} & UnitCard> = [];
+          
+          imports.forEach(importData => {
+            importData.units.forEach((unit, index) => {
+              const experienceMap: { [key: string]: ExperienceLevel } = {
+                'Amador': 'Amador',
+                'Recruta': 'Recruta',
+                'Profissional': 'Profissional',
+                'Veterano': 'Veterano',
+                'Elite': 'Elite',
+                'Lendário': 'Lendário'
+              };
+              const mappedExperience = experienceMap[unit.experience] || 'Profissional';
+              
+              const unitCard: CombinedUnit = {
+                id: `${importData.id}-${index}`,
+                name: unit.name,
+                attack: unit.attack,
+                defense: unit.defense,
+                ranged: unit.ranged,
+                movement: unit.movement,
+                morale: unit.morale,
+                experience: mappedExperience,
+                totalForce: unit.power || (unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale),
+                maintenanceCost: unit.maintenance || Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
+                specialAbilities: unit.ability ? [{ id: `ability-${index}`, name: unit.ability, level: 1 as const, cost: 0, description: '' }] : [],
+                backgroundImage: '',
+                source: 'imported',
+                importName: importData.fileName,
+                createdAt: new Date(importData.importDate).getTime()
+              };
+              
+              allCombined.push(unitCard);
+              importedUnitsArray.push({
+                ...unitCard,
+                importName: importData.fileName
+              });
+            });
+          });
+          
+          setAvailableUnits(importedUnitsArray);
+        } catch (error) {
+          console.error('Erro ao carregar importações:', error);
+        }
+      }
+      
+      setCombinedUnits(allCombined);
+    };
+    
+    loadAllUnits();
+  }, []);
+
+  // Função de ordenação
+  const sortUnits = useCallback((units: CombinedUnit[], option: SortOption): CombinedUnit[] => {
+    const sorted = [...units];
+    switch (option) {
+      case 'name-asc':
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case 'name-desc':
+        return sorted.sort((a, b) => b.name.localeCompare(a.name));
+      case 'force-asc':
+        return sorted.sort((a, b) => a.totalForce - b.totalForce);
+      case 'force-desc':
+        return sorted.sort((a, b) => b.totalForce - a.totalForce);
+      case 'date-asc':
+        return sorted.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      case 'date-desc':
+        return sorted.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      case 'attack':
+        return sorted.sort((a, b) => b.attack - a.attack);
+      case 'defense':
+        return sorted.sort((a, b) => b.defense - a.defense);
+      case 'morale':
+        return sorted.sort((a, b) => b.morale - a.morale);
+      default:
+        return sorted;
     }
   }, []);
+
+  const sortedUnits = sortUnits(combinedUnits, sortOption);
 
   // Carregar países das importações de localização
   useEffect(() => {
@@ -477,90 +545,8 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                     </div>
                   </div>
                   
-                  {/* Listar primeiro as unidades criadas manualmente (unitCards) */}
-                  {(() => {
-                    // Carregar unidades criadas manualmente do localStorage
-                    const savedCards = localStorage.getItem('unitCards');
-                    const createdUnits: UnitCard[] = savedCards ? JSON.parse(savedCards) : [];
-                    
-                    if (createdUnits.length > 0) {
-                      return (
-                        <>
-                          <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                              <span className="w-full border-t" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                              <span className="bg-card px-2 text-muted-foreground">
-                                Unidades Criadas
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2 max-h-40 overflow-y-auto">
-                            {createdUnits.map(unit => (
-                              <div
-                                key={unit.id}
-                                className={`border rounded-lg p-3 cursor-pointer transition-all ${
-                                  selectedUnitId === unit.id
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-border hover:border-primary/50'
-                                }`}
-                                onClick={() => {
-                                  setSelectedUnitId(unit.id);
-                                  const newBaseAttributes = {
-                                    attack: unit.attack,
-                                    defense: unit.defense,
-                                    ranged: unit.ranged,
-                                    movement: unit.movement,
-                                    morale: unit.morale
-                                  };
-                                  setBaseAttributes(newBaseAttributes);
-                                  setUnitData({
-                                    id: card?.id || '',
-                                    name: unit.name,
-                                    attack: unit.attack,
-                                    defense: unit.defense,
-                                    ranged: unit.ranged,
-                                    movement: unit.movement,
-                                    morale: unit.morale,
-                                    experience: unit.experience || 'Profissional',
-                                    totalForce: unit.totalForce,
-                                    maintenanceCost: unit.maintenanceCost,
-                                    specialAbilities: unit.specialAbilities || [],
-                                    backgroundImage: unit.backgroundImage || '',
-                                    customBackgroundImage: unit.customBackgroundImage || '',
-                                    images: unit.images || {},
-                                    countryId: unit.countryId || '',
-                                    provinceId: unit.provinceId || ''
-                                  });
-                                  setAvailablePoints(experienceModifiers[unit.experience || 'Profissional'].points);
-                                }}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center">
-                                    <span className="text-sm">⚔️</span>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="font-medium truncate">{unit.name}</h4>
-                                    <p className="text-xs text-muted-foreground">
-                                      Força: {unit.totalForce} • {unit.experience}
-                                    </p>
-                                  </div>
-                                  {selectedUnitId === unit.id && (
-                                    <div className="text-primary">✓</div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      );
-                    }
-                    return null;
-                  })()}
-                  
-                  {availableUnits.length > 0 && (
+                  {/* Ordenador */}
+                  {combinedUnits.length > 0 && (
                     <>
                       <div className="relative">
                         <div className="absolute inset-0 flex items-center">
@@ -568,59 +554,97 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
                           <span className="bg-card px-2 text-muted-foreground">
-                            Unidades Importadas (Excel)
+                            Unidades Disponíveis ({combinedUnits.length})
                           </span>
                         </div>
                       </div>
                       
                       <div>
-                        <Label htmlFor="importedUnit">Escolher Unidade da Planilha</Label>
-                         <Select 
-                           value={selectedUnitId === '__scratch__' ? '' : (availableUnits.find(u => u.id === selectedUnitId) ? selectedUnitId : '')}
-                           onValueChange={(value) => {
-                             const selectedUnit = availableUnits.find(unit => unit.id === value);
-                             if (selectedUnit) {
-                               setSelectedUnitId(value);
-                               const newBaseAttributes = {
-                                 attack: selectedUnit.attack,
-                                 defense: selectedUnit.defense,
-                                 ranged: selectedUnit.ranged,
-                                 movement: selectedUnit.movement,
-                                 morale: selectedUnit.morale
-                               };
-                               setBaseAttributes(newBaseAttributes);
-                                setUnitData({
-                                  id: card?.id || '',
-                                  name: selectedUnit.name,
-                                  attack: selectedUnit.attack,
-                                  defense: selectedUnit.defense,
-                                  ranged: selectedUnit.ranged,
-                                  movement: selectedUnit.movement,
-                                  morale: selectedUnit.morale,
-                                  experience: 'Profissional',
-                                  totalForce: selectedUnit.totalForce,
-                                  maintenanceCost: selectedUnit.maintenanceCost,
-                                  specialAbilities: selectedUnit.specialAbilities || [],
-                                  backgroundImage: selectedUnit.backgroundImage || '',
-                                  customBackgroundImage: selectedUnit.customBackgroundImage || '',
-                                  images: {}
-                                });
-                               setAvailablePoints(experienceModifiers['Profissional'].points);
-                             }
-                           }}
+                        <Label htmlFor="sortOption">Ordenar por</Label>
+                        <Select 
+                          value={sortOption}
+                          onValueChange={(value) => setSortOption(value as SortOption)}
                         >
                           <SelectTrigger className="bg-background border">
-                            <SelectValue placeholder="Escolher unidade..." />
+                            <SelectValue placeholder="Ordenar por..." />
                           </SelectTrigger>
                           <SelectContent className="bg-background border z-50 shadow-lg">
-                            {availableUnits.map(unit => (
-                              <SelectItem key={unit.id} value={unit.id} className="hover:bg-accent cursor-pointer">
-                                {unit.name} ({unit.importName} - Força: {unit.totalForce})
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="date-desc">📅 Mais Recentes</SelectItem>
+                            <SelectItem value="date-asc">📅 Mais Antigos</SelectItem>
+                            <SelectItem value="name-asc">🔤 Nome (A-Z)</SelectItem>
+                            <SelectItem value="name-desc">🔤 Nome (Z-A)</SelectItem>
+                            <SelectItem value="force-desc">💪 Maior Força</SelectItem>
+                            <SelectItem value="force-asc">💪 Menor Força</SelectItem>
+                            <SelectItem value="attack">⚔️ Ataque</SelectItem>
+                            <SelectItem value="defense">🛡️ Defesa</SelectItem>
+                            <SelectItem value="morale">❤️ Moral</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
+                      
+                      <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-2">
+                        {sortedUnits.map(unit => (
+                          <div
+                            key={unit.id}
+                            className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                              selectedUnitId === unit.id
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                            onClick={() => {
+                              setSelectedUnitId(unit.id);
+                              const newBaseAttributes = {
+                                attack: unit.attack,
+                                defense: unit.defense,
+                                ranged: unit.ranged,
+                                movement: unit.movement,
+                                morale: unit.morale
+                              };
+                              setBaseAttributes(newBaseAttributes);
+                              setUnitData({
+                                id: card?.id || '',
+                                name: unit.name,
+                                attack: unit.attack,
+                                defense: unit.defense,
+                                ranged: unit.ranged,
+                                movement: unit.movement,
+                                morale: unit.morale,
+                                experience: unit.experience || 'Profissional',
+                                totalForce: unit.totalForce,
+                                maintenanceCost: unit.maintenanceCost,
+                                specialAbilities: unit.specialAbilities || [],
+                                backgroundImage: unit.backgroundImage || '',
+                                customBackgroundImage: unit.customBackgroundImage || '',
+                                images: unit.images || {},
+                                countryId: unit.countryId || '',
+                                provinceId: unit.provinceId || ''
+                              });
+                              setAvailablePoints(experienceModifiers[unit.experience || 'Profissional'].points);
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded flex items-center justify-center ${
+                                unit.source === 'created' ? 'bg-primary/20' : 'bg-muted'
+                              }`}>
+                                <span className="text-sm">{unit.source === 'created' ? '⚔️' : '📊'}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium truncate">{unit.name}</h4>
+                                <p className="text-xs text-muted-foreground">
+                                  Força: {unit.totalForce} • {unit.experience} • 
+                                  <span className={unit.source === 'created' ? 'text-primary' : 'text-muted-foreground'}>
+                                    {unit.source === 'created' ? ' Criada' : ` ${unit.importName}`}
+                                  </span>
+                                </p>
+                              </div>
+                              {selectedUnitId === unit.id && (
+                                <div className="text-primary">✓</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
                       <p className="text-sm text-muted-foreground">
                         Selecione uma unidade como base e depois ajuste a experiência e distribua pontos
                       </p>
