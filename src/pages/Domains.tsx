@@ -2,22 +2,26 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
-import { Home, FileSpreadsheet, Map, Building, Upload, Crown } from 'lucide-react';
+import { Home, FileSpreadsheet, Map, Upload, Crown } from 'lucide-react';
 import { RealmList } from '@/components/domains/RealmList';
-import { ProvinceList } from '@/components/domains/ProvinceList';
-import { HoldingList } from '@/components/domains/HoldingList';
 import { DomainImporter } from '@/components/domains/DomainImporter';
 import { HoldingsImporter } from '@/components/domains/HoldingsImporter';
 import { RegentDomainList } from '@/components/domains/RegentDomainList';
-import { Realm, Province } from '@/types/Domain';
+import { RealmProvinceHoldingView } from '@/components/domains/RealmProvinceHoldingView';
+import { Realm } from '@/types/Domain';
 
 const Domains = () => {
   const navigate = useNavigate();
   const [selectedRealm, setSelectedRealm] = useState<Realm | null>(null);
-  const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
   const [showImporter, setShowImporter] = useState(false);
   const [showHoldingsImporter, setShowHoldingsImporter] = useState(false);
-  const [activeTab, setActiveTab] = useState('provinces');
+  const [activeTab, setActiveTab] = useState('reinos');
+  const [selectedRegentId, setSelectedRegentId] = useState<string | null>(null);
+
+  const handleSelectRegent = (regentId: string) => {
+    setSelectedRegentId(regentId);
+    setActiveTab('dominios');
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -81,14 +85,10 @@ const Domains = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[450px]">
-            <TabsTrigger value="provinces" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-2 lg:w-[300px]">
+            <TabsTrigger value="reinos" className="flex items-center gap-2">
               <Map className="w-4 h-4" />
-              Províncias
-            </TabsTrigger>
-            <TabsTrigger value="holdings" className="flex items-center gap-2">
-              <Building className="w-4 h-4" />
-              Holdings
+              Reinos
             </TabsTrigger>
             <TabsTrigger value="dominios" className="flex items-center gap-2">
               <Crown className="w-4 h-4" />
@@ -96,8 +96,8 @@ const Domains = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Provinces Tab */}
-          <TabsContent value="provinces">
+          {/* Reinos Tab */}
+          <TabsContent value="reinos">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Realm List - Sidebar */}
               <div className="lg:col-span-1">
@@ -107,46 +107,22 @@ const Domains = () => {
                 />
               </div>
 
-              {/* Province List - Main Content */}
+              {/* Province + Holdings List - Main Content */}
               <div className="lg:col-span-3">
-                <ProvinceList 
-                  selectedRealmId={selectedRealm?.id}
-                  onSelectProvince={setSelectedProvince}
+                <RealmProvinceHoldingView 
+                  selectedRealm={selectedRealm}
+                  onSelectRegent={handleSelectRegent}
                 />
-              </div>
-            </div>
-
-            {/* Footer Info */}
-            <div className="text-center mt-8">
-              <p className="text-sm text-muted-foreground">
-                {selectedRealm 
-                  ? `Visualizando províncias de ${selectedRealm.name}`
-                  : 'Selecione um reino para filtrar províncias ou visualize todas'
-                }
-              </p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="holdings">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Province selector */}
-              <div className="lg:col-span-1">
-                <ProvinceList 
-                  selectedRealmId={selectedRealm?.id}
-                  onSelectProvince={setSelectedProvince}
-                  compact
-                />
-              </div>
-
-              {/* Holdings List */}
-              <div className="lg:col-span-3">
-                <HoldingList selectedProvinceId={selectedProvince?.id} />
               </div>
             </div>
           </TabsContent>
 
+          {/* Domínios Tab */}
           <TabsContent value="dominios">
-            <RegentDomainList />
+            <RegentDomainList 
+              selectedRegentId={selectedRegentId}
+              onClearSelection={() => setSelectedRegentId(null)}
+            />
           </TabsContent>
         </Tabs>
       </div>
