@@ -97,12 +97,42 @@ export function HoldingsImporter({ onClose }: HoldingsImporterProps) {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
 
-      // Find the "Holdings long" sheet
-      const sheetName = workbook.SheetNames.find(name =>
-        name.toLowerCase().includes('holdings') ||
-        name.toLowerCase().includes('holding')
-      ) || workbook.SheetNames[0];
-
+      // Find the holdings sheet - look for "Holdings long" or similar
+      // Priority: "Holdings long" > sheet containing "holdings" > last sheet (usually has raw data)
+      console.log('Available sheets:', workbook.SheetNames);
+      
+      let sheetName = workbook.SheetNames.find(name =>
+        name.toLowerCase() === 'holdings long'
+      );
+      
+      if (!sheetName) {
+        sheetName = workbook.SheetNames.find(name =>
+          name.toLowerCase().includes('holdings')
+        );
+      }
+      
+      // If still not found, check if any sheet has holding_type column
+      if (!sheetName) {
+        for (const name of workbook.SheetNames) {
+          const testSheet = workbook.Sheets[name];
+          const testData = XLSX.utils.sheet_to_json(testSheet, { range: 0 });
+          if (testData.length > 0) {
+            const firstRow = testData[0] as Record<string, unknown>;
+            if ('holding_type' in firstRow || 'Tipo de Holding' in firstRow) {
+              sheetName = name;
+              break;
+            }
+          }
+        }
+      }
+      
+      // Fallback to last sheet (often contains detailed data)
+      if (!sheetName) {
+        sheetName = workbook.SheetNames[workbook.SheetNames.length - 1];
+      }
+      
+      console.log('Selected sheet:', sheetName);
+      
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
       
