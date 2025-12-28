@@ -48,11 +48,13 @@ export const PrintCardGenerator = ({ units, templates, onClose }: PrintCardGener
   // Combinar units (do ArmyManagement) com unitCards (do CardEditor)
   const loadAllUnits = () => {
     const savedCards = localStorage.getItem('unitCards');
+    console.log('[PrintCardGenerator] Raw unitCards from localStorage:', savedCards);
     let cardUnits: Unit[] = [];
     
     if (savedCards) {
       try {
         const cards = JSON.parse(savedCards);
+        console.log('[PrintCardGenerator] Parsed cards:', cards.length, cards.map((c: any) => c.name));
         // Converter UnitCard para Unit format
         cardUnits = cards.map((card: any) => ({
           id: card.id,
@@ -79,8 +81,12 @@ export const PrintCardGenerator = ({ units, templates, onClose }: PrintCardGener
       }
     }
     
+    console.log('[PrintCardGenerator] cardUnits:', cardUnits.length);
+    console.log('[PrintCardGenerator] units prop:', units.length);
+    
     // Combinar: cards criados primeiro, depois units do Army
     const combinedUnits = [...cardUnits, ...units.filter(u => !cardUnits.find(c => c.id === u.id))];
+    console.log('[PrintCardGenerator] combinedUnits:', combinedUnits.length, combinedUnits.map(u => u.name));
     setAllUnits(combinedUnits);
   };
 
