@@ -20,12 +20,16 @@ export function TravelCalculator() {
   const calculation = useMemo(() => {
     if (!distanceData || !individualSpeed || !armySpeed) return null;
 
-    const distance = Number(distanceData.distance_km);
-    const individualDays = distance / Number(individualSpeed.speed_km_per_day);
-    const armyDays = distance / Number(armySpeed.speed_km_per_day);
+    // Multiply straight-line distance by 10 to account for terrain/road factors
+    const straightLineDistance = Number(distanceData.distance_km);
+    const adjustedDistance = straightLineDistance * 10;
+    
+    const individualDays = adjustedDistance / Number(individualSpeed.speed_km_per_day);
+    const armyDays = adjustedDistance / Number(armySpeed.speed_km_per_day);
 
     return {
-      distance,
+      straightLineDistance,
+      adjustedDistance,
       individualDays: Math.ceil(individualDays * 10) / 10, // Round to 1 decimal
       armyDays: Math.ceil(armyDays * 10) / 10,
     };
@@ -134,7 +138,10 @@ export function TravelCalculator() {
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
                   <span className="text-sm text-muted-foreground">Distância em linha reta</span>
                   <div className="text-3xl font-bold mt-1">
-                    {calculation.distance.toFixed(1)} <span className="text-lg font-normal text-muted-foreground">km</span>
+                    {calculation.straightLineDistance.toFixed(1)} <span className="text-lg font-normal text-muted-foreground">km</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-2">
+                    Distância ajustada: <span className="font-medium">{calculation.adjustedDistance.toFixed(1)} km</span> (×10)
                   </div>
                 </div>
 
