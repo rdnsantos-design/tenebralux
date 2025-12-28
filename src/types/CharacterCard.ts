@@ -1,6 +1,6 @@
 // Character Card Types for Tenebra Lux System
 
-export type CharacterType = 'Herói' | 'Comandante';
+export type CharacterType = 'Herói' | 'Comandante' | 'Regente';
 export type AbilityType = 'Passiva' | 'Ativável' | 'Uma vez por batalha';
 export type EffectType = 'buff_self' | 'debuff_enemy';
 export type ConditionalType = 'none' | 'light' | 'heavy';
@@ -8,7 +8,7 @@ export type RangeType = 'self' | 'unit' | 'area' | 'enemy';
 export type PassiveBonusType = 'Ataque' | 'Defesa' | 'Mobilidade';
 export type Specialty = 'Infantaria' | 'Cavalaria' | 'Arqueria' | 'Sitio';
 
-export const CHARACTER_TYPES: CharacterType[] = ['Herói', 'Comandante'];
+export const CHARACTER_TYPES: CharacterType[] = ['Herói', 'Comandante', 'Regente'];
 export const ABILITY_TYPES: AbilityType[] = ['Passiva', 'Ativável', 'Uma vez por batalha'];
 export const EFFECT_TYPES: EffectType[] = ['buff_self', 'debuff_enemy'];
 export const CONDITIONAL_TYPES: ConditionalType[] = ['none', 'light', 'heavy'];
@@ -38,6 +38,11 @@ export interface CharacterCard {
   name: string;
   character_type: CharacterType[];
   culture: string;
+  // PC/NPC distinction
+  is_pc: boolean;
+  player_name?: string;
+  // Regent linking
+  regent_id?: string;
   // Core attributes
   comando: number;
   estrategia: number;

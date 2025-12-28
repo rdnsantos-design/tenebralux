@@ -8,9 +8,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
+import { useRegents } from '@/hooks/useRegents';
 import { toast } from 'sonner';
-import { Upload, X, Save, ArrowLeft } from 'lucide-react';
+import { Upload, X, Save, ArrowLeft, User, Users, Crown, RefreshCw } from 'lucide-react';
 import { 
   CharacterCard, 
   CharacterAbility,
@@ -37,10 +39,15 @@ export function CharacterCardEditor({
   onSave, 
   onCancel 
 }: CharacterCardEditorProps) {
+  const { data: regents } = useRegents();
+  
   const [formData, setFormData] = useState<Partial<CharacterCard>>({
     name: '',
     character_type: [],
     culture: config.cultures[0] || 'Anuire',
+    is_pc: false,
+    player_name: '',
+    regent_id: undefined,
     comando: 1,
     estrategia: 1,
     guarda: 2,
@@ -157,6 +164,9 @@ export function CharacterCardEditor({
       name: formData.name!,
       character_type: formData.character_type as CharacterType[],
       culture: formData.culture!,
+      is_pc: formData.is_pc || false,
+      player_name: formData.is_pc ? formData.player_name : undefined,
+      regent_id: formData.character_type?.includes('Regente') ? formData.regent_id : undefined,
       comando: formData.comando || 0,
       estrategia: formData.estrategia || 0,
       guarda: formData.guarda || 0,
@@ -203,9 +213,41 @@ export function CharacterCardEditor({
               />
             </div>
 
+            {/* PC/NPC Selection */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-2">
+                {formData.is_pc ? (
+                  <User className="w-4 h-4 text-primary" />
+                ) : (
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                )}
+                <Label htmlFor="is_pc" className="cursor-pointer">
+                  {formData.is_pc ? 'Personagem de Jogador (PC)' : 'Non-Player Character (NPC)'}
+                </Label>
+              </div>
+              <Switch
+                id="is_pc"
+                checked={formData.is_pc || false}
+                onCheckedChange={checked => setFormData(prev => ({ ...prev, is_pc: checked }))}
+              />
+            </div>
+
+            {/* Player Name - only shown when PC */}
+            {formData.is_pc && (
+              <div>
+                <Label htmlFor="player_name">Nome do Jogador</Label>
+                <Input
+                  id="player_name"
+                  value={formData.player_name || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, player_name: e.target.value }))}
+                  placeholder="Nome do jogador que controla este personagem"
+                />
+              </div>
+            )}
+
             <div>
               <Label>Tipo de Personagem</Label>
-              <div className="flex gap-2 mt-2">
+              <div className="flex flex-wrap gap-2 mt-2">
                 {CHARACTER_TYPES.map(type => (
                   <Badge
                     key={type}
@@ -213,11 +255,57 @@ export function CharacterCardEditor({
                     className="cursor-pointer"
                     onClick={() => toggleCharacterType(type)}
                   >
+                    {type === 'Regente' && <Crown className="w-3 h-3 mr-1" />}
                     {type}
                   </Badge>
                 ))}
               </div>
             </div>
+
+            {/* Regent Section - only shown when Regente type is selected */}
+            {formData.character_type?.includes('Regente') && (
+              <div className="p-4 rounded-lg border border-primary/30 bg-primary/5 space-y-3">
+                <div className="flex items-center gap-2 text-primary">
+                  <Crown className="w-4 h-4" />
+                  <Label className="font-semibold">Configuração de Regente</Label>
+                </div>
+                
+                <div>
+                  <Label htmlFor="regent_replace" className="text-sm flex items-center gap-2 mb-2">
+                    <RefreshCw className="w-3 h-3" />
+                    Substituir Regente Existente
+                  </Label>
+                  <Select
+                    value={formData.regent_id || 'none'}
+                    onValueChange={value => {
+                      const regent = regents?.find(r => r.id === value);
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        regent_id: value === 'none' ? undefined : value,
+                        domain: regent?.name || prev.domain
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Selecione um regente para assumir seu domínio" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border shadow-md z-50">
+                      <SelectItem value="none">Nenhum (criar novo domínio)</SelectItem>
+                      {regents?.map(regent => (
+                        <SelectItem key={regent.id} value={regent.id}>
+                          {regent.code && <span className="font-mono text-xs mr-2">[{regent.code}]</span>}
+                          {regent.name}
+                          {regent.full_name && <span className="text-muted-foreground ml-1">({regent.full_name})</span>}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ao selecionar um regente, este personagem assumirá todos os holdings desse domínio.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div>
               <Label htmlFor="culture">Cultura</Label>
@@ -228,7 +316,7 @@ export function CharacterCardEditor({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover border shadow-md z-50">
                   {config.cultures.map(culture => (
                     <SelectItem key={culture} value={culture}>{culture}</SelectItem>
                   ))}
