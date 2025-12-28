@@ -47,10 +47,10 @@ export const useUpdateRealm = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+    mutationFn: async ({ id, ...updates }: Partial<Realm> & { id: string }) => {
       const { data, error } = await supabase
         .from('realms')
-        .update({ name })
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
