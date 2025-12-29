@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Trash2, Printer, Download, Eye, Image as ImageIcon } from "lucide-react";
@@ -36,6 +37,7 @@ export const PrintCardGenerator = ({ units, templates, onClose }: PrintCardGener
   const [selectedImageId, setSelectedImageId] = useState<string>('');
   const [cardsToPrint, setCardsToPrint] = useState<CardToPrint[]>([]);
   const [previewCard, setPreviewCard] = useState<CardToPrint | null>(null);
+  const [unitSearchFilter, setUnitSearchFilter] = useState<string>('');
   
   const printContainerRef = useRef<HTMLDivElement>(null);
 
@@ -366,19 +368,39 @@ export const PrintCardGenerator = ({ units, templates, onClose }: PrintCardGener
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Busca de Unidade */}
+              <div className="space-y-2">
+                <Label>Buscar unidade</Label>
+                <Input
+                  type="text"
+                  placeholder="Digite o nome da unidade..."
+                  value={unitSearchFilter}
+                  onChange={(e) => setUnitSearchFilter(e.target.value)}
+                />
+              </div>
+              
               {/* Seletor de Unidade */}
               <div className="space-y-2">
-                <Label>Unidade</Label>
+                <Label>Unidade ({allUnits.length} disponíveis)</Label>
                 <Select value={selectedUnitId} onValueChange={setSelectedUnitId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma unidade" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {allUnits.map((unit) => (
-                      <SelectItem key={unit.id} value={unit.id}>
-                        {unit.name} - {unit.experience}
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="max-h-80">
+                    {allUnits
+                      .filter((unit) => {
+                        if (!unitSearchFilter.trim()) return true;
+                        return unit.name.toLowerCase().includes(unitSearchFilter.toLowerCase().trim());
+                      })
+                      .map((unit) => {
+                        // Unidades criadas têm IDs numéricos
+                        const isCreated = !isNaN(parseInt(unit.id));
+                        return (
+                          <SelectItem key={unit.id} value={unit.id}>
+                            {isCreated ? '⚔️ ' : '📊 '}{unit.name} - {unit.experience}
+                          </SelectItem>
+                        );
+                      })}
                   </SelectContent>
                 </Select>
               </div>

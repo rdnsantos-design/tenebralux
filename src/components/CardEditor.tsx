@@ -38,6 +38,7 @@ const experienceModifiers = {
 };
 
 type SortOption = 'name-asc' | 'name-desc' | 'force-asc' | 'force-desc' | 'date-asc' | 'date-desc' | 'attack' | 'defense' | 'morale';
+type SourceFilter = 'all' | 'created' | 'imported';
 
 interface CombinedUnit extends UnitCard {
   source: 'created' | 'imported';
@@ -58,6 +59,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({
   const [availableUnits, setAvailableUnits] = useState<Array<{id: string, name: string, importName: string} & UnitCard>>([]);
   const [combinedUnits, setCombinedUnits] = useState<CombinedUnit[]>([]);
   const [sortOption, setSortOption] = useState<SortOption>('date-desc');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [countries, setCountries] = useState<Country[]>([]);
   const [selectedCountryId, setSelectedCountryId] = useState<string>('');
@@ -199,12 +201,36 @@ export const CardEditor: React.FC<CardEditorProps> = ({
 
   const filteredAndSortedUnits = (() => {
     let filtered = combinedUnits;
+    
+    // Filtrar por fonte (criada ou importada)
+    if (sourceFilter !== 'all') {
+      filtered = filtered.filter(unit => unit.source === sourceFilter);
+    }
+    
+    // Filtrar por nome
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = combinedUnits.filter(unit => unit.name.toLowerCase().includes(query));
+      filtered = filtered.filter(unit => unit.name.toLowerCase().includes(query));
     }
-    return sortUnits(filtered, sortOption);
+    
+    // Ordenar colocando unidades criadas primeiro por padrão
+    const sorted = sortUnits(filtered, sortOption);
+    
+    // Se não tem filtro de fonte ativo, coloca criadas primeiro
+    if (sourceFilter === 'all' && sortOption === 'date-desc') {
+      return sorted.sort((a, b) => {
+        if (a.source === 'created' && b.source !== 'created') return -1;
+        if (a.source !== 'created' && b.source === 'created') return 1;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+    }
+    
+    return sorted;
   })();
+  
+  // Contadores para mostrar no filtro
+  const createdCount = combinedUnits.filter(u => u.source === 'created').length;
+  const importedCount = combinedUnits.filter(u => u.source === 'imported').length;
 
   // Carregar países das importações de localização
   useEffect(() => {
@@ -562,45 +588,84 @@ export const CardEditor: React.FC<CardEditorProps> = ({
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
                           <span className="bg-card px-2 text-muted-foreground">
-                            Unidades Disponíveis ({combinedUnits.length})
+                            Unidades Disponíveis ({filteredAndSortedUnits.length} de {combinedUnits.length})
                           </span>
                         </div>
                       </div>
                       
-                      <div>
-                        <Label htmlFor="sortOption">Ordenar por</Label>
-                        <Select 
-                          value={sortOption}
-                          onValueChange={(value) => setSortOption(value as SortOption)}
+                      {/* Filtro por tipo de unidade */}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSourceFilter('all')}
+                          className={`flex-1 px-3 py-2 text-sm rounded-md border transition-colors ${
+                            sourceFilter === 'all' 
+                              ? 'bg-primary text-primary-foreground border-primary' 
+                              : 'bg-background border-border hover:border-primary/50'
+                          }`}
                         >
-                          <SelectTrigger className="bg-background border">
-                            <SelectValue placeholder="Ordenar por..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border z-50 shadow-lg">
-                            <SelectItem value="date-desc">📅 Mais Recentes</SelectItem>
-                            <SelectItem value="date-asc">📅 Mais Antigos</SelectItem>
-                            <SelectItem value="name-asc">🔤 Nome (A-Z)</SelectItem>
-                            <SelectItem value="name-desc">🔤 Nome (Z-A)</SelectItem>
-                            <SelectItem value="force-desc">💪 Maior Força</SelectItem>
-                            <SelectItem value="force-asc">💪 Menor Força</SelectItem>
-                            <SelectItem value="attack">⚔️ Ataque</SelectItem>
-                            <SelectItem value="defense">🛡️ Defesa</SelectItem>
-                            <SelectItem value="morale">❤️ Moral</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          Todas ({combinedUnits.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSourceFilter('created')}
+                          className={`flex-1 px-3 py-2 text-sm rounded-md border transition-colors ${
+                            sourceFilter === 'created' 
+                              ? 'bg-primary text-primary-foreground border-primary' 
+                              : 'bg-background border-border hover:border-primary/50'
+                          }`}
+                        >
+                          ⚔️ Criadas ({createdCount})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSourceFilter('imported')}
+                          className={`flex-1 px-3 py-2 text-sm rounded-md border transition-colors ${
+                            sourceFilter === 'imported' 
+                              ? 'bg-primary text-primary-foreground border-primary' 
+                              : 'bg-background border-border hover:border-primary/50'
+                          }`}
+                        >
+                          📊 Importadas ({importedCount})
+                        </button>
                       </div>
                       
-                      {/* Campo de busca */}
-                      <div>
-                        <Label htmlFor="searchQuery">Buscar por nome</Label>
-                        <Input
-                          id="searchQuery"
-                          type="text"
-                          placeholder="Digite o nome da unidade..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="bg-background"
-                        />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="sortOption">Ordenar por</Label>
+                          <Select 
+                            value={sortOption}
+                            onValueChange={(value) => setSortOption(value as SortOption)}
+                          >
+                            <SelectTrigger className="bg-background border">
+                              <SelectValue placeholder="Ordenar por..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border z-50 shadow-lg">
+                              <SelectItem value="date-desc">📅 Mais Recentes</SelectItem>
+                              <SelectItem value="date-asc">📅 Mais Antigos</SelectItem>
+                              <SelectItem value="name-asc">🔤 Nome (A-Z)</SelectItem>
+                              <SelectItem value="name-desc">🔤 Nome (Z-A)</SelectItem>
+                              <SelectItem value="force-desc">💪 Maior Força</SelectItem>
+                              <SelectItem value="force-asc">💪 Menor Força</SelectItem>
+                              <SelectItem value="attack">⚔️ Ataque</SelectItem>
+                              <SelectItem value="defense">🛡️ Defesa</SelectItem>
+                              <SelectItem value="morale">❤️ Moral</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {/* Campo de busca */}
+                        <div>
+                          <Label htmlFor="searchQuery">Buscar</Label>
+                          <Input
+                            id="searchQuery"
+                            type="text"
+                            placeholder="Nome da unidade..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="bg-background"
+                          />
+                        </div>
                       </div>
                       
                       <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-2">
