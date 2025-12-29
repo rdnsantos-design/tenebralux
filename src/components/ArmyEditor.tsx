@@ -30,23 +30,69 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
   const [availableCards, setAvailableCards] = useState<UnitCard[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string>("");
   const [countries, setCountries] = useState<Country[]>([]);
+  const [unitFilter, setUnitFilter] = useState<string>('');
 
   // Filtrar comandantes do regente selecionado
   const regentCommanders = commanders.filter(
     (c) => c.regent_id === formData.regentId
   );
 
-  // Carregar cards disponíveis
+  // Carregar cards disponíveis (criados + importados)
   useEffect(() => {
+    const allCards: UnitCard[] = [];
+    
+    // 1. Carregar cards criados manualmente
     const savedCards = localStorage.getItem('unitCards');
     if (savedCards) {
       try {
-        const loadedCards = JSON.parse(savedCards);
-        setAvailableCards(loadedCards);
+        const createdCards = JSON.parse(savedCards);
+        allCards.push(...createdCards);
       } catch (error) {
-        console.error('Erro ao carregar cards:', error);
+        console.error('Erro ao carregar cards criados:', error);
       }
     }
+    
+    // 2. Carregar unidades importadas do Excel
+    const savedImports = localStorage.getItem('excelImports');
+    if (savedImports) {
+      try {
+        const imports = JSON.parse(savedImports);
+        imports.forEach((importData: any) => {
+          importData.units.forEach((unit: any, index: number) => {
+            const experienceMap: { [key: string]: string } = {
+              'Amador': 'Amador',
+              'Recruta': 'Recruta',
+              'Profissional': 'Profissional',
+              'Veterano': 'Veterano',
+              'Elite': 'Elite',
+              'Lendário': 'Lendário'
+            };
+            const mappedExperience = experienceMap[unit.experience] || 'Profissional';
+            
+            const unitCard: UnitCard = {
+              id: `${importData.id}-${index}`,
+              name: unit.name,
+              attack: unit.attack,
+              defense: unit.defense,
+              ranged: unit.ranged,
+              movement: unit.movement,
+              morale: unit.morale,
+              experience: mappedExperience as any,
+              totalForce: unit.power || (unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale),
+              maintenanceCost: unit.maintenance || Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
+              specialAbilities: unit.ability ? [{ id: `ability-${index}`, name: unit.ability, level: 1 as const, cost: 0, description: '' }] : [],
+              backgroundImage: ''
+            };
+            
+            allCards.push(unitCard);
+          });
+        });
+      } catch (error) {
+        console.error('Erro ao carregar importações:', error);
+      }
+    }
+    
+    setAvailableCards(allCards);
   }, []);
 
   // Carregar países das importações de localização
@@ -282,9 +328,20 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
 
           <Card>
             <CardHeader>
-              <CardTitle>Adicionar Unidades</CardTitle>
+              <CardTitle>Adicionar Unidades ({availableCards.length} disponíveis)</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* Busca de unidades */}
+              <div>
+                <Label>Buscar unidade</Label>
+                <Input
+                  type="text"
+                  placeholder="Digite o nome da unidade..."
+                  value={unitFilter}
+                  onChange={(e) => setUnitFilter(e.target.value)}
+                />
+              </div>
+              
               <div className="flex gap-4 items-end">
                 <div className="flex-1 space-y-2">
                   <Label>Selecionar Card de Unidade</Label>
@@ -292,20 +349,32 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                     <SelectTrigger>
                       <SelectValue placeholder="Escolha uma unidade militar" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {/* Ordenar: unidades criadas manualmente primeiro (IDs mais recentes) */}
+                    <SelectContent className="max-h-80">
+                      {/* Ordenar: unidades criadas manualmente primeiro (IDs numéricos) */}
                       {[...availableCards]
+                        .filter((card) => {
+                          if (!unitFilter.trim()) return true;
+                          return card.name.toLowerCase().includes(unitFilter.toLowerCase().trim());
+                        })
                         .sort((a, b) => {
-                          // IDs numéricos maiores = mais recentes = primeiro
+                          // IDs numéricos = unidades criadas = primeiro
+                          const aIsCreated = !isNaN(parseInt(a.id));
+                          const bIsCreated = !isNaN(parseInt(b.id));
+                          if (aIsCreated && !bIsCreated) return -1;
+                          if (!aIsCreated && bIsCreated) return 1;
+                          // Dentro do mesmo grupo, ordenar por ID (mais recentes primeiro)
                           const aNum = parseInt(a.id) || 0;
                           const bNum = parseInt(b.id) || 0;
                           return bNum - aNum;
                         })
-                        .map((card) => (
-                        <SelectItem key={card.id} value={card.id}>
-                          {card.name} - Força: {card.totalForce} - Manutenção: {card.maintenanceCost}
-                        </SelectItem>
-                      ))}
+                        .map((card) => {
+                          const isCreated = !isNaN(parseInt(card.id));
+                          return (
+                            <SelectItem key={card.id} value={card.id}>
+                              {isCreated ? '⚔️ ' : '📊 '}{card.name} - Força: {card.totalForce} - Manut: {card.maintenanceCost}
+                            </SelectItem>
+                          );
+                        })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -319,6 +388,10 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                   Adicionar
                 </Button>
               </div>
+              
+              <p className="text-xs text-muted-foreground">
+                ⚔️ = Unidades criadas | 📊 = Unidades importadas
+              </p>
             </CardContent>
           </Card>
 
