@@ -155,6 +155,7 @@ export function MassCombatTacticalCardList() {
         <div class="card">
           <div class="card-header" style="background: linear-gradient(135deg, ${colors.primary}, ${colors.primary}dd);">
             <div class="unit-type-badge">${card.unit_type}</div>
+            <div class="vet-badge">VET ${card.vet_cost}</div>
           </div>
           
           <div class="card-name">
@@ -266,6 +267,16 @@ export function MassCombatTacticalCardList() {
             background: rgba(255,255,255,0.2);
             padding: 4px 10px;
             border-radius: 20px;
+          }
+          
+          .vet-badge {
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(0,0,0,0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+          }
+          
           .card-name {
             padding: 12px;
             text-align: center;
@@ -428,6 +439,7 @@ export function MassCombatTacticalCardList() {
       'Comando Necessário': card.command_required,
       'Cultura': card.culture || '',
       'Descrição': card.description || '',
+      'Custo VET': card.vet_cost,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
