@@ -102,6 +102,10 @@ export function RegentList() {
           name: formData.name,
           full_name: formData.full_name || undefined,
           notes: formData.notes || undefined,
+          gold_bars: 0,
+          regency_points: 0,
+          comando: 1,
+          estrategia: 1,
         });
       } else {
         await createRegent.mutateAsync({
@@ -109,6 +113,10 @@ export function RegentList() {
           name: formData.name,
           full_name: formData.full_name || undefined,
           notes: formData.notes || undefined,
+          gold_bars: 0,
+          regency_points: 0,
+          comando: 1,
+          estrategia: 1,
         });
       }
       setIsDialogOpen(false);

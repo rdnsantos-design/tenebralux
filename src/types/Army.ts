@@ -1,14 +1,6 @@
-export interface Regent {
-  id: string;
-  name: string;
-  character: string; // jogador
-  domain: string; // domínio
-  goldBars: number; // GB - Gold Bars
-  regencyPoints: number; // RP - Regency Points
-  comando: number; // perícia de comando (1-5)
-  estrategia: number; // perícia de estratégia (1-5)  
-  createdAt: string;
-}
+// Regent agora é importado de Domain.ts - fonte única de verdade
+// Re-exportando para compatibilidade com código existente
+export { type Regent } from './Domain';
 
 export interface Army {
   id: string;

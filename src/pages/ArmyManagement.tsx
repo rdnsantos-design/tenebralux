@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout, Swords, Printer } from "lucide-react";
+import { Plus, Users, Home, FileSpreadsheet, Settings, Shield, Upload, MapPin, Layout, Swords, Printer, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Regent, Army } from "@/types/Army";
 import { UnitCard } from "@/types/UnitCard";
@@ -17,6 +17,7 @@ import { LocationImportManager } from "@/components/LocationImportManager";
 import { Country } from "@/types/Location";
 import { TemplateCreator } from "@/components/TemplateCreator";
 import { useFieldCommanders } from "@/hooks/useFieldCommanders";
+import { useRegents } from "@/hooks/useRegents";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { PrintCardGenerator } from "@/components/PrintCardGenerator";
@@ -25,7 +26,10 @@ import { ArmyExporter } from "@/components/ArmyExporter";
 const ArmyManagement = () => {
   const navigate = useNavigate();
   const { commanders } = useFieldCommanders();
-  const [regents, setRegents] = useState<Regent[]>([]);
+  
+  // Regentes agora vêm do Supabase via hook
+  const { data: regents = [], isLoading: isLoadingRegents } = useRegents();
+  
   const [armies, setArmies] = useState<Army[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [legacyCards, setLegacyCards] = useState<UnitCard[]>([]);
@@ -41,16 +45,8 @@ const ArmyManagement = () => {
   const [cardTemplates, setCardTemplates] = useState<CardTemplate[]>([]);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
-  // Carregar dados do localStorage
+  // Carregar dados do localStorage (exceto regentes que agora vêm do Supabase)
   useEffect(() => {
-    const savedRegents = localStorage.getItem('armyRegents');
-    if (savedRegents) {
-      try {
-        setRegents(JSON.parse(savedRegents));
-      } catch (error) {
-        console.error('Erro ao carregar regentes:', error);
-      }
-    }
 
     const savedArmies = localStorage.getItem('armyArmies');
     if (savedArmies) {
@@ -94,10 +90,7 @@ const ArmyManagement = () => {
   }, []);
 
   // Salvar dados no localStorage
-  useEffect(() => {
-    if (!initialLoaded) return;
-    localStorage.setItem('armyRegents', JSON.stringify(regents));
-  }, [regents, initialLoaded]);
+  // Regentes agora são gerenciados pelo Supabase, não precisa salvar no localStorage
 
   useEffect(() => {
     if (!initialLoaded) return;

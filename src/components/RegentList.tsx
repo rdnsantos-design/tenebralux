@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Crown, Coins, Star } from "lucide-react";
-import { Regent } from "@/types/Army";
+import { Regent } from "@/types/Domain";
 
 interface RegentListProps {
   regents: Regent[];
@@ -20,30 +20,34 @@ export const RegentList = ({ regents, onEdit, onDelete }: RegentListProps) => {
               <Crown className="w-5 h-5 text-primary" />
               <span className="truncate">{regent.name}</span>
             </CardTitle>
-            <p className="text-sm text-muted-foreground truncate">
-              {regent.character}
-            </p>
+            {regent.character && (
+              <p className="text-sm text-muted-foreground truncate">
+                {regent.character}
+              </p>
+            )}
           </CardHeader>
           <CardContent className="pt-0 space-y-4">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  {regent.domain}
-                </Badge>
-              </div>
+              {regent.domain && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {regent.domain}
+                  </Badge>
+                </div>
+              )}
               
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="flex items-center gap-2">
                   <Coins className="w-4 h-4 text-yellow-600" />
                   <div>
-                    <div className="font-semibold">{regent.goldBars}</div>
+                    <div className="font-semibold">{regent.gold_bars}</div>
                     <div className="text-xs text-muted-foreground">GB</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Star className="w-4 h-4 text-purple-600" />
                   <div>
-                    <div className="font-semibold">{regent.regencyPoints}</div>
+                    <div className="font-semibold">{regent.regency_points}</div>
                     <div className="text-xs text-muted-foreground">RP</div>
                   </div>
                 </div>
@@ -71,7 +75,7 @@ export const RegentList = ({ regents, onEdit, onDelete }: RegentListProps) => {
             </div>
 
             <div className="text-xs text-muted-foreground border-t pt-2">
-              Criado em {new Date(regent.createdAt).toLocaleDateString('pt-BR')}
+              Criado em {new Date(regent.created_at).toLocaleDateString('pt-BR')}
             </div>
           </CardContent>
         </Card>

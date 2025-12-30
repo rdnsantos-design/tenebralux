@@ -1,4 +1,4 @@
-import { Regent } from '@/types/Army';
+import { Regent } from '@/types/Domain';
 import { Crown, Coins, Sparkles, Users, Brain, Castle, User } from 'lucide-react';
 
 interface RegentCardPreviewProps {
@@ -21,7 +21,8 @@ export function RegentCardPreview({ regent, commanderCount = 0, armyCount = 0 }:
     return hues[hash % hues.length];
   };
 
-  const colors = getDomainColor(regent.domain);
+  const domainName = regent.domain || 'Sem Domínio';
+  const colors = getDomainColor(domainName);
 
   const renderStars = (value: number, max: number = 5) => {
     return (
@@ -77,10 +78,12 @@ export function RegentCardPreview({ regent, commanderCount = 0, armyCount = 0 }:
         </div>
 
         {/* Player Name */}
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <User className="w-3 h-3 text-slate-400" />
-          <span className="text-sm text-slate-300 italic">{regent.character}</span>
-        </div>
+        {regent.character && (
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <User className="w-3 h-3 text-slate-400" />
+            <span className="text-sm text-slate-300 italic">{regent.character}</span>
+          </div>
+        )}
 
         {/* Domain Banner */}
         <div className="relative mb-6">
@@ -88,7 +91,7 @@ export function RegentCardPreview({ regent, commanderCount = 0, armyCount = 0 }:
           <div className="relative bg-gradient-to-r from-slate-900/80 via-slate-800/90 to-slate-900/80 rounded-lg px-4 py-3 border border-slate-600/30">
             <div className="flex items-center justify-center gap-2">
               <Castle className={`w-5 h-5 ${colors.accent}`} />
-              <span className="text-lg font-semibold text-white tracking-wide">{regent.domain}</span>
+              <span className="text-lg font-semibold text-white tracking-wide">{domainName}</span>
             </div>
           </div>
         </div>
@@ -102,7 +105,7 @@ export function RegentCardPreview({ regent, commanderCount = 0, armyCount = 0 }:
               <span className="text-xs text-amber-300/80 uppercase tracking-wider font-medium">Gold Bars</span>
             </div>
             <div className="text-3xl font-bold text-amber-100 text-center">
-              {regent.goldBars}
+              {regent.gold_bars}
             </div>
           </div>
 
@@ -113,7 +116,7 @@ export function RegentCardPreview({ regent, commanderCount = 0, armyCount = 0 }:
               <span className="text-xs text-purple-300/80 uppercase tracking-wider font-medium">Regência</span>
             </div>
             <div className="text-3xl font-bold text-purple-100 text-center">
-              {regent.regencyPoints}
+              {regent.regency_points}
             </div>
           </div>
         </div>
