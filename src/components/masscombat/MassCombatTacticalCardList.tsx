@@ -188,7 +188,7 @@ export function MassCombatTacticalCardList() {
             </div>
           </div>
           
-          ${card.description ? `<div class="description">"${card.description}"</div>` : ''}
+          ${card.description ? `<div class="description"><span class="condition-label">Condição:</span> ${card.description}</div>` : ''}
           
           <div class="card-footer" style="background: ${colors.secondary}; border-top: 2px solid ${colors.primary};">
             <div class="footer-decoration" style="background: ${colors.primary};"></div>
@@ -366,10 +366,15 @@ export function MassCombatTacticalCardList() {
             padding: 10px 12px;
             font-size: 10px;
             color: #6b7280;
-            font-style: italic;
             text-align: center;
             line-height: 1.4;
             border-bottom: 1px solid #e5e7eb;
+          }
+          
+          .condition-label {
+            font-weight: 600;
+            color: #d97706;
+            font-style: normal;
           }
           
           .card-footer {

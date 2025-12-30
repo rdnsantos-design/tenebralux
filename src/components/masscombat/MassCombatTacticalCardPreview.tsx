@@ -88,11 +88,12 @@ export function MassCombatTacticalCardPreview({ card }: MassCombatTacticalCardPr
           </span>
         </div>
 
-        {/* Description */}
+        {/* Condition */}
         {card.description && (
           <div className="p-3 border-t border-border/50">
+            <p className="text-xs font-semibold text-amber-600 mb-1 text-center">Condição:</p>
             <p className="text-xs text-muted-foreground italic text-center">
-              "{card.description}"
+              {card.description}
             </p>
           </div>
         )}
