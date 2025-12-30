@@ -534,6 +534,7 @@ export type Database = {
           defense_mod: number
           description: string | null
           effect_description: string | null
+          effect_tag: string | null
           id: string
           image_url: string | null
           is_universal: boolean
@@ -541,6 +542,7 @@ export type Database = {
           name: string
           special_effects: string | null
           strategy_mod: number
+          style: string | null
           updated_at: string
         }
         Insert: {
@@ -549,6 +551,7 @@ export type Database = {
           defense_mod?: number
           description?: string | null
           effect_description?: string | null
+          effect_tag?: string | null
           id?: string
           image_url?: string | null
           is_universal?: boolean
@@ -556,6 +559,7 @@ export type Database = {
           name: string
           special_effects?: string | null
           strategy_mod?: number
+          style?: string | null
           updated_at?: string
         }
         Update: {
@@ -564,6 +568,7 @@ export type Database = {
           defense_mod?: number
           description?: string | null
           effect_description?: string | null
+          effect_tag?: string | null
           id?: string
           image_url?: string | null
           is_universal?: boolean
@@ -571,6 +576,7 @@ export type Database = {
           name?: string
           special_effects?: string | null
           strategy_mod?: number
+          style?: string | null
           updated_at?: string
         }
         Relationships: []
