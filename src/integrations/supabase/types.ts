@@ -398,6 +398,45 @@ export type Database = {
           },
         ]
       }
+      mass_combat_cultures: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          season_affinity: string
+          special_ability: string
+          specialization: string
+          terrain_affinity: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          season_affinity: string
+          special_ability: string
+          specialization: string
+          terrain_affinity: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          season_affinity?: string
+          special_ability?: string
+          specialization?: string
+          terrain_affinity?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mass_combat_primary_terrains: {
         Row: {
           allowed_climates: string[]
