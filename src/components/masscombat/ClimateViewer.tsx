@@ -3,7 +3,8 @@ import { useMassCombatSeasons } from '@/hooks/useMassCombatClimates';
 import { MassCombatSeason } from '@/types/combat/mass-combat-climate';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Flower2, Sun, Leaf, Snowflake, Swords, Shield, Move, Heart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Flower2, Sun, Leaf, Snowflake, Swords, Shield, Move, Heart, Printer } from 'lucide-react';
 
 const getSeasonIcon = (name: string) => {
   const lowerName = name.toLowerCase();
@@ -141,6 +142,142 @@ function SeasonCard({ season }: SeasonCardProps) {
 export function ClimateViewer() {
   const { data: seasons, isLoading } = useMassCombatSeasons();
 
+  const handlePrintSeasons = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow || !seasons) return;
+
+    const getSeasonColor = (name: string) => {
+      const lower = name.toLowerCase();
+      if (lower.includes('primavera')) return '#10b981';
+      if (lower.includes('verão') || lower.includes('verao')) return '#f59e0b';
+      if (lower.includes('outono')) return '#f97316';
+      if (lower.includes('inverno')) return '#3b82f6';
+      return '#6b7280';
+    };
+
+    const getModLabel = (type: string) => {
+      switch (type) {
+        case 'ataque': return 'ATK';
+        case 'defesa': return 'DEF';
+        case 'mobilidade': return 'MOB';
+        case 'pv': return 'PV';
+        default: return type.toUpperCase();
+      }
+    };
+
+    const cardsHtml = seasons.map(season => {
+      const color = getSeasonColor(season.name);
+      const modLabel = getModLabel(season.modifier_type);
+
+      return `
+        <div class="card" style="border-color: ${color}">
+          <div class="card-header" style="background: ${color}">${season.name}</div>
+          <div class="card-subtitle" style="background: ${color}">Afeta ${season.modifier_type.toUpperCase()}</div>
+          <div class="conditions">
+            <div class="condition">
+              <span class="level">1</span>
+              <span class="name">${season.condition1_name}</span>
+              <span class="mod">${season.condition1_modifier} ${modLabel}</span>
+            </div>
+            <div class="condition">
+              <span class="level">2</span>
+              <span class="name">${season.condition2_name}</span>
+              <span class="mod">${season.condition2_modifier} ${modLabel}</span>
+            </div>
+            <div class="condition">
+              <span class="level">3</span>
+              <span class="name">${season.condition3_name}</span>
+              <span class="mod">${season.condition3_modifier} ${modLabel}</span>
+            </div>
+          </div>
+          <div class="token-hint">🎲 Use tokens para marcar nível</div>
+        </div>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Cartas de Estação</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: system-ui, sans-serif; padding: 20px; background: #f5f5f5; }
+            .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+            .card { 
+              width: 200px; height: 280px; 
+              background: white; 
+              border-radius: 12px; 
+              border: 3px solid;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+              break-inside: avoid;
+            }
+            .card-header { 
+              color: white; 
+              text-align: center; 
+              font-size: 20px; 
+              font-weight: bold; 
+              padding: 12px 8px 4px;
+            }
+            .card-subtitle {
+              color: rgba(255,255,255,0.8);
+              text-align: center;
+              font-size: 10px;
+              text-transform: uppercase;
+              padding-bottom: 8px;
+            }
+            .conditions {
+              flex: 1;
+              padding: 12px;
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+            }
+            .condition {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px;
+              background: #f9fafb;
+              border-radius: 6px;
+            }
+            .level {
+              width: 24px; height: 24px;
+              background: #374151;
+              color: white;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 12px;
+              font-weight: bold;
+            }
+            .name { flex: 1; font-size: 12px; font-weight: 500; }
+            .mod { font-size: 12px; font-weight: bold; color: #dc2626; }
+            .token-hint {
+              padding: 8px;
+              text-align: center;
+              font-size: 9px;
+              color: #6b7280;
+              border-top: 1px dashed #e5e7eb;
+            }
+            @media print { 
+              body { background: white; padding: 0; }
+              .grid { grid-template-columns: repeat(4, 1fr); gap: 8px; } 
+            }
+          </style>
+        </head>
+        <body>
+          <div class="grid">${cardsHtml}</div>
+          <script>window.onload = () => window.print();</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -151,11 +288,17 @@ export function ClimateViewer() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Estações & Condições Climáticas</h2>
-        <p className="text-muted-foreground">
-          Cada estação possui 3 níveis de condição que afetam um atributo específico
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="text-center flex-1 space-y-2">
+          <h2 className="text-2xl font-bold">Estações & Condições Climáticas</h2>
+          <p className="text-muted-foreground">
+            Cada estação possui 3 níveis de condição que afetam um atributo específico
+          </p>
+        </div>
+        <Button onClick={handlePrintSeasons} variant="outline">
+          <Printer className="w-4 h-4 mr-2" />
+          Imprimir Estações
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -167,13 +310,14 @@ export function ClimateViewer() {
       {/* Rules card */}
       <Card className="bg-muted/30">
         <CardContent className="p-4">
-          <h4 className="font-semibold mb-2">Regras de Escalonamento</h4>
+          <h4 className="font-semibold mb-2">Regras de Escalonamento (1d20)</h4>
           <div className="text-sm text-muted-foreground space-y-1">
-            <p>• A cada rodada (15 minutos no jogo), role 1d20 para verificar mudança de condição</p>
-            <p>• <strong>1-10:</strong> Mantém condição atual</p>
-            <p>• <strong>11-15:</strong> Escala +1 nível (máx. 3)</p>
-            <p>• <strong>16-19:</strong> Reduz -1 nível (mín. 1)</p>
-            <p>• <strong>20:</strong> Mudança drástica - vai direto ao nível oposto</p>
+            <p>• A cada rodada, role 1d20 para verificar mudança de condição:</p>
+            <p>• <strong>1:</strong> Piora 2 níveis (máx. 3)</p>
+            <p>• <strong>2-6:</strong> Piora 1 nível (máx. 3)</p>
+            <p>• <strong>7-14:</strong> Mantém condição atual</p>
+            <p>• <strong>15-19:</strong> Melhora 1 nível (mín. 1)</p>
+            <p>• <strong>20:</strong> Melhora 2 níveis (mín. 1)</p>
           </div>
         </CardContent>
       </Card>
