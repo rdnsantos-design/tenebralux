@@ -155,7 +155,6 @@ export function MassCombatTacticalCardList() {
         <div class="card">
           <div class="card-header" style="background: linear-gradient(135deg, ${colors.primary}, ${colors.primary}dd);">
             <div class="unit-type-badge">${card.unit_type}</div>
-            <div class="vet-badge">VET ${card.vet_cost}</div>
           </div>
           
           <div class="card-name">
@@ -182,13 +181,9 @@ export function MassCombatTacticalCardList() {
           </div>
           
           <div class="requirements">
-            <div class="req-item">
+            <div class="req-item single">
               <span class="req-icon">👑</span>
               <span>Comando <strong>${card.command_required}</strong></span>
-            </div>
-            <div class="req-item">
-              <span class="req-icon">🎯</span>
-              <span>Estratégia <strong>${card.strategy_required}</strong></span>
             </div>
           </div>
           
@@ -271,16 +266,6 @@ export function MassCombatTacticalCardList() {
             background: rgba(255,255,255,0.2);
             padding: 4px 10px;
             border-radius: 20px;
-          }
-          
-          .vet-badge {
-            font-size: 12px;
-            font-weight: 700;
-            background: rgba(0,0,0,0.3);
-            padding: 4px 10px;
-            border-radius: 20px;
-          }
-          
           .card-name {
             padding: 12px;
             text-align: center;
@@ -340,8 +325,6 @@ export function MassCombatTacticalCardList() {
           .bonus-item.active.mobility .bonus-value { color: #ca8a04; }
           
           .requirements {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
             background: #f9fafb;
             border-bottom: 1px solid #e5e7eb;
           }
@@ -356,8 +339,8 @@ export function MassCombatTacticalCardList() {
             color: #4b5563;
           }
           
-          .req-item:first-child {
-            border-right: 1px solid #e5e7eb;
+          .req-item.single {
+            width: 100%;
           }
           
           .req-icon {
@@ -443,10 +426,8 @@ export function MassCombatTacticalCardList() {
       'Bônus em Defesa': card.defense_bonus,
       'Bônus em Mobilidade': card.mobility_bonus,
       'Comando Necessário': card.command_required,
-      'Estratégia Requerida': card.strategy_required,
       'Cultura': card.culture || '',
       'Descrição': card.description || '',
-      'Custo VET': card.vet_cost,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);

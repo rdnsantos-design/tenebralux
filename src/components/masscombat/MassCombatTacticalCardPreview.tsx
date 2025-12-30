@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   MassCombatTacticalCard,
 } from '@/types/MassCombatTacticalCard';
-import { Swords, Shield, Zap, Crown, Target, Users, Sword, Crosshair, Castle, Flag, Mountain, Cloud, Sparkles } from 'lucide-react';
+import { Swords, Shield, Zap, Crown, Users, Sword, Crosshair, Castle, Flag, Mountain, Cloud, Sparkles } from 'lucide-react';
 
 interface MassCombatTacticalCardPreviewProps {
   card: MassCombatTacticalCard;
@@ -31,17 +31,11 @@ export function MassCombatTacticalCardPreview({ card }: MassCombatTacticalCardPr
       <CardContent className="p-0">
         {/* Header with unit type */}
         <div className={`p-3 border-b ${config.bg}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <UnitIcon className={`h-5 w-5 ${config.color}`} />
-              <Badge variant="outline" className={config.color}>
-                {card.unit_type}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-1 bg-primary/20 px-2 py-1 rounded-full">
-              <span className="text-xs text-muted-foreground">VET</span>
-              <span className="font-bold text-primary">{card.vet_cost}</span>
-            </div>
+          <div className="flex items-center justify-center gap-2">
+            <UnitIcon className={`h-5 w-5 ${config.color}`} />
+            <Badge variant="outline" className={config.color}>
+              {card.unit_type}
+            </Badge>
           </div>
         </div>
 
@@ -81,19 +75,11 @@ export function MassCombatTacticalCardPreview({ card }: MassCombatTacticalCardPr
         </div>
 
         {/* Requirements */}
-        <div className="grid grid-cols-2 divide-x divide-border/50 bg-muted/30">
-          <div className="p-2 flex items-center justify-center gap-2">
-            <Crown className="h-4 w-4 text-purple-500" />
-            <span className="text-sm">
-              Comando <span className="font-bold">{card.command_required}</span>
-            </span>
-          </div>
-          <div className="p-2 flex items-center justify-center gap-2">
-            <Target className="h-4 w-4 text-emerald-500" />
-            <span className="text-sm">
-              Estratégia <span className="font-bold">{card.strategy_required}</span>
-            </span>
-          </div>
+        <div className="bg-muted/30 p-2 flex items-center justify-center gap-2">
+          <Crown className="h-4 w-4 text-purple-500" />
+          <span className="text-sm">
+            Comando <span className="font-bold">{card.command_required}</span>
+          </span>
         </div>
 
         {/* Description */}
