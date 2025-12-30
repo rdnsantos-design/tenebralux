@@ -1,47 +1,45 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, FileSpreadsheet, Trash2, Eye, Calendar, Users, Upload, X } from 'lucide-react';
-import { ExcelImport, ImportedUnit } from '@/types/ExcelImport';
+import { Plus, FileSpreadsheet, Trash2, Eye, Calendar, Users, X, Loader2, Database, Check } from 'lucide-react';
 import { UnitCard, ExperienceLevel } from '@/types/UnitCard';
+import { useUnitTemplates, useBulkImportUnitTemplates, useDeleteUnitTemplate, UnitTemplate, SpecialAbility } from '@/hooks/useUnitTemplates';
 import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 
 interface ExcelImportManagerProps {
   onCancel: () => void;
   onCreateCards: (units: UnitCard[]) => void;
 }
 
+interface ImportedUnit {
+  name: string;
+  movement: number;
+  defense: number;
+  morale: number;
+  attack: number;
+  charge: number;
+  ranged: number;
+  ability: string;
+  experience: string;
+  power: number;
+  maintenance: number;
+}
+
 export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
   onCancel,
   onCreateCards
 }) => {
-  const [imports, setImports] = useState<ExcelImport[]>([]);
   const [showImporter, setShowImporter] = useState(false);
-  const [previewImport, setPreviewImport] = useState<ExcelImport | null>(null);
   const [importing, setImporting] = useState(false);
-  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [previewData, setPreviewData] = useState<ImportedUnit[]>([]);
+  const [previewFileName, setPreviewFileName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Carregar importações salvas
-  useEffect(() => {
-    const savedImports = localStorage.getItem('excelImports');
-    if (savedImports) {
-      try {
-        const parsed = JSON.parse(savedImports);
-        setImports(parsed.map((imp: any) => ({
-          ...imp,
-          importDate: new Date(imp.importDate)
-        })));
-      } catch (error) {
-        console.error('Erro ao carregar importações:', error);
-      }
-    }
-  }, []);
-
-  // Salvar importações
-  useEffect(() => {
-    localStorage.setItem('excelImports', JSON.stringify(imports));
-  }, [imports]);
+  // Hooks do Supabase
+  const { data: templates = [], isLoading } = useUnitTemplates();
+  const bulkImport = useBulkImportUnitTemplates();
+  const deleteTemplate = useDeleteUnitTemplate();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -55,23 +53,18 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
       
-      setPreviewData(jsonData);
-      
-      // Criar unidades a partir dos dados com todos os campos
+      // Criar unidades a partir dos dados
       const units: ImportedUnit[] = jsonData.map((row: any, index: number) => {
-        // Nome - primeira coluna ou coluna "Nome"
         const keys = Object.keys(row);
-        const firstColumn = keys[0]; // Primeira coluna do Excel
+        const firstColumn = keys[0];
         const nameVariations = ['Nome da unidade', 'Nome', 'Name', 'nome', 'NOME', 'name', 'NAME', 'Unidade', 'UNIDADE', 'unidade'];
         
         let name = '';
         
-        // Primeiro, tentar pegar da primeira coluna (que geralmente é o nome)
         if (firstColumn && row[firstColumn] && typeof row[firstColumn] === 'string') {
           name = row[firstColumn].toString().trim();
         }
         
-        // Se não funcionou, tentar as variações conhecidas
         if (!name) {
           for (const variation of nameVariations) {
             if (row[variation] && row[variation].toString().trim()) {
@@ -83,7 +76,6 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
         
         if (!name) name = `Unidade ${index + 1}`;
         
-        // Atributos numéricos
         const movement = parseInt(row['Movimento'] || row['Movement'] || row['movimento'] || row['MOVIMENTO']) || 1;
         const defense = parseInt(row['Defesa'] || row['Defense'] || row['defesa'] || row['DEFESA']) || 1;
         const morale = parseInt(row['Moral'] || row['Morale'] || row['moral'] || row['MORAL']) || 1;
@@ -93,7 +85,6 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
         const power = parseInt(row['Poder'] || row['Power'] || row['poder'] || row['PODER']) || 0;
         const maintenance = parseInt(row['Manutenção'] || row['Manutencao'] || row['Maintenance'] || row['manutenção'] || row['MANUTENÇÃO']) || 0;
         
-        // Campos de texto
         const ability = (row['Habilidade'] || row['Ability'] || row['habilidade'] || row['HABILIDADE'] || '').toString().trim();
         const experience = (row['Experiência'] || row['Experiencia'] || row['Experience'] || row['experiência'] || row['EXPERIÊNCIA'] || 'Profissional').toString().trim();
         
@@ -112,76 +103,185 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
         };
       });
 
-      handleNewImport(units, file.name);
+      setPreviewData(units);
+      setPreviewFileName(file.name);
     } catch (error) {
       console.error('Erro ao ler arquivo Excel:', error);
-      alert('Erro ao ler arquivo Excel. Verifique se o formato está correto.');
+      toast.error('Erro ao ler arquivo Excel. Verifique se o formato está correto.');
     } finally {
       setImporting(false);
     }
   };
 
-  const handleNewImport = (units: ImportedUnit[], fileName?: string) => {
-    const newImport: ExcelImport = {
-      id: `import-${Date.now()}`,
-      fileName: fileName || `Importação ${imports.length + 1}`,
-      importDate: new Date(),
-      unitCount: units.length,
-      units
+  const handleConfirmImport = async () => {
+    if (previewData.length === 0) return;
+
+    const experienceMap: Record<string, ExperienceLevel> = {
+      'Amador': 'Amador',
+      'Recruta': 'Recruta',
+      'Profissional': 'Profissional',
+      'Veterano': 'Veterano',
+      'Elite': 'Elite',
+      'Lendário': 'Lendário'
     };
 
-    setImports([...imports, newImport]);
-    setShowImporter(false);
-    setPreviewData([]);
-  };
+    // Converter para formato do Supabase
+    const templatesData = previewData.map((unit) => {
+      const abilities: SpecialAbility[] = unit.ability 
+        ? [{ id: crypto.randomUUID(), name: unit.ability, level: 1 as const, cost: 0, description: '' }] 
+        : [];
 
-  const handleDeleteImport = (importId: string) => {
-    setImports(imports.filter(imp => imp.id !== importId));
-  };
-
-  const handleCreateCardsFromImport = (importData: ExcelImport) => {
-    const units: UnitCard[] = importData.units.map((unit, index) => {
-      // Mapear experiência do Excel para ExperienceLevel
-      const experienceMap: { [key: string]: ExperienceLevel } = {
-        'Amador': 'Amador',
-        'Recruta': 'Recruta',
-        'Profissional': 'Profissional',
-        'Veterano': 'Veterano',
-        'Elite': 'Elite',
-        'Lendário': 'Lendário'
-      };
-      const mappedExperience = experienceMap[unit.experience] || 'Profissional';
-      
       return {
-        id: `imported-${importData.id}-${index}`,
         name: unit.name,
-        attack: unit.attack,
-        defense: unit.defense,
-        ranged: unit.ranged,
-        movement: unit.movement,
-        morale: unit.morale,
-        experience: mappedExperience,
-        totalForce: unit.power || (unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale),
-        maintenanceCost: unit.maintenance || Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
-        specialAbilities: unit.ability ? [{ id: `ability-${index}`, name: unit.ability, level: 1 as const, cost: 0, description: '' }] : [],
-        backgroundImage: ''
+        source_file: previewFileName,
+        attack: Math.min(6, Math.max(1, unit.attack)),
+        defense: Math.min(6, Math.max(1, unit.defense)),
+        ranged: Math.min(6, Math.max(0, unit.ranged)),
+        movement: Math.min(6, Math.max(1, unit.movement)),
+        morale: Math.min(6, Math.max(1, unit.morale)),
+        experience: experienceMap[unit.experience] || 'Profissional' as ExperienceLevel,
+        total_force: unit.power || (unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale),
+        maintenance_cost: unit.maintenance || Math.ceil((unit.attack + unit.defense + unit.ranged + unit.movement + unit.morale) * 0.2),
+        special_abilities: abilities,
       };
     });
 
-    onCreateCards(units);
+    try {
+      await bulkImport.mutateAsync(templatesData);
+      setShowImporter(false);
+      setPreviewData([]);
+      setPreviewFileName('');
+    } catch (error) {
+      // Error already handled by mutation
+    }
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este template?')) {
+      await deleteTemplate.mutateAsync(id);
+    }
+  };
+
+  const handleCreateCardsFromTemplates = (templatesToConvert: UnitTemplate[]) => {
+    const units: UnitCard[] = templatesToConvert.map((template) => ({
+      id: template.id,
+      name: template.name,
+      attack: template.attack,
+      defense: template.defense,
+      ranged: template.ranged,
+      movement: template.movement,
+      morale: template.morale,
+      experience: template.experience,
+      totalForce: template.total_force,
+      maintenanceCost: template.maintenance_cost,
+      specialAbilities: template.special_abilities.map(a => ({
+        ...a,
+        level: a.level as 1 | 2
+      })),
+      backgroundImage: template.background_image || ''
+    }));
 
     onCreateCards(units);
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // Agrupar templates por arquivo de origem
+  const templatesBySource = templates.reduce((acc, template) => {
+    const source = template.source_file || 'Criados manualmente';
+    if (!acc[source]) acc[source] = [];
+    acc[source].push(template);
+    return acc;
+  }, {} as Record<string, UnitTemplate[]>);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Tela de preview após upload
+  if (previewData.length > 0) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Confirmar Importação</h1>
+              <p className="text-muted-foreground">
+                {previewFileName} • {previewData.length} templates para importar
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleConfirmImport}
+                disabled={bulkImport.isPending}
+                className="flex items-center gap-2"
+              >
+                {bulkImport.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Database className="w-4 h-4" />
+                )}
+                Salvar no Banco de Dados
+              </Button>
+              <Button variant="outline" onClick={() => {
+                setPreviewData([]);
+                setPreviewFileName('');
+              }}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-green-500" />
+                Templates a serem importados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-96 overflow-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50 sticky top-0">
+                      <th className="text-left p-2">Nome</th>
+                      <th className="text-center p-2">Mov</th>
+                      <th className="text-center p-2">Def</th>
+                      <th className="text-center p-2">Moral</th>
+                      <th className="text-center p-2">Atq</th>
+                      <th className="text-center p-2">Tiro</th>
+                      <th className="text-left p-2">Habilidade</th>
+                      <th className="text-center p-2">Exp</th>
+                      <th className="text-center p-2">Força</th>
+                      <th className="text-center p-2">Manut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewData.map((unit, index) => (
+                      <tr key={index} className="border-b hover:bg-muted/30">
+                        <td className="p-2 font-medium">{unit.name}</td>
+                        <td className="text-center p-2">{unit.movement}</td>
+                        <td className="text-center p-2">{unit.defense}</td>
+                        <td className="text-center p-2">{unit.morale}</td>
+                        <td className="text-center p-2">{unit.attack}</td>
+                        <td className="text-center p-2">{unit.ranged}</td>
+                        <td className="text-left p-2 text-xs max-w-32 truncate">{unit.ability || '-'}</td>
+                        <td className="text-center p-2 text-xs">{unit.experience}</td>
+                        <td className="text-center p-2">{unit.power || '-'}</td>
+                        <td className="text-center p-2">{unit.maintenance || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (showImporter) {
     return (
@@ -191,7 +291,7 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
             <div>
               <h1 className="text-3xl font-bold mb-2">Importar Planilha Excel</h1>
               <p className="text-muted-foreground">
-                Importe múltiplas unidades de uma planilha Excel
+                Importe templates de unidades de uma planilha Excel
               </p>
             </div>
             <Button variant="outline" onClick={() => setShowImporter(false)} className="flex items-center gap-2">
@@ -220,34 +320,34 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
                   disabled={importing}
                 >
                   {importing ? (
-                    <>Processando arquivo...</>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Processando arquivo...
+                    </div>
                   ) : (
-                    <>
-                      <div className="text-center">
-                        <FileSpreadsheet className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                        <div className="font-medium">Clique para selecionar arquivo Excel</div>
-                        <div className="text-sm text-muted-foreground">
-                          Formatos suportados: .xlsx, .xls
-                        </div>
+                    <div className="text-center">
+                      <FileSpreadsheet className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                      <div className="font-medium">Clique para selecionar arquivo Excel</div>
+                      <div className="text-sm text-muted-foreground">
+                        Formatos suportados: .xlsx, .xls
                       </div>
-                    </>
+                    </div>
                   )}
                 </Button>
                 
                 <div className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Formato esperado da planilha (cabeçalho na linha 1):</h4>
+                  <h4 className="font-medium mb-2">Formato esperado (cabeçalho na linha 1):</h4>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     <span>• <strong>Nome:</strong> Nome da unidade</span>
-                    <span>• <strong>Movimento:</strong> Valor de movimento</span>
-                    <span>• <strong>Defesa:</strong> Valor de defesa</span>
-                    <span>• <strong>Moral:</strong> Valor de moral</span>
-                    <span>• <strong>Ataque:</strong> Valor de ataque</span>
-                    <span>• <strong>Carga:</strong> Valor de carga</span>
-                    <span>• <strong>Tiro:</strong> Valor de tiro</span>
-                    <span>• <strong>Habilidade:</strong> Texto da habilidade</span>
-                    <span>• <strong>Experiência:</strong> Nível de experiência</span>
+                    <span>• <strong>Movimento:</strong> Valor (1-6)</span>
+                    <span>• <strong>Defesa:</strong> Valor (1-6)</span>
+                    <span>• <strong>Moral:</strong> Valor (1-6)</span>
+                    <span>• <strong>Ataque:</strong> Valor (1-6)</span>
+                    <span>• <strong>Tiro:</strong> Valor (0-6)</span>
+                    <span>• <strong>Habilidade:</strong> Texto</span>
+                    <span>• <strong>Experiência:</strong> Nível</span>
                     <span>• <strong>Poder:</strong> Força total</span>
-                    <span>• <strong>Manutenção:</strong> Custo de manutenção</span>
+                    <span>• <strong>Manutenção:</strong> Custo</span>
                   </div>
                 </div>
               </div>
@@ -258,89 +358,20 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
     );
   }
 
-  if (previewImport) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Preview: {previewImport.fileName}</h1>
-              <p className="text-muted-foreground">
-                Importado em {formatDate(previewImport.importDate)} • {previewImport.unitCount} unidades
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => handleCreateCardsFromImport(previewImport)}>
-                Criar Cards desta Importação
-              </Button>
-              <Button variant="outline" onClick={() => setPreviewImport(null)}>
-                Voltar
-              </Button>
-            </div>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Unidades na Importação</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="max-h-96 overflow-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="text-left p-2">Nome</th>
-                      <th className="text-center p-2">Mov</th>
-                      <th className="text-center p-2">Def</th>
-                      <th className="text-center p-2">Moral</th>
-                      <th className="text-center p-2">Atq</th>
-                      <th className="text-center p-2">Carga</th>
-                      <th className="text-center p-2">Tiro</th>
-                      <th className="text-left p-2">Habilidade</th>
-                      <th className="text-center p-2">Exp</th>
-                      <th className="text-center p-2">Poder</th>
-                      <th className="text-center p-2">Manut</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previewImport.units.map((unit, index) => (
-                      <tr key={index} className="border-b hover:bg-muted/30">
-                        <td className="p-2 font-medium">{unit.name}</td>
-                        <td className="text-center p-2">{unit.movement}</td>
-                        <td className="text-center p-2">{unit.defense}</td>
-                        <td className="text-center p-2">{unit.morale}</td>
-                        <td className="text-center p-2">{unit.attack}</td>
-                        <td className="text-center p-2">{unit.charge}</td>
-                        <td className="text-center p-2">{unit.ranged}</td>
-                        <td className="text-left p-2 text-xs">{unit.ability || '-'}</td>
-                        <td className="text-center p-2 text-xs">{unit.experience}</td>
-                        <td className="text-center p-2">{unit.power}</td>
-                        <td className="text-center p-2">{unit.maintenance}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Gerenciador de Importações Excel</h1>
+            <h1 className="text-3xl font-bold mb-2">Templates de Unidades</h1>
             <p className="text-muted-foreground">
-              Gerencie suas importações de planilhas Excel
+              Gerencie templates importados do Excel • {templates.length} templates no banco de dados
             </p>
           </div>
           <div className="flex gap-2">
             <Button onClick={() => setShowImporter(true)} className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
-              Nova Importação
+              Importar Excel
             </Button>
             <Button variant="outline" onClick={onCancel}>
               Voltar
@@ -348,13 +379,13 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
           </div>
         </div>
 
-        {imports.length === 0 ? (
+        {templates.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent className="pt-6">
-              <FileSpreadsheet className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-2xl font-semibold mb-4">Nenhuma importação ainda</h3>
+              <Database className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-2xl font-semibold mb-4">Nenhum template ainda</h3>
               <p className="text-muted-foreground mb-6">
-                Faça sua primeira importação de planilha Excel
+                Importe sua primeira planilha Excel para criar templates de unidades
               </p>
               <Button onClick={() => setShowImporter(true)} size="lg">
                 <Plus className="w-5 h-5 mr-2" />
@@ -363,56 +394,69 @@ export const ExcelImportManager: React.FC<ExcelImportManagerProps> = ({
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {imports.map((importData) => (
-              <Card key={importData.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileSpreadsheet className="w-5 h-5 text-primary" />
-                        <h3 className="text-lg font-semibold">{importData.fileName}</h3>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {formatDate(importData.importDate)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
-                          {importData.unitCount} unidades
-                        </div>
-                      </div>
-                      <div className="text-sm">
-                        <strong>Unidades:</strong> {importData.units.slice(0, 3).map(u => u.name).join(', ')}
-                        {importData.units.length > 3 && ` e mais ${importData.units.length - 3}...`}
-                      </div>
+          <div className="space-y-6">
+            {Object.entries(templatesBySource).map(([source, sourceTemplates]) => (
+              <Card key={source}>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-5 h-5 text-primary" />
+                      {source}
+                      <span className="text-sm font-normal text-muted-foreground">
+                        ({sourceTemplates.length} templates)
+                      </span>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPreviewImport(importData)}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        Ver
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCreateCardsFromImport(importData)}
-                      >
-                        Criar Cards
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteImport(importData.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <Button 
+                      size="sm"
+                      onClick={() => handleCreateCardsFromTemplates(sourceTemplates)}
+                    >
+                      Criar Cards
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-h-64 overflow-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50 sticky top-0">
+                          <th className="text-left p-2">Nome</th>
+                          <th className="text-center p-2">Atq</th>
+                          <th className="text-center p-2">Def</th>
+                          <th className="text-center p-2">Tiro</th>
+                          <th className="text-center p-2">Mov</th>
+                          <th className="text-center p-2">Moral</th>
+                          <th className="text-center p-2">Exp</th>
+                          <th className="text-center p-2">Força</th>
+                          <th className="text-center p-2">Manut</th>
+                          <th className="text-center p-2">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sourceTemplates.map((template) => (
+                          <tr key={template.id} className="border-b hover:bg-muted/30">
+                            <td className="p-2 font-medium">{template.name}</td>
+                            <td className="text-center p-2">{template.attack}</td>
+                            <td className="text-center p-2">{template.defense}</td>
+                            <td className="text-center p-2">{template.ranged}</td>
+                            <td className="text-center p-2">{template.movement}</td>
+                            <td className="text-center p-2">{template.morale}</td>
+                            <td className="text-center p-2 text-xs">{template.experience}</td>
+                            <td className="text-center p-2">{template.total_force}</td>
+                            <td className="text-center p-2">{template.maintenance_cost}</td>
+                            <td className="text-center p-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteTemplate(template.id)}
+                                className="text-destructive hover:text-destructive h-7 w-7 p-0"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </CardContent>
               </Card>
