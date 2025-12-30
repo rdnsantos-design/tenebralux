@@ -1,27 +1,9 @@
-// Regent agora é importado de Domain.ts - fonte única de verdade
-// Re-exportando para compatibilidade com código existente
-export { type Regent } from './Domain';
+// Re-exporta para compatibilidade com código existente
+// Fonte única de verdade: src/types/entities/
 
-export interface Army {
-  id: string;
-  regentId: string;
-  name: string;
-  generalId?: string; // ID do comandante promovido a general deste exército
-  units: ArmyUnit[];
-  createdAt: string;
-}
+export { type Regent } from './entities/regent';
 
-export interface ArmyUnit {
-  id: string;
-  cardId: string; // referência ao UnitCard
-  name: string;
-  unitNumber?: string; // número da unidade para distinguir
-  power: number;
-  creationCost: number;
-  maintenanceCost: number;
-  location?: string;
-  countryId?: string;
-  provinceId?: string;
-  isGarrisoned: boolean;
-  commanderId?: string; // ID do comandante de campo associado
-}
+export { 
+  type Army, 
+  type ArmyUnit 
+} from './entities/army';

@@ -1,289 +1,34 @@
-// Character Card Types for Tenebra Lux System
+// Re-exporta para compatibilidade com código existente
+// Fonte única de verdade: src/types/entities/
 
-export type CharacterType = 'Herói' | 'Comandante' | 'Regente';
-export type AbilityType = 'Passiva' | 'Ativável' | 'Uma vez por batalha';
-export type EffectType = 'buff_self' | 'debuff_enemy';
-export type ConditionalType = 'none' | 'light' | 'heavy';
-export type RangeType = 'self' | 'unit' | 'area' | 'enemy';
-export type PassiveBonusType = 'Ataque' | 'Defesa' | 'Mobilidade';
-export type Specialty = 'Infantaria' | 'Cavalaria' | 'Arqueria' | 'Sitio';
-
-export const CHARACTER_TYPES: CharacterType[] = ['Herói', 'Comandante', 'Regente'];
-export const ABILITY_TYPES: AbilityType[] = ['Passiva', 'Ativável', 'Uma vez por batalha'];
-export const EFFECT_TYPES: EffectType[] = ['buff_self', 'debuff_enemy'];
-export const CONDITIONAL_TYPES: ConditionalType[] = ['none', 'light', 'heavy'];
-export const RANGE_TYPES: RangeType[] = ['self', 'unit', 'area', 'enemy'];
-export const PASSIVE_BONUS_TYPES: PassiveBonusType[] = ['Ataque', 'Defesa', 'Mobilidade'];
-export const DEFAULT_SPECIALTIES: Specialty[] = ['Infantaria', 'Cavalaria', 'Arqueria', 'Sitio'];
-export const DEFAULT_CULTURES = ['Anuire', 'Khinasi', 'Vos', 'Rjurik', 'Brecht'];
-
-export interface CharacterAbility {
-  id: string;
-  name: string;
-  description?: string;
-  ability_type: AbilityType;
-  effect_type: EffectType;
-  affected_attribute?: string;
-  attribute_modifier: number;
-  conditional_type: ConditionalType;
-  conditional_description?: string;
-  range_type: RangeType;
-  base_power_cost: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface CharacterCard {
-  id: string;
-  name: string;
-  character_type: CharacterType[];
-  culture: string;
-  // PC/NPC distinction
-  is_pc: boolean;
-  player_name?: string;
-  // Regent linking
-  regent_id?: string;
-  // Core attributes
-  comando: number;
-  estrategia: number;
-  guarda: number;
-  // Passive bonus
-  passive_bonus_type?: PassiveBonusType;
-  passive_bonus_value: number;
-  passive_affects_area: boolean;
-  // Specialties
-  specialties: Specialty[];
-  // Special ability
-  ability_id?: string;
-  custom_ability_name?: string;
-  custom_ability_description?: string;
-  custom_ability_power_cost: number;
-  // Calculated
-  total_power_cost: number;
-  power_cost_override?: number;
-  // Images
-  portrait_url?: string;
-  coat_of_arms_url?: string;
-  // Bio
-  domain?: string;
-  notes?: string;
-  // Timestamps
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface AbilityCostRules {
-  per_modifier_point: number;
-  range_costs: {
-    self: number;
-    unit: number;
-    area: number;
-    enemy: number;
-  };
-  type_costs: {
-    'Passiva': number;
-    'Ativável': number;
-    'Uma vez por batalha': number;
-  };
-  effect_costs: {
-    buff_self: number;
-    debuff_enemy: number;
-  };
-}
-
-export interface SystemConfig {
-  attribute_costs: {
-    comando: number;
-    estrategia: number;
-    guarda: number;
-  };
-  passive_bonus_costs: {
-    [key: string]: number;
-  };
-  passive_area_cost: number;
-  conditional_discounts: {
-    none: number;
-    light: number;
-    heavy: number;
-  };
-  ability_cost_rules: AbilityCostRules;
-  cultures: string[];
-  specialties: string[];
-}
-
-export const DEFAULT_ABILITY_COST_RULES: AbilityCostRules = {
-  per_modifier_point: 1,
-  range_costs: {
-    self: 0,
-    unit: 0,
-    area: 1,
-    enemy: 0.5
-  },
-  type_costs: {
-    'Passiva': 2,
-    'Ativável': 1,
-    'Uma vez por batalha': 0
-  },
-  effect_costs: {
-    buff_self: 0,
-    debuff_enemy: 0.5
-  }
-};
-
-// Default configuration values
-export const DEFAULT_CONFIG: SystemConfig = {
-  attribute_costs: {
-    comando: 1,
-    estrategia: 2,
-    guarda: 0.5
-  },
-  passive_bonus_costs: {
-    '1': 1,
-    '2': 3,
-    '3': 5
-  },
-  passive_area_cost: 1,
-  conditional_discounts: {
-    none: 0,
-    light: 1,
-    heavy: 2
-  },
-  ability_cost_rules: DEFAULT_ABILITY_COST_RULES,
-  cultures: DEFAULT_CULTURES,
-  specialties: DEFAULT_SPECIALTIES
-};
-
-// Cost per additional specialty multiplier (2nd costs 1×3, 3rd costs 2×3, etc.)
-export const SPECIALTY_COST_MULTIPLIER = 3;
-
-// Calculate specialty cost: first is free, each next costs (current count × 3)
-// 1st: 0, 2nd: 3, 3rd: 6, 4th: 9 => Total for n specs = 3 * (0+1+2+...+(n-1)) = 3 * (n-1)*n/2
-export function calculateSpecialtyCost(specialtyCount: number): number {
-  if (specialtyCount <= 1) return 0;
-  // Sum of 1+2+...+(n-1) = (n-1)*n/2, then multiply by 3
-  return SPECIALTY_COST_MULTIPLIER * ((specialtyCount - 1) * specialtyCount) / 2;
-}
-
-// Calculate power cost for a character card
-export function calculatePowerCost(
-  card: Partial<CharacterCard>,
-  config: SystemConfig = DEFAULT_CONFIG
-): number {
-  let cost = 0;
-
-  // Attribute costs
-  cost += (card.comando || 0) * config.attribute_costs.comando;
-  cost += (card.estrategia || 0) * config.attribute_costs.estrategia;
-  cost += (card.guarda || 0) * config.attribute_costs.guarda;
-
-  // Specialty costs (progressive: 1st free, 2nd=3, 3rd=6, 4th=9)
-  const specialtyCount = card.specialties?.length || 0;
-  cost += calculateSpecialtyCost(specialtyCount);
-
-  // Passive bonus cost
-  if (card.passive_bonus_value && card.passive_bonus_value > 0) {
-    const bonusCost = config.passive_bonus_costs[card.passive_bonus_value.toString()] || 0;
-    cost += bonusCost;
-    
-    // Area effect cost
-    if (card.passive_affects_area) {
-      cost += config.passive_area_cost;
-    }
-  }
-
-  // Custom ability cost
-  if (card.custom_ability_power_cost) {
-    cost += card.custom_ability_power_cost;
-  }
-
-  return Math.max(0, cost);
-}
-
-// Calculate ability power cost automatically based on components
-export function calculateAbilityCost(
-  ability: Partial<CharacterAbility>,
-  config: SystemConfig = DEFAULT_CONFIG
-): number {
-  const rules = config.ability_cost_rules || DEFAULT_ABILITY_COST_RULES;
-  
-  // Base cost from modifier
-  const modifierCost = Math.abs(ability.attribute_modifier || 0) * rules.per_modifier_point;
-  
-  // Range cost
-  const rangeCost = rules.range_costs[ability.range_type || 'self'] || 0;
-  
-  // Ability type cost
-  const typeCost = rules.type_costs[ability.ability_type || 'Ativável'] || 0;
-  
-  // Effect type cost
-  const effectCost = rules.effect_costs[ability.effect_type || 'buff_self'] || 0;
-  
-  // Conditional discount
-  const discount = config.conditional_discounts[ability.conditional_type || 'none'] || 0;
-  
-  // If there's a manual override, use it instead
-  if (ability.base_power_cost !== undefined && ability.base_power_cost > 0) {
-    // base_power_cost is now used as override
-    return Math.max(0, ability.base_power_cost - discount);
-  }
-  
-  const calculatedCost = modifierCost + rangeCost + typeCost + effectCost - discount;
-  return Math.max(0, calculatedCost);
-}
-
-// Calculate ability cost showing breakdown
-export function calculateAbilityCostBreakdown(
-  ability: Partial<CharacterAbility>,
-  config: SystemConfig = DEFAULT_CONFIG
-): { total: number; breakdown: { label: string; value: number }[] } {
-  const rules = config.ability_cost_rules || DEFAULT_ABILITY_COST_RULES;
-  const breakdown: { label: string; value: number }[] = [];
-  
-  const modifierCost = Math.abs(ability.attribute_modifier || 0) * rules.per_modifier_point;
-  if (modifierCost > 0) {
-    breakdown.push({ label: `Modificador (${Math.abs(ability.attribute_modifier || 0)} × ${rules.per_modifier_point})`, value: modifierCost });
-  }
-  
-  const rangeCost = rules.range_costs[ability.range_type || 'self'] || 0;
-  if (rangeCost !== 0) {
-    breakdown.push({ label: `Alcance (${RANGE_TYPE_LABELS[ability.range_type || 'self']})`, value: rangeCost });
-  }
-  
-  const typeCost = rules.type_costs[ability.ability_type || 'Ativável'] || 0;
-  if (typeCost !== 0) {
-    breakdown.push({ label: `Tipo (${ability.ability_type || 'Ativável'})`, value: typeCost });
-  }
-  
-  const effectCost = rules.effect_costs[ability.effect_type || 'buff_self'] || 0;
-  if (effectCost !== 0) {
-    breakdown.push({ label: `Efeito (${EFFECT_TYPE_LABELS[ability.effect_type || 'buff_self']})`, value: effectCost });
-  }
-  
-  const discount = config.conditional_discounts[ability.conditional_type || 'none'] || 0;
-  if (discount > 0) {
-    breakdown.push({ label: `Condicional (${CONDITIONAL_TYPE_LABELS[ability.conditional_type || 'none']})`, value: -discount });
-  }
-  
-  const total = Math.max(0, modifierCost + rangeCost + typeCost + effectCost - discount);
-  
-  return { total, breakdown };
-}
-
-// Label helpers
-export const EFFECT_TYPE_LABELS: Record<EffectType, string> = {
-  buff_self: 'Buff para si/aliados',
-  debuff_enemy: 'Debuff para inimigo'
-};
-
-export const CONDITIONAL_TYPE_LABELS: Record<ConditionalType, string> = {
-  none: 'Sem condicional',
-  light: 'Condicional leve (-1 custo)',
-  heavy: 'Condicional pesada (-2 custo)'
-};
-
-export const RANGE_TYPE_LABELS: Record<RangeType, string> = {
-  self: 'Próprio',
-  unit: 'Unidade',
-  area: 'Área de influência',
-  enemy: 'Inimigo'
-};
+export {
+  type CharacterCard,
+  type CharacterAbility,
+  type CharacterType,
+  type AbilityType,
+  type EffectType,
+  type ConditionalType,
+  type RangeType,
+  type PassiveBonusType,
+  type Specialty,
+  type SystemConfig,
+  type AbilityCostRules,
+  CHARACTER_TYPES,
+  ABILITY_TYPES,
+  EFFECT_TYPES,
+  CONDITIONAL_TYPES,
+  RANGE_TYPES,
+  PASSIVE_BONUS_TYPES,
+  DEFAULT_SPECIALTIES,
+  DEFAULT_CULTURES,
+  DEFAULT_CONFIG,
+  DEFAULT_ABILITY_COST_RULES,
+  SPECIALTY_COST_MULTIPLIER,
+  calculateSpecialtyCost,
+  calculatePowerCost,
+  calculateAbilityCost,
+  calculateAbilityCostBreakdown,
+  EFFECT_TYPE_LABELS,
+  CONDITIONAL_TYPE_LABELS,
+  RANGE_TYPE_LABELS
+} from './entities/character-card';
