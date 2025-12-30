@@ -163,6 +163,142 @@ export function MassCombatTerrainList() {
     printWindow.document.close();
   };
 
+  const handlePrintSecondaryTerrains = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const getStyleColor = (style: string) => {
+      switch (style) {
+        case 'Ofensivo': return { bg: '#fef2f2', border: '#ef4444', text: '#dc2626' };
+        case 'Defensivo': return { bg: '#eff6ff', border: '#3b82f6', text: '#2563eb' };
+        default: return { bg: '#f5f3ff', border: '#8b5cf6', text: '#7c3aed' };
+      }
+    };
+
+    const getCompatiblePrimaries = (secondaryId: string) => {
+      return compatibility
+        .filter(c => c.secondary_terrain_id === secondaryId)
+        .map(c => primaryTerrains.find(p => p.id === c.primary_terrain_id)?.name)
+        .filter(Boolean)
+        .join(', ');
+    };
+
+    const cardsHtml = secondaryTerrains.map(terrain => {
+      const style = (terrain as any).style || 'Versátil';
+      const effectTag = (terrain as any).effect_tag;
+      const colors = getStyleColor(style);
+      const compatibles = getCompatiblePrimaries(terrain.id);
+
+      return `
+        <div class="card" style="border-color: ${colors.border}">
+          <div class="card-header" style="background: ${colors.border}">${terrain.name}</div>
+          <div class="card-subtitle" style="background: ${colors.border}">Terreno Secundário</div>
+          <div class="style-badge" style="background: ${colors.bg}; color: ${colors.text}; border-color: ${colors.border}">${style}</div>
+          ${effectTag ? `<div class="tag-badge">🎯 ${effectTag}</div>` : ''}
+          <div class="effect">${terrain.effect_description || ''}</div>
+          <div class="compatibles">
+            <div class="compatibles-label">Terrenos Permitidos:</div>
+            <div class="compatibles-list">${compatibles}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Cartas de Terreno Secundário</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: system-ui, sans-serif; padding: 20px; background: #f5f5f5; }
+            .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+            .card { 
+              width: 200px; height: 300px; 
+              background: white; 
+              border-radius: 12px; 
+              border: 3px solid #374151;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+              break-inside: avoid;
+            }
+            .card-header { 
+              background: #374151; 
+              color: white; 
+              text-align: center; 
+              font-size: 14px; 
+              font-weight: bold; 
+              padding: 10px 8px 4px;
+            }
+            .card-subtitle {
+              background: #374151;
+              color: rgba(255,255,255,0.7);
+              text-align: center;
+              font-size: 8px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              padding-bottom: 6px;
+            }
+            .style-badge {
+              margin: 8px auto 4px;
+              padding: 4px 12px;
+              border-radius: 12px;
+              font-size: 10px;
+              font-weight: bold;
+              text-transform: uppercase;
+              border: 1px solid;
+            }
+            .tag-badge {
+              text-align: center;
+              font-size: 11px;
+              color: #374151;
+              padding: 4px;
+            }
+            .effect { 
+              flex: 1;
+              padding: 10px 12px;
+              font-size: 11px;
+              text-align: center;
+              color: #374151;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              line-height: 1.4;
+              font-weight: 500;
+            }
+            .compatibles {
+              padding: 8px;
+              background: #f9fafb;
+              border-top: 1px dashed #e5e7eb;
+            }
+            .compatibles-label {
+              font-size: 8px;
+              color: #6b7280;
+              text-transform: uppercase;
+              margin-bottom: 4px;
+            }
+            .compatibles-list {
+              font-size: 9px;
+              color: #374151;
+              line-height: 1.3;
+            }
+            @media print { 
+              body { background: white; padding: 0; }
+              .grid { grid-template-columns: repeat(4, 1fr); gap: 8px; } 
+              .card { page-break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="grid">${cardsHtml}</div>
+          <script>window.onload = () => window.print();</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const handleSeedData = async () => {
     try {
       const result = await seedTerrains.mutateAsync();
@@ -267,7 +403,11 @@ export function MassCombatTerrainList() {
         )}
         <Button onClick={handlePrintPrimaryTerrains} variant="outline">
           <Printer className="w-4 h-4 mr-2" />
-          Imprimir Terrenos Primários
+          Imprimir Primários
+        </Button>
+        <Button onClick={handlePrintSecondaryTerrains} variant="outline">
+          <Printer className="w-4 h-4 mr-2" />
+          Imprimir Secundários
         </Button>
         <Button onClick={handleExportExcel} variant="outline">
           <Download className="w-4 h-4 mr-2" />
