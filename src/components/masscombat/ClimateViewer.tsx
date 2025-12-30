@@ -314,9 +314,9 @@ export function ClimateViewer() {
           <div className="text-sm text-muted-foreground space-y-1">
             <p>• A cada rodada, role 1d20 para verificar mudança de condição:</p>
             <p>• <strong>1:</strong> Piora 2 níveis (máx. 3)</p>
-            <p>• <strong>2-6:</strong> Piora 1 nível (máx. 3)</p>
-            <p>• <strong>7-14:</strong> Mantém condição atual</p>
-            <p>• <strong>15-19:</strong> Melhora 1 nível (mín. 1)</p>
+            <p>• <strong>2-5:</strong> Piora 1 nível (máx. 3)</p>
+            <p>• <strong>6-15:</strong> Mantém condição atual</p>
+            <p>• <strong>16-19:</strong> Melhora 1 nível (mín. 1)</p>
             <p>• <strong>20:</strong> Melhora 2 níveis (mín. 1)</p>
           </div>
         </CardContent>
