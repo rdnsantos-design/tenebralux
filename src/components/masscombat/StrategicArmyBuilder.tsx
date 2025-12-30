@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Plus, 
   Minus, 
@@ -18,13 +19,16 @@ import {
   MapPin,
   Save,
   Trash2,
-  Crown
+  Crown,
+  Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRegents } from '@/hooks/useRegents';
 import { useRealms, useProvinces } from '@/hooks/useDomains';
 import { useMassCombatTacticalCards } from '@/hooks/useMassCombatTacticalCards';
 import { useMassCombatCommanderTemplates, MassCombatCommanderTemplate } from '@/hooks/useMassCombatCommanderTemplates';
+import { MassCombatTacticalCardPreview } from './MassCombatTacticalCardPreview';
+import { MassCombatTacticalCard } from '@/types/MassCombatTacticalCard';
 import {
   StrategicArmy,
   StrategicArmyCommander,
@@ -52,8 +56,15 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
   const [formData, setFormData] = useState<Partial<StrategicArmy>>(() => {
     return army || createEmptyStrategicArmy();
   });
+  const [selectedCardForPreview, setSelectedCardForPreview] = useState<MassCombatTacticalCard | null>(null);
 
   const vetInfo = useMemo(() => calculateVetSpent(formData), [formData]);
+  
+  // IDs das cartas já adicionadas (para impedir duplicatas)
+  const addedCardIds = useMemo(() => 
+    new Set((formData.tacticalCards || []).map(c => c.cardId)), 
+    [formData.tacticalCards]
+  );
 
   const filteredProvinces = useMemo(() => {
     if (!formData.realmId || !provinces) return [];
@@ -125,18 +136,18 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
     }));
   };
 
-  // Handler para adicionar carta tática
+  // Handler para adicionar carta tática (não permite duplicatas)
   const handleAddTacticalCard = (card: { id: string; name: string; vet_cost: number }) => {
-    const existing = (formData.tacticalCards || []).find(c => c.cardId === card.id);
+    // Impedir duplicatas
+    if (addedCardIds.has(card.id)) {
+      toast.error('Esta carta já foi adicionada ao exército!');
+      return;
+    }
     
-    const newCards = existing
-      ? (formData.tacticalCards || []).map(c =>
-          c.cardId === card.id ? { ...c, quantity: c.quantity + 1 } : c
-        )
-      : [
-          ...(formData.tacticalCards || []),
-          { cardId: card.id, cardName: card.name, vetCost: card.vet_cost, quantity: 1 },
-        ];
+    const newCards = [
+      ...(formData.tacticalCards || []),
+      { cardId: card.id, cardName: card.name, vetCost: card.vet_cost, quantity: 1 },
+    ];
     
     const newVetInfo = calculateVetSpent({ ...formData, tacticalCards: newCards });
     
@@ -150,24 +161,18 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
 
   // Handler para remover carta tática
   const handleRemoveTacticalCard = (cardId: string) => {
-    setFormData(prev => {
-      const existing = (prev.tacticalCards || []).find(c => c.cardId === cardId);
-      if (!existing) return prev;
-      
-      if (existing.quantity > 1) {
-        return {
-          ...prev,
-          tacticalCards: (prev.tacticalCards || []).map(c =>
-            c.cardId === cardId ? { ...c, quantity: c.quantity - 1 } : c
-          ),
-        };
-      }
-      
-      return {
-        ...prev,
-        tacticalCards: (prev.tacticalCards || []).filter(c => c.cardId !== cardId),
-      };
-    });
+    setFormData(prev => ({
+      ...prev,
+      tacticalCards: (prev.tacticalCards || []).filter(c => c.cardId !== cardId),
+    }));
+  };
+  
+  // Handler para visualizar carta
+  const handleViewCard = (cardId: string) => {
+    const card = tacticalCards.find(c => c.id === cardId);
+    if (card) {
+      setSelectedCardForPreview(card);
+    }
   };
 
   // Handler para salvar
@@ -555,19 +560,22 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
                   <Label className="text-xs text-muted-foreground">Adicionadas:</Label>
                   {(formData.tacticalCards || []).map((card) => (
                     <div key={card.cardId} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">x{card.quantity}</Badge>
+                      <div 
+                        className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => handleViewCard(card.cardId)}
+                      >
+                        <Eye className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm">{card.cardName}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge>{card.vetCost * card.quantity} VET</Badge>
+                        <Badge>{card.vetCost} VET</Badge>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
                           onClick={() => handleRemoveTacticalCard(card.cardId)}
                         >
-                          <Minus className="w-3 h-3 text-destructive" />
+                          <Trash2 className="w-3 h-3 text-destructive" />
                         </Button>
                       </div>
                     </div>
@@ -580,26 +588,44 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
                 <Label className="text-xs text-muted-foreground">Disponíveis:</Label>
                 <ScrollArea className="h-[200px]">
                   <div className="space-y-1">
-                    {tacticalCards.map((card) => (
-                      <div
-                        key={card.id}
-                        className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-lg cursor-pointer"
-                        onClick={() => handleAddTacticalCard(card)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{card.name}</span>
-                          {card.culture && (
-                            <Badge variant="outline" className="text-xs">
-                              {card.culture}
-                            </Badge>
-                          )}
+                    {tacticalCards.map((card) => {
+                      const isAdded = addedCardIds.has(card.id);
+                      return (
+                        <div
+                          key={card.id}
+                          className={`flex items-center justify-between p-2 rounded-lg ${
+                            isAdded 
+                              ? 'bg-muted/30 opacity-50 cursor-not-allowed' 
+                              : 'hover:bg-muted/50 cursor-pointer'
+                          }`}
+                          onClick={() => !isAdded && handleAddTacticalCard(card)}
+                        >
+                          <div 
+                            className="flex items-center gap-2 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCardForPreview(card);
+                            }}
+                          >
+                            <Eye className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                            <span className="text-sm">{card.name}</span>
+                            {card.culture && (
+                              <Badge variant="outline" className="text-xs">
+                                {card.culture}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{card.vet_cost} VET</Badge>
+                            {isAdded ? (
+                              <Badge variant="outline" className="text-xs">Adicionada</Badge>
+                            ) : (
+                              <Plus className="w-4 h-4 text-primary" />
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary">{card.vet_cost} VET</Badge>
-                          <Plus className="w-4 h-4 text-primary" />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               </div>
@@ -618,6 +644,18 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
           Salvar Exército
         </Button>
       </div>
+
+      {/* Dialog para preview da carta */}
+      <Dialog open={!!selectedCardForPreview} onOpenChange={() => setSelectedCardForPreview(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Carta</DialogTitle>
+          </DialogHeader>
+          {selectedCardForPreview && (
+            <MassCombatTacticalCardPreview card={selectedCardForPreview} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
