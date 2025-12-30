@@ -1,6 +1,6 @@
 /**
  * Hook unificado para dados de Mass Combat
- * Combina: primary_terrains, secondary_terrains, climates, seasons, compatibility, tactical_cards
+ * Combina: primary_terrains, secondary_terrains, seasons, compatibility, tactical_cards
  */
 
 import { useMemo } from 'react';
@@ -9,29 +9,22 @@ import {
   useMassCombatSecondaryTerrains,
   useMassCombatTerrainCompatibility 
 } from './useMassCombatTerrains';
-import { useMassCombatClimates, useMassCombatSeasons } from './useMassCombatClimates';
+import { useMassCombatSeasons } from './useMassCombatClimates';
 import { useMassCombatTacticalCards } from './useMassCombatTacticalCards';
 import { 
   MassCombatPrimaryTerrain, 
   MassCombatSecondaryTerrain,
   MassCombatTerrainCompatibility 
 } from '@/types/MassCombatTerrain';
-import { MassCombatClimate, MassCombatSeason } from '@/types/MassCombatClimate';
+import { MassCombatSeason } from '@/types/MassCombatClimate';
 import { MassCombatTacticalCard } from '@/types/MassCombatTacticalCard';
 
 export interface EnrichedPrimaryTerrain extends MassCombatPrimaryTerrain {
   compatibleSecondaries: MassCombatSecondaryTerrain[];
-  allowedClimatesList: MassCombatClimate[];
 }
 
 export interface EnrichedSecondaryTerrain extends MassCombatSecondaryTerrain {
   compatiblePrimaries: MassCombatPrimaryTerrain[];
-}
-
-export interface SeasonWithClimates extends MassCombatSeason {
-  commonClimatesList: MassCombatClimate[];
-  rareClimatesList: MassCombatClimate[];
-  blockedClimatesList: MassCombatClimate[];
 }
 
 export interface TacticalCardsByType {
@@ -47,14 +40,12 @@ export interface UseMassCombatDataResult {
   primaryTerrains: MassCombatPrimaryTerrain[];
   secondaryTerrains: MassCombatSecondaryTerrain[];
   terrainCompatibility: MassCombatTerrainCompatibility[];
-  climates: MassCombatClimate[];
   seasons: MassCombatSeason[];
   tacticalCards: MassCombatTacticalCard[];
   
   // Dados enriquecidos
   enrichedPrimaryTerrains: EnrichedPrimaryTerrain[];
   enrichedSecondaryTerrains: EnrichedSecondaryTerrain[];
-  seasonsWithClimates: SeasonWithClimates[];
   tacticalCardsByType: TacticalCardsByType;
   tacticalCardsByCulture: TacticalCardsByCulture;
   
@@ -65,7 +56,7 @@ export interface UseMassCombatDataResult {
   // Utilitários
   getCompatibleSecondaries: (primaryId: string) => MassCombatSecondaryTerrain[];
   getCompatiblePrimaries: (secondaryId: string) => MassCombatPrimaryTerrain[];
-  getClimateByName: (name: string) => MassCombatClimate | undefined;
+  getSeasonByName: (name: string) => MassCombatSeason | undefined;
   getCardsForUnit: (unitType: string, culture?: string) => MassCombatTacticalCard[];
   calculateTerrainModifiers: (primaryId: string, secondaryIds: string[]) => {
     attack: number;
@@ -73,6 +64,11 @@ export interface UseMassCombatDataResult {
     mobility: number;
     strategy: number;
   };
+  calculateSeasonModifier: (seasonName: string, conditionLevel: 1 | 2 | 3) => {
+    type: string;
+    conditionName: string;
+    modifier: number;
+  } | null;
 }
 
 export const useMassCombatData = (): UseMassCombatDataResult => {
@@ -80,7 +76,6 @@ export const useMassCombatData = (): UseMassCombatDataResult => {
   const { data: primaryTerrains = [], isLoading: primaryLoading, isError: primaryError } = useMassCombatPrimaryTerrains();
   const { data: secondaryTerrains = [], isLoading: secondaryLoading, isError: secondaryError } = useMassCombatSecondaryTerrains();
   const { data: terrainCompatibility = [], isLoading: compatLoading, isError: compatError } = useMassCombatTerrainCompatibility();
-  const { data: climates = [], isLoading: climatesLoading, isError: climatesError } = useMassCombatClimates();
   const { data: seasons = [], isLoading: seasonsLoading, isError: seasonsError } = useMassCombatSeasons();
   const { cards: tacticalCards = [], loading: cardsLoading, error: cardsError } = useMassCombatTacticalCards();
 
@@ -95,17 +90,12 @@ export const useMassCombatData = (): UseMassCombatDataResult => {
         s.is_universal || compatibleIds.includes(s.id)
       );
 
-      const allowedClimatesList = climates.filter(c => 
-        primary.allowed_climates.includes(c.name)
-      );
-
       return {
         ...primary,
         compatibleSecondaries,
-        allowedClimatesList,
       };
     });
-  }, [primaryTerrains, secondaryTerrains, terrainCompatibility, climates]);
+  }, [primaryTerrains, secondaryTerrains, terrainCompatibility]);
 
   // Enriquece terrenos secundários
   const enrichedSecondaryTerrains = useMemo((): EnrichedSecondaryTerrain[] => {
@@ -125,16 +115,6 @@ export const useMassCombatData = (): UseMassCombatDataResult => {
       return { ...secondary, compatiblePrimaries };
     });
   }, [secondaryTerrains, primaryTerrains, terrainCompatibility]);
-
-  // Enriquece estações com climas
-  const seasonsWithClimates = useMemo((): SeasonWithClimates[] => {
-    return seasons.map(season => ({
-      ...season,
-      commonClimatesList: climates.filter(c => season.common_climates.includes(c.name)),
-      rareClimatesList: climates.filter(c => season.rare_climates.includes(c.name)),
-      blockedClimatesList: climates.filter(c => season.blocked_climates.includes(c.name)),
-    }));
-  }, [seasons, climates]);
 
   // Agrupa cards por tipo de unidade
   const tacticalCardsByType = useMemo((): TacticalCardsByType => {
@@ -172,8 +152,8 @@ export const useMassCombatData = (): UseMassCombatDataResult => {
     return enriched?.compatiblePrimaries || [];
   };
 
-  const getClimateByName = (name: string) => 
-    climates.find(c => c.name === name);
+  const getSeasonByName = (name: string) => 
+    seasons.find(s => s.name === name);
 
   const getCardsForUnit = (unitType: string, culture?: string) => {
     let cards = tacticalCardsByType[unitType] || [];
@@ -202,24 +182,41 @@ export const useMassCombatData = (): UseMassCombatDataResult => {
     return { attack, defense, mobility, strategy };
   };
 
+  const calculateSeasonModifier = (seasonName: string, conditionLevel: 1 | 2 | 3) => {
+    const season = getSeasonByName(seasonName);
+    if (!season) return null;
+
+    const conditionMap = {
+      1: { name: season.condition1_name, mod: season.condition1_modifier },
+      2: { name: season.condition2_name, mod: season.condition2_modifier },
+      3: { name: season.condition3_name, mod: season.condition3_modifier },
+    };
+
+    const condition = conditionMap[conditionLevel];
+    return {
+      type: season.modifier_type,
+      conditionName: condition.name,
+      modifier: condition.mod,
+    };
+  };
+
   return {
     primaryTerrains,
     secondaryTerrains,
     terrainCompatibility,
-    climates,
     seasons,
     tacticalCards,
     enrichedPrimaryTerrains,
     enrichedSecondaryTerrains,
-    seasonsWithClimates,
     tacticalCardsByType,
     tacticalCardsByCulture,
-    isLoading: primaryLoading || secondaryLoading || compatLoading || climatesLoading || seasonsLoading || cardsLoading,
-    isError: primaryError || secondaryError || compatError || climatesError || seasonsError || !!cardsError,
+    isLoading: primaryLoading || secondaryLoading || compatLoading || seasonsLoading || cardsLoading,
+    isError: primaryError || secondaryError || compatError || seasonsError || !!cardsError,
     getCompatibleSecondaries,
     getCompatiblePrimaries,
-    getClimateByName,
+    getSeasonByName,
     getCardsForUnit,
     calculateTerrainModifiers,
+    calculateSeasonModifier,
   };
 };

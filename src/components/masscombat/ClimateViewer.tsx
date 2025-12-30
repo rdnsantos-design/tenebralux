@@ -1,124 +1,147 @@
-import React, { useState } from 'react';
-import { useMassCombatClimates, useMassCombatSeasons, useUpdateMassCombatClimate } from '@/hooks/useMassCombatClimates';
-import { MassCombatClimate } from '@/types/MassCombatClimate';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
+import { useMassCombatSeasons } from '@/hooks/useMassCombatClimates';
+import { MassCombatSeason } from '@/types/combat/mass-combat-climate';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Loader2, Sun, Cloud, CloudSnow, Thermometer, Wind, Droplets, Zap, Flame, Snowflake } from 'lucide-react';
-import { toast } from 'sonner';
+import { Loader2, Flower2, Sun, Leaf, Snowflake, Swords, Shield, Move, Heart } from 'lucide-react';
 
-const formatMod = (mod: number) => {
-  if (mod === 0) return '—';
-  return mod > 0 ? `+${mod}` : `${mod}`;
-};
-
-const getClimateIcon = (name: string) => {
+const getSeasonIcon = (name: string) => {
   const lowerName = name.toLowerCase();
-  if (lowerName.includes('céu') || lowerName.includes('aberto')) return <Sun className="h-4 w-4" />;
-  if (lowerName.includes('neve') || lowerName.includes('nevasca') || lowerName.includes('geada')) return <CloudSnow className="h-4 w-4" />;
-  if (lowerName.includes('calor') || lowerName.includes('escaldante')) return <Thermometer className="h-4 w-4" />;
-  if (lowerName.includes('desértico') || lowerName.includes('desertico')) return <Flame className="h-4 w-4" />;
-  if (lowerName.includes('ártico') || lowerName.includes('artico')) return <Snowflake className="h-4 w-4" />;
-  if (lowerName.includes('vento')) return <Wind className="h-4 w-4" />;
-  if (lowerName.includes('chuva') || lowerName.includes('névoa')) return <Droplets className="h-4 w-4" />;
-  if (lowerName.includes('tempestade') && lowerName.includes('elétrica')) return <Zap className="h-4 w-4" />;
-  return <Cloud className="h-4 w-4" />;
+  if (lowerName.includes('primavera')) return <Flower2 className="h-6 w-6" />;
+  if (lowerName.includes('verão') || lowerName.includes('verao')) return <Sun className="h-6 w-6" />;
+  if (lowerName.includes('outono')) return <Leaf className="h-6 w-6" />;
+  if (lowerName.includes('inverno')) return <Snowflake className="h-6 w-6" />;
+  return <Sun className="h-6 w-6" />;
 };
 
-const getModifierColor = (mod: number) => {
-  if (mod < -1) return 'text-red-600 font-bold';
-  if (mod < 0) return 'text-red-500';
-  if (mod > 0) return 'text-green-500';
-  return 'text-muted-foreground';
+const getSeasonColors = (name: string) => {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('primavera')) return {
+    bg: 'bg-gradient-to-br from-emerald-500/20 to-green-600/30',
+    border: 'border-emerald-500/50',
+    text: 'text-emerald-400',
+    accent: 'bg-emerald-500/20',
+  };
+  if (lowerName.includes('verão') || lowerName.includes('verao')) return {
+    bg: 'bg-gradient-to-br from-amber-500/20 to-orange-600/30',
+    border: 'border-amber-500/50',
+    text: 'text-amber-400',
+    accent: 'bg-amber-500/20',
+  };
+  if (lowerName.includes('outono')) return {
+    bg: 'bg-gradient-to-br from-orange-500/20 to-red-600/30',
+    border: 'border-orange-500/50',
+    text: 'text-orange-400',
+    accent: 'bg-orange-500/20',
+  };
+  if (lowerName.includes('inverno')) return {
+    bg: 'bg-gradient-to-br from-blue-500/20 to-cyan-600/30',
+    border: 'border-blue-500/50',
+    text: 'text-blue-400',
+    accent: 'bg-blue-500/20',
+  };
+  return {
+    bg: 'bg-gradient-to-br from-gray-500/20 to-gray-600/30',
+    border: 'border-gray-500/50',
+    text: 'text-gray-400',
+    accent: 'bg-gray-500/20',
+  };
 };
 
-type ModifierField = 
-  | 'level1_attack_mod' | 'level1_defense_mod' | 'level1_mobility_mod' | 'level1_strategy_mod'
-  | 'level2_attack_mod' | 'level2_defense_mod' | 'level2_mobility_mod' | 'level2_strategy_mod'
-  | 'level3_attack_mod' | 'level3_defense_mod' | 'level3_mobility_mod' | 'level3_strategy_mod';
+const getModifierIcon = (type: string) => {
+  switch (type) {
+    case 'ataque': return <Swords className="h-4 w-4" />;
+    case 'defesa': return <Shield className="h-4 w-4" />;
+    case 'mobilidade': return <Move className="h-4 w-4" />;
+    case 'pv': return <Heart className="h-4 w-4" />;
+    default: return null;
+  }
+};
 
-interface EditableCellProps {
-  value: number;
-  climateId: string;
-  field: ModifierField;
-  disabled?: boolean;
-  onUpdate: (id: string, field: ModifierField, value: number) => void;
+const getModifierLabel = (type: string) => {
+  switch (type) {
+    case 'ataque': return 'ATK';
+    case 'defesa': return 'DEF';
+    case 'mobilidade': return 'MOB';
+    case 'pv': return 'PV';
+    default: return type.toUpperCase();
+  }
+};
+
+interface SeasonCardProps {
+  season: MassCombatSeason;
 }
 
-function EditableCell({ value, climateId, field, disabled, onUpdate }: EditableCellProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value.toString());
-
-  const handleBlur = () => {
-    setIsEditing(false);
-    const newValue = parseInt(editValue, 10);
-    if (!isNaN(newValue) && newValue !== value) {
-      onUpdate(climateId, field, newValue);
-    } else {
-      setEditValue(value.toString());
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleBlur();
-    } else if (e.key === 'Escape') {
-      setEditValue(value.toString());
-      setIsEditing(false);
-    }
-  };
-
-  if (disabled) {
-    return <span className="text-muted-foreground">—</span>;
-  }
-
-  if (isEditing) {
-    return (
-      <Input
-        type="number"
-        value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
-        onBlur={handleBlur}
-        onKeyDown={handleKeyDown}
-        className="w-12 h-6 text-center text-xs p-1"
-        autoFocus
-      />
-    );
-  }
+function SeasonCard({ season }: SeasonCardProps) {
+  const colors = getSeasonColors(season.name);
+  const modLabel = getModifierLabel(season.modifier_type);
+  
+  const conditions = [
+    { name: season.condition1_name, mod: season.condition1_modifier, level: 1 },
+    { name: season.condition2_name, mod: season.condition2_modifier, level: 2 },
+    { name: season.condition3_name, mod: season.condition3_modifier, level: 3 },
+  ];
 
   return (
-    <span 
-      className={`cursor-pointer hover:bg-muted/50 px-2 py-1 rounded ${getModifierColor(value)}`}
-      onClick={() => setIsEditing(true)}
-      title="Clique para editar"
-    >
-      {formatMod(value)}
-    </span>
+    <Card className={`overflow-hidden ${colors.bg} ${colors.border} border-2`}>
+      {/* Header */}
+      <div className="p-4 border-b border-border/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${colors.accent}`}>
+              <span className={colors.text}>{getSeasonIcon(season.name)}</span>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">{season.name}</h3>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                {getModifierIcon(season.modifier_type)}
+                <span>Afeta {season.modifier_type.toUpperCase()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Conditions */}
+      <CardContent className="p-4 space-y-3">
+        {conditions.map((condition) => (
+          <div 
+            key={condition.level}
+            className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/30"
+          >
+            <div className="flex items-center gap-3">
+              <Badge 
+                variant={condition.level === 1 ? 'outline' : condition.level === 2 ? 'secondary' : 'destructive'}
+                className="w-6 h-6 p-0 flex items-center justify-center text-xs"
+              >
+                {condition.level}
+              </Badge>
+              <span className="font-medium">{condition.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`font-bold text-lg ${condition.mod < 0 ? 'text-destructive' : 'text-green-500'}`}>
+                {condition.mod > 0 ? '+' : ''}{condition.mod}
+              </span>
+              <span className="text-xs text-muted-foreground">{modLabel}</span>
+            </div>
+          </div>
+        ))}
+
+        {/* Token indicator */}
+        <div className="pt-2 border-t border-border/30">
+          <p className="text-xs text-muted-foreground text-center">
+            Use tokens para marcar a condição atual (1-3)
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 export function ClimateViewer() {
-  const { data: climates, isLoading: loadingClimates } = useMassCombatClimates();
-  const { data: seasons, isLoading: loadingSeasons } = useMassCombatSeasons();
-  const updateClimate = useUpdateMassCombatClimate();
+  const { data: seasons, isLoading } = useMassCombatSeasons();
 
-  const handleUpdateModifier = (climateId: string, field: ModifierField, value: number) => {
-    updateClimate.mutate(
-      { id: climateId, [field]: value },
-      {
-        onSuccess: () => {
-          toast.success('Modificador atualizado');
-        },
-        onError: () => {
-          toast.error('Erro ao atualizar modificador');
-        },
-      }
-    );
-  };
-
-  if (loadingClimates || loadingSeasons) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -128,286 +151,32 @@ export function ClimateViewer() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="climates" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="climates">Climas</TabsTrigger>
-          <TabsTrigger value="seasons">Estações</TabsTrigger>
-        </TabsList>
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl font-bold">Estações & Condições Climáticas</h2>
+        <p className="text-muted-foreground">
+          Cada estação possui 3 níveis de condição que afetam um atributo específico
+        </p>
+      </div>
 
-        <TabsContent value="climates" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Tabela de Modificadores de Clima</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Níveis progressivos: Leve → Moderado → Severo (clique para editar)
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="sticky left-0 bg-background z-10 min-w-[150px]">Clima</TableHead>
-                      <TableHead colSpan={4} className="text-center border-l">Nível 1 (Leve)</TableHead>
-                      <TableHead colSpan={4} className="text-center border-l">Nível 2 (Moderado)</TableHead>
-                      <TableHead colSpan={4} className="text-center border-l">Nível 3 (Severo)</TableHead>
-                    </TableRow>
-                    <TableRow>
-                      <TableHead className="sticky left-0 bg-background z-10"></TableHead>
-                      <TableHead className="text-center text-xs border-l">ATK</TableHead>
-                      <TableHead className="text-center text-xs">DEF</TableHead>
-                      <TableHead className="text-center text-xs">MOB</TableHead>
-                      <TableHead className="text-center text-xs">EST</TableHead>
-                      <TableHead className="text-center text-xs border-l">ATK</TableHead>
-                      <TableHead className="text-center text-xs">DEF</TableHead>
-                      <TableHead className="text-center text-xs">MOB</TableHead>
-                      <TableHead className="text-center text-xs">EST</TableHead>
-                      <TableHead className="text-center text-xs border-l">ATK</TableHead>
-                      <TableHead className="text-center text-xs">DEF</TableHead>
-                      <TableHead className="text-center text-xs">MOB</TableHead>
-                      <TableHead className="text-center text-xs">EST</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {climates?.map((climate) => (
-                      <TableRow key={climate.id}>
-                        <TableCell className="sticky left-0 bg-background z-10 font-medium">
-                          <div className="flex items-center gap-2">
-                            {getClimateIcon(climate.name)}
-                            <span>{climate.name}</span>
-                          </div>
-                        </TableCell>
-                        {/* Level 1 */}
-                        <TableCell className="text-center border-l">
-                          <EditableCell
-                            value={climate.level1_attack_mod}
-                            climateId={climate.id}
-                            field="level1_attack_mod"
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <EditableCell
-                            value={climate.level1_defense_mod}
-                            climateId={climate.id}
-                            field="level1_defense_mod"
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <EditableCell
-                            value={climate.level1_mobility_mod}
-                            climateId={climate.id}
-                            field="level1_mobility_mod"
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <EditableCell
-                            value={climate.level1_strategy_mod}
-                            climateId={climate.id}
-                            field="level1_strategy_mod"
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        {/* Level 2 */}
-                        <TableCell className="text-center border-l">
-                          <EditableCell
-                            value={climate.level2_attack_mod}
-                            climateId={climate.id}
-                            field="level2_attack_mod"
-                            disabled={!climate.has_all_levels}
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <EditableCell
-                            value={climate.level2_defense_mod}
-                            climateId={climate.id}
-                            field="level2_defense_mod"
-                            disabled={!climate.has_all_levels}
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <EditableCell
-                            value={climate.level2_mobility_mod}
-                            climateId={climate.id}
-                            field="level2_mobility_mod"
-                            disabled={!climate.has_all_levels}
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <EditableCell
-                            value={climate.level2_strategy_mod}
-                            climateId={climate.id}
-                            field="level2_strategy_mod"
-                            disabled={!climate.has_all_levels}
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        {/* Level 3 */}
-                        <TableCell className="text-center border-l">
-                          <EditableCell
-                            value={climate.level3_attack_mod}
-                            climateId={climate.id}
-                            field="level3_attack_mod"
-                            disabled={!climate.has_all_levels}
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <EditableCell
-                            value={climate.level3_defense_mod}
-                            climateId={climate.id}
-                            field="level3_defense_mod"
-                            disabled={!climate.has_all_levels}
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <EditableCell
-                            value={climate.level3_mobility_mod}
-                            climateId={climate.id}
-                            field="level3_mobility_mod"
-                            disabled={!climate.has_all_levels}
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <EditableCell
-                            value={climate.level3_strategy_mod}
-                            climateId={climate.id}
-                            field="level3_strategy_mod"
-                            disabled={!climate.has_all_levels}
-                            onUpdate={handleUpdateModifier}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {seasons?.map((season) => (
+          <SeasonCard key={season.id} season={season} />
+        ))}
+      </div>
 
-          {/* Climate details cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {climates?.map((climate) => (
-              <Card key={climate.id} className="overflow-hidden">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    {getClimateIcon(climate.name)}
-                    {climate.name}
-                  </CardTitle>
-                  {climate.description && (
-                    <p className="text-xs text-muted-foreground">{climate.description}</p>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {climate.level1_description && (
-                    <div className="text-sm">
-                      <Badge variant="outline" className="mr-2">Leve</Badge>
-                      {climate.level1_description}
-                    </div>
-                  )}
-                  {climate.has_all_levels && climate.level2_description && (
-                    <div className="text-sm">
-                      <Badge variant="secondary" className="mr-2">Moderado</Badge>
-                      {climate.level2_description}
-                    </div>
-                  )}
-                  {climate.has_all_levels && climate.level3_description && (
-                    <div className="text-sm">
-                      <Badge variant="destructive" className="mr-2">Severo</Badge>
-                      {climate.level3_description}
-                    </div>
-                  )}
-                  {climate.special_effects && (
-                    <p className="text-xs text-muted-foreground italic mt-2">
-                      {climate.special_effects}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+      {/* Rules card */}
+      <Card className="bg-muted/30">
+        <CardContent className="p-4">
+          <h4 className="font-semibold mb-2">Regras de Escalonamento</h4>
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p>• A cada rodada (15 minutos no jogo), role 1d20 para verificar mudança de condição</p>
+            <p>• <strong>1-10:</strong> Mantém condição atual</p>
+            <p>• <strong>11-15:</strong> Escala +1 nível (máx. 3)</p>
+            <p>• <strong>16-19:</strong> Reduz -1 nível (mín. 1)</p>
+            <p>• <strong>20:</strong> Mudança drástica - vai direto ao nível oposto</p>
           </div>
-        </TabsContent>
-
-        <TabsContent value="seasons" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {seasons?.map((season) => (
-              <Card key={season.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{season.name}</CardTitle>
-                  {season.description && (
-                    <p className="text-sm text-muted-foreground">{season.description}</p>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium mb-2 text-green-600">Climas Comuns</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {season.common_climates.map((climate) => (
-                        <Badge key={climate} variant="outline" className="text-xs">
-                          {climate}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-2 text-yellow-600">Climas Raros</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {season.rare_climates.length > 0 ? (
-                        season.rare_climates.map((climate) => (
-                          <Badge key={climate} variant="secondary" className="text-xs">
-                            {climate}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Nenhum</span>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-2 text-red-600">Climas Bloqueados</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {season.blocked_climates.length > 0 ? (
-                        season.blocked_climates.map((climate) => (
-                          <Badge key={climate} variant="destructive" className="text-xs">
-                            {climate}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Nenhum</span>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Climate escalation rules */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Regras de Escalonamento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm">Em cada rodada (15 minutos no jogo), role 1d20:</p>
-              <ul className="text-sm space-y-1 ml-4">
-                <li><Badge variant="destructive" className="mr-2">1-3</Badge>O clima piora (avança 1 nível)</li>
-                <li><Badge variant="secondary" className="mr-2">4-17</Badge>Mantém o clima atual</li>
-                <li><Badge variant="outline" className="mr-2">18-20</Badge>Clima melhora (regride 1 nível)</li>
-              </ul>
-              <p className="text-xs text-muted-foreground mt-4">
-                ⚠️ Clima nunca muda mais de um nível por rodada. Personagens com habilidades de previsão ou manipulação do clima podem interferir.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

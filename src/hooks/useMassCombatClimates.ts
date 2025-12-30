@@ -1,8 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { MassCombatSeason, MassCombatClimate } from '@/types/MassCombatClimate';
+import { MassCombatSeason } from '@/types/MassCombatClimate';
 
-// Seasons
+// ========================
+// MASS COMBAT SEASONS HOOKS
+// ========================
+
 export function useMassCombatSeasons() {
   return useQuery({
     queryKey: ['mass-combat-seasons'],
@@ -77,77 +80,4 @@ export function useDeleteMassCombatSeason() {
   });
 }
 
-// Climates
-export function useMassCombatClimates() {
-  return useQuery({
-    queryKey: ['mass-combat-climates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('mass_combat_climates')
-        .select('*')
-        .order('name', { ascending: true });
-      
-      if (error) throw error;
-      return data as MassCombatClimate[];
-    },
-  });
-}
-
-export function useCreateMassCombatClimate() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (climate: Omit<MassCombatClimate, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('mass_combat_climates')
-        .insert(climate)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mass-combat-climates'] });
-    },
-  });
-}
-
-export function useUpdateMassCombatClimate() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<MassCombatClimate> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('mass_combat_climates')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mass-combat-climates'] });
-    },
-  });
-}
-
-export function useDeleteMassCombatClimate() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('mass_combat_climates')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mass-combat-climates'] });
-    },
-  });
-}
+// Removido: hooks de MassCombatClimate (tabela não existe mais no novo sistema simplificado)
