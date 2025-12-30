@@ -12,6 +12,7 @@ export interface StrategicArmyCommander {
   estrategia: number;
   guarda: number;
   custoVet: number;
+  isGeneral?: boolean; // Indica se é o general do exército
 }
 
 export interface StrategicArmyCard {
@@ -24,6 +25,8 @@ export interface StrategicArmyCard {
 export interface StrategicArmy {
   id: string;
   name: string;
+  culture: string; // Cultura obrigatória
+  cultureName?: string;
   regentId?: string;
   regentName?: string;
   realmId?: string;
@@ -34,7 +37,7 @@ export interface StrategicArmy {
   // VET total e distribuição
   totalVet: number;
   
-  // Atributos comprados (10 VET = 1 ponto)
+  // Atributos comprados (5 VET = 1 ponto)
   attackPurchased: number;
   defensePurchased: number;
   mobilityPurchased: number;
@@ -60,7 +63,7 @@ export interface StrategicArmy {
 }
 
 // Funções auxiliares
-export const VET_PER_ATTRIBUTE_POINT = 10;
+export const VET_PER_ATTRIBUTE_POINT = 5; // Alterado de 10 para 5
 
 export function calculateAttributeVetCost(points: number): number {
   return points * VET_PER_ATTRIBUTE_POINT;
@@ -77,6 +80,7 @@ export function calculateDefense(defensePurchased: number): number {
 export function createEmptyStrategicArmy(): Partial<StrategicArmy> {
   return {
     name: '',
+    culture: '',
     totalVet: 100,
     attackPurchased: 0,
     defensePurchased: 0,
@@ -106,4 +110,12 @@ export function calculateVetSpent(army: Partial<StrategicArmy>): {
   const remaining = (army.totalVet || 0) - total;
   
   return { attributes, commanders, cards, total, remaining };
+}
+
+export function hasGeneral(army: Partial<StrategicArmy>): boolean {
+  return (army.commanders || []).some(c => c.isGeneral);
+}
+
+export function getGeneral(army: Partial<StrategicArmy>): StrategicArmyCommander | undefined {
+  return (army.commanders || []).find(c => c.isGeneral);
 }

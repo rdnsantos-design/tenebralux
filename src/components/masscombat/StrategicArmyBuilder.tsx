@@ -27,6 +27,7 @@ import { useRegents } from '@/hooks/useRegents';
 import { useRealms, useProvinces } from '@/hooks/useDomains';
 import { useMassCombatTacticalCards } from '@/hooks/useMassCombatTacticalCards';
 import { useMassCombatCommanderTemplates, MassCombatCommanderTemplate } from '@/hooks/useMassCombatCommanderTemplates';
+import { useMassCombatCultures } from '@/hooks/useMassCombatCultures';
 import { MassCombatTacticalCardPreview } from './MassCombatTacticalCardPreview';
 import { MassCombatTacticalCard } from '@/types/MassCombatTacticalCard';
 import {
@@ -38,6 +39,7 @@ import {
   calculateHitPoints,
   calculateDefense,
   createEmptyStrategicArmy,
+  hasGeneral,
 } from '@/types/combat/strategic-army';
 
 interface StrategicArmyBuilderProps {
@@ -52,6 +54,7 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
   const { data: provinces } = useProvinces();
   const { cards: tacticalCards } = useMassCombatTacticalCards();
   const { templates: commanderTemplates } = useMassCombatCommanderTemplates();
+  const { cultures } = useMassCombatCultures();
 
   const [formData, setFormData] = useState<Partial<StrategicArmy>>(() => {
     return army || createEmptyStrategicArmy();
@@ -123,6 +126,7 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
           estrategia: template.estrategia,
           guarda: template.guarda,
           custoVet: template.custo_vet,
+          isGeneral: (prev.commanders || []).length === 0, // Primeiro comandante é o general por padrão
         },
       ],
     }));
@@ -130,9 +134,24 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
 
   // Handler para remover comandante
   const handleRemoveCommander = (index: number) => {
+    setFormData(prev => {
+      const newCommanders = (prev.commanders || []).filter((_, i) => i !== index);
+      // Se removeu o general, designar o primeiro como general
+      if (newCommanders.length > 0 && !newCommanders.some(c => c.isGeneral)) {
+        newCommanders[0].isGeneral = true;
+      }
+      return { ...prev, commanders: newCommanders };
+    });
+  };
+  
+  // Handler para designar general
+  const handleSetGeneral = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      commanders: (prev.commanders || []).filter((_, i) => i !== index),
+      commanders: (prev.commanders || []).map((cmd, i) => ({
+        ...cmd,
+        isGeneral: i === index,
+      })),
     }));
   };
 
@@ -182,11 +201,22 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
       return;
     }
     
+    if (!formData.culture) {
+      toast.error('Cultura é obrigatória!');
+      return;
+    }
+    
+    if ((formData.commanders || []).length > 0 && !hasGeneral(formData)) {
+      toast.error('Designe um comandante como General!');
+      return;
+    }
+    
     if (vetInfo.remaining < 0) {
       toast.error('VET excedido!');
       return;
     }
     
+    const selectedCulture = cultures.find(c => c.id === formData.culture);
     const selectedRegent = regents?.find(r => r.id === formData.regentId);
     const selectedRealm = realms?.find(r => r.id === formData.realmId);
     const selectedProvince = provinces?.find(p => p.id === formData.provinceId);
@@ -194,6 +224,8 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
     const completeArmy: StrategicArmy = {
       id: army?.id || crypto.randomUUID(),
       name: formData.name!,
+      culture: formData.culture,
+      cultureName: selectedCulture?.name,
       regentId: formData.regentId,
       regentName: selectedRegent?.name,
       realmId: formData.realmId,
@@ -289,7 +321,26 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
               </div>
               
               <div className="space-y-2">
-                <Label>Regente</Label>
+                <Label>Cultura *</Label>
+                <Select
+                  value={formData.culture || ''}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, culture: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma cultura" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cultures.map((culture) => (
+                      <SelectItem key={culture.id} value={culture.id}>
+                        {culture.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Regente (opcional)</Label>
                 <Select
                   value={formData.regentId || ''}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, regentId: value || undefined }))}
@@ -309,7 +360,7 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Reino</Label>
+                  <Label>Reino (opcional)</Label>
                   <Select
                     value={formData.realmId || ''}
                     onValueChange={(value) => setFormData(prev => ({ 
@@ -332,7 +383,7 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Província</Label>
+                  <Label>Província (opcional)</Label>
                   <Select
                     value={formData.provinceId || ''}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, provinceId: value || undefined }))}
@@ -486,10 +537,18 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
               {/* Comandantes adicionados */}
               {(formData.commanders || []).length > 0 && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Adicionados:</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Adicionados: {!hasGeneral(formData) && <span className="text-destructive">(Designe um general!)</span>}
+                  </Label>
                   {(formData.commanders || []).map((cmd, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                    <div 
+                      key={index} 
+                      className={`flex items-center justify-between p-2 rounded-lg ${
+                        cmd.isGeneral ? 'bg-primary/10 border border-primary/30' : 'bg-muted/50'
+                      }`}
+                    >
                       <div className="flex items-center gap-2">
+                        {cmd.isGeneral && <Crown className="w-4 h-4 text-primary" />}
                         <Badge variant="outline">#{cmd.templateNumber}</Badge>
                         <span className="text-sm">{cmd.especializacao}</span>
                         <span className="text-xs text-muted-foreground">
@@ -498,6 +557,23 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge>{cmd.custoVet} VET</Badge>
+                        {!cmd.isGeneral && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => handleSetGeneral(index)}
+                          >
+                            <Crown className="w-3 h-3 mr-1" />
+                            General
+                          </Button>
+                        )}
+                        {cmd.isGeneral && (
+                          <Badge variant="default" className="text-xs">
+                            <Crown className="w-3 h-3 mr-1" />
+                            General
+                          </Badge>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
