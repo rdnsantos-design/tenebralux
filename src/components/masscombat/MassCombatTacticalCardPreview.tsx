@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   MassCombatTacticalCard,
 } from '@/types/MassCombatTacticalCard';
-import { Swords, Shield, Zap, Crown, Target, Users, Sword, Crosshair, Castle, Flag } from 'lucide-react';
+import { Swords, Shield, Zap, Crown, Target, Users, Sword, Crosshair, Castle, Flag, Mountain, Cloud, Sparkles } from 'lucide-react';
 
 interface MassCombatTacticalCardPreviewProps {
   card: MassCombatTacticalCard;
@@ -14,8 +14,12 @@ const UNIT_TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string;
   Infantaria: { icon: Users, color: 'text-orange-500', bg: 'bg-orange-500/10 border-orange-500/30' },
   Cavalaria: { icon: Sword, color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/30' },
   Arqueiros: { icon: Crosshair, color: 'text-green-500', bg: 'bg-green-500/10 border-green-500/30' },
+  Arqueria: { icon: Crosshair, color: 'text-green-500', bg: 'bg-green-500/10 border-green-500/30' },
   Cerco: { icon: Castle, color: 'text-stone-500', bg: 'bg-stone-500/10 border-stone-500/30' },
   Geral: { icon: Flag, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/30' },
+  Genérica: { icon: Sparkles, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/30' },
+  Terreno: { icon: Mountain, color: 'text-emerald-600', bg: 'bg-emerald-600/10 border-emerald-600/30' },
+  Estação: { icon: Cloud, color: 'text-sky-500', bg: 'bg-sky-500/10 border-sky-500/30' },
 };
 
 export function MassCombatTacticalCardPreview({ card }: MassCombatTacticalCardPreviewProps) {
