@@ -32,9 +32,12 @@ export function useFieldCommanders() {
 
   const createCommander = async (commander: Omit<FieldCommander, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
       const { error: insertError } = await supabase
         .from('field_commanders')
-        .insert([commander]);
+        .insert([{ ...commander, user_id: user.id }]);
 
       if (insertError) throw insertError;
 
