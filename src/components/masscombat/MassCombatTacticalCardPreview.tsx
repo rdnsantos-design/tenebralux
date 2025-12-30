@@ -31,11 +31,17 @@ export function MassCombatTacticalCardPreview({ card }: MassCombatTacticalCardPr
       <CardContent className="p-0">
         {/* Header with unit type */}
         <div className={`p-3 border-b ${config.bg}`}>
-          <div className="flex items-center justify-center gap-2">
-            <UnitIcon className={`h-5 w-5 ${config.color}`} />
-            <Badge variant="outline" className={config.color}>
-              {card.unit_type}
-            </Badge>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <UnitIcon className={`h-5 w-5 ${config.color}`} />
+              <Badge variant="outline" className={config.color}>
+                {card.unit_type}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1 bg-primary/20 px-2 py-1 rounded-full">
+              <span className="text-xs text-muted-foreground">VET</span>
+              <span className="font-bold text-primary">{card.vet_cost}</span>
+            </div>
           </div>
         </div>
 
