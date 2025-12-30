@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Download, Database, Swords, Shield, Move, Eye, Lightbulb, Cloud } from 'lucide-react';
+import { Plus, Edit, Trash2, Download, Database, Swords, Shield, Move, Eye, Lightbulb, Cloud, Printer } from 'lucide-react';
 import { 
   useMassCombatPrimaryTerrains, 
   useMassCombatSecondaryTerrains,
@@ -14,6 +14,7 @@ import {
 } from '@/hooks/useMassCombatTerrains';
 import { MassCombatPrimaryTerrain, MassCombatSecondaryTerrain, VISIBILITY_OPTIONS } from '@/types/MassCombatTerrain';
 import { MassCombatTerrainHex } from './MassCombatTerrainHex';
+import { MassCombatPrimaryTerrainCard } from './MassCombatPrimaryTerrainCard';
 import { PrimaryTerrainEditor } from './PrimaryTerrainEditor';
 import { SecondaryTerrainEditor } from './SecondaryTerrainEditor';
 import { TerrainCompatibilityManager } from './TerrainCompatibilityManager';
@@ -45,6 +46,122 @@ export function MassCombatTerrainList() {
   const [secondaryEditorOpen, setSecondaryEditorOpen] = useState(false);
   const [compatibilityOpen, setCompatibilityOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'primary' | 'secondary'; id: string; name: string } | null>(null);
+  const [showPrintView, setShowPrintView] = useState(false);
+
+  const handlePrintPrimaryTerrains = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const cardsHtml = primaryTerrains.map(terrain => {
+      const formatMod = (v: number) => v > 0 ? `+${v}` : `${v}`;
+      const getModColor = (v: number) => v > 0 ? '#16a34a' : v < 0 ? '#dc2626' : '#6b7280';
+      const getModBg = (v: number) => v > 0 ? '#dcfce7' : v < 0 ? '#fee2e2' : '#f3f4f6';
+      
+      return `
+        <div class="card">
+          <div class="card-header">${terrain.name}</div>
+          <div class="card-subtitle">Terreno Primário</div>
+          <div class="modifiers">
+            <div class="mod">
+              <div class="mod-value" style="background: ${getModBg(terrain.attack_mod)}; color: ${getModColor(terrain.attack_mod)}">${formatMod(terrain.attack_mod)}</div>
+              <div class="mod-label">⚔️ Ataque</div>
+            </div>
+            <div class="mod">
+              <div class="mod-value" style="background: ${getModBg(terrain.defense_mod)}; color: ${getModColor(terrain.defense_mod)}">${formatMod(terrain.defense_mod)}</div>
+              <div class="mod-label">🛡️ Defesa</div>
+            </div>
+            <div class="mod">
+              <div class="mod-value" style="background: ${getModBg(terrain.mobility_mod)}; color: ${getModColor(terrain.mobility_mod)}">${formatMod(terrain.mobility_mod)}</div>
+              <div class="mod-label">⚡ Mobilidade</div>
+            </div>
+          </div>
+          <div class="description">${terrain.description || ''}</div>
+        </div>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Cartas de Terreno Primário</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: system-ui, sans-serif; padding: 20px; background: #f5f5f5; }
+            .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+            .card { 
+              width: 200px; height: 280px; 
+              background: white; 
+              border-radius: 12px; 
+              border: 3px solid #374151;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+              break-inside: avoid;
+            }
+            .card-header { 
+              background: #374151; 
+              color: white; 
+              text-align: center; 
+              font-size: 18px; 
+              font-weight: bold; 
+              padding: 12px 8px 4px;
+            }
+            .card-subtitle {
+              background: #374151;
+              color: rgba(255,255,255,0.7);
+              text-align: center;
+              font-size: 9px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              padding-bottom: 8px;
+            }
+            .modifiers { 
+              display: flex; 
+              justify-content: space-around; 
+              padding: 12px 8px;
+              background: #fafafa;
+            }
+            .mod { text-align: center; }
+            .mod-value { 
+              width: 44px; height: 44px; 
+              border-radius: 10px; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center;
+              font-size: 20px;
+              font-weight: bold;
+              margin: 0 auto 4px;
+            }
+            .mod-label { font-size: 10px; color: #666; }
+            .description { 
+              flex: 1;
+              padding: 12px;
+              font-size: 11px;
+              text-align: center;
+              color: #374151;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              line-height: 1.4;
+              border-top: 2px dashed #e5e7eb;
+              margin: 0 8px;
+            }
+            @media print { 
+              body { background: white; padding: 0; }
+              .grid { grid-template-columns: repeat(4, 1fr); gap: 8px; } 
+              .card { page-break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="grid">${cardsHtml}</div>
+          <script>window.onload = () => window.print();</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const handleSeedData = async () => {
     try {
@@ -148,6 +265,10 @@ export function MassCombatTerrainList() {
             Carregar Dados Iniciais
           </Button>
         )}
+        <Button onClick={handlePrintPrimaryTerrains} variant="outline">
+          <Printer className="w-4 h-4 mr-2" />
+          Imprimir Terrenos Primários
+        </Button>
         <Button onClick={handleExportExcel} variant="outline">
           <Download className="w-4 h-4 mr-2" />
           Exportar Excel
