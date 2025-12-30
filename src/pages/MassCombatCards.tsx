@@ -2,7 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MassCombatTacticalCardList } from '@/components/masscombat/MassCombatTacticalCardList';
+import { MassCombatCommanderTemplateList } from '@/components/masscombat/MassCombatCommanderTemplateList';
+import { Swords, Crown } from 'lucide-react';
 
 export default function MassCombatCards() {
   return (
@@ -18,7 +21,7 @@ export default function MassCombatCards() {
             <div>
               <h1 className="text-2xl font-bold">Cartas de Combate Estratégico</h1>
               <p className="text-sm text-muted-foreground">
-                Cartas para resolução rápida de combate em massa
+                Cartas e comandantes para resolução de combate em massa
               </p>
             </div>
           </div>
@@ -26,7 +29,26 @@ export default function MassCombatCards() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <MassCombatTacticalCardList />
+        <Tabs defaultValue="cards" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="cards" className="flex items-center gap-2">
+              <Swords className="h-4 w-4" />
+              Cartas Táticas
+            </TabsTrigger>
+            <TabsTrigger value="commanders" className="flex items-center gap-2">
+              <Crown className="h-4 w-4" />
+              Comandantes (VET)
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="cards">
+            <MassCombatTacticalCardList />
+          </TabsContent>
+
+          <TabsContent value="commanders">
+            <MassCombatCommanderTemplateList />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

@@ -398,6 +398,42 @@ export type Database = {
           },
         ]
       }
+      mass_combat_commander_templates: {
+        Row: {
+          comando: number
+          created_at: string
+          custo_vet: number
+          especializacao: string
+          estrategia: number
+          guarda: number
+          id: string
+          numero: number
+          updated_at: string
+        }
+        Insert: {
+          comando?: number
+          created_at?: string
+          custo_vet?: number
+          especializacao: string
+          estrategia?: number
+          guarda?: number
+          id?: string
+          numero: number
+          updated_at?: string
+        }
+        Update: {
+          comando?: number
+          created_at?: string
+          custo_vet?: number
+          especializacao?: string
+          estrategia?: number
+          guarda?: number
+          id?: string
+          numero?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mass_combat_cultures: {
         Row: {
           created_at: string
