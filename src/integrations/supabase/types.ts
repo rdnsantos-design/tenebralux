@@ -130,6 +130,7 @@ export type Database = {
           specialties: string[]
           total_power_cost: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           ability_id?: string | null
@@ -159,6 +160,7 @@ export type Database = {
           specialties?: string[]
           total_power_cost?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           ability_id?: string | null
@@ -188,6 +190,7 @@ export type Database = {
           specialties?: string[]
           total_power_cost?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -256,6 +259,7 @@ export type Database = {
           regent_id: string | null
           unidade_de_origem: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           ac?: number | null
@@ -282,6 +286,7 @@ export type Database = {
           regent_id?: string | null
           unidade_de_origem?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           ac?: number | null
@@ -308,6 +313,7 @@ export type Database = {
           regent_id?: string | null
           unidade_de_origem?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -360,6 +366,7 @@ export type Database = {
           province_id: string
           regent_id: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -370,6 +377,7 @@ export type Database = {
           province_id: string
           regent_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -380,6 +388,7 @@ export type Database = {
           province_id?: string
           regent_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -751,6 +760,7 @@ export type Database = {
           road_level: number
           terrain_type: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           arcane_line_level?: number
@@ -768,6 +778,7 @@ export type Database = {
           road_level?: number
           terrain_type?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           arcane_line_level?: number
@@ -785,6 +796,7 @@ export type Database = {
           road_level?: number
           terrain_type?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -804,6 +816,7 @@ export type Database = {
           name: string
           region: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -812,6 +825,7 @@ export type Database = {
           name: string
           region?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -820,6 +834,7 @@ export type Database = {
           name?: string
           region?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -838,6 +853,7 @@ export type Database = {
           notes: string | null
           regency_points: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           character?: string | null
@@ -853,6 +869,7 @@ export type Database = {
           notes?: string | null
           regency_points?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           character?: string | null
@@ -868,6 +885,7 @@ export type Database = {
           notes?: string | null
           regency_points?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1069,6 +1087,7 @@ export type Database = {
           total_force: number
           unit_number: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           army_id?: string | null
@@ -1102,6 +1121,7 @@ export type Database = {
           total_force?: number
           unit_number?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           army_id?: string | null
@@ -1135,6 +1155,7 @@ export type Database = {
           total_force?: number
           unit_number?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1184,6 +1205,7 @@ export type Database = {
           special_abilities: Json
           total_force: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           attack?: number
@@ -1201,6 +1223,7 @@ export type Database = {
           special_abilities?: Json
           total_force?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           attack?: number
@@ -1218,6 +1241,7 @@ export type Database = {
           special_abilities?: Json
           total_force?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
