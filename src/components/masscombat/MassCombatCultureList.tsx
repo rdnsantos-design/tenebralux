@@ -52,11 +52,99 @@ export function MassCombatCultureList() {
   };
 
   const handlePrint = () => {
-    const printContent = printRef.current;
-    if (!printContent) return;
-
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+
+    const getCultureColor = (name: string) => {
+      switch (name) {
+        case 'Anuire': return { bg: '#fef3c7', border: '#d97706', header: '#b45309', text: '#92400e' };
+        case 'Khinasi': return { bg: '#ffedd5', border: '#ea580c', header: '#c2410c', text: '#9a3412' };
+        case 'Vos': return { bg: '#fee2e2', border: '#dc2626', header: '#b91c1c', text: '#991b1b' };
+        case 'Brecht': return { bg: '#dbeafe', border: '#2563eb', header: '#1d4ed8', text: '#1e40af' };
+        case 'Rjurik': return { bg: '#dcfce7', border: '#16a34a', header: '#15803d', text: '#166534' };
+        default: return { bg: '#f3f4f6', border: '#6b7280', header: '#4b5563', text: '#374151' };
+      }
+    };
+
+    const getTerrainIcon = (terrain: string) => {
+      switch (terrain) {
+        case 'Planície': return '🌾';
+        case 'Desértico': return '☀️';
+        case 'Ártico': return '❄️';
+        case 'Alagado': return '💧';
+        case 'Floresta': return '🌲';
+        default: return '🏔️';
+      }
+    };
+
+    const getSeasonIcon = (season: string) => {
+      switch (season) {
+        case 'Primavera': return '🌸';
+        case 'Verão': return '🔥';
+        case 'Outono': return '🍂';
+        case 'Inverno': return '❄️';
+        default: return '🌤️';
+      }
+    };
+
+    const getSpecIcon = (spec: string) => {
+      switch (spec) {
+        case 'Cavalaria': return '🐴';
+        case 'Infantaria': return '🛡️';
+        case 'Arqueria': return '🏹';
+        default: return '⚔️';
+      }
+    };
+
+    const cardsHtml = cultures.map(culture => {
+      const colors = getCultureColor(culture.name);
+      return `
+        <div class="card" style="border-color: ${colors.border}; background: ${colors.bg}">
+          <div class="card-header" style="background: ${colors.header}">
+            <h3>${culture.name}</h3>
+            <span class="subtitle">Cultura de Cerith</span>
+          </div>
+          
+          <div class="affinities">
+            <div class="affinity-row">
+              <div class="affinity-item">
+                <span class="affinity-icon">${getTerrainIcon(culture.terrain_affinity)}</span>
+                <div class="affinity-content">
+                  <span class="affinity-label">Terreno</span>
+                  <span class="affinity-value" style="color: ${colors.text}">${culture.terrain_affinity}</span>
+                </div>
+              </div>
+              <div class="affinity-item">
+                <span class="affinity-icon">${getSeasonIcon(culture.season_affinity)}</span>
+                <div class="affinity-content">
+                  <span class="affinity-label">Estação</span>
+                  <span class="affinity-value" style="color: ${colors.text}">${culture.season_affinity}</span>
+                </div>
+              </div>
+              <div class="affinity-item">
+                <span class="affinity-icon">${getSpecIcon(culture.specialization)}</span>
+                <div class="affinity-content">
+                  <span class="affinity-label">Especialização</span>
+                  <span class="affinity-value" style="color: ${colors.text}">${culture.specialization}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="ability">
+            <div class="ability-header" style="background: ${colors.header}20; border-color: ${colors.border}">
+              <span class="tap-icon">⟳</span>
+              <span>Habilidade Especial</span>
+            </div>
+            <div class="ability-text" style="border-color: ${colors.border}40">${culture.special_ability}</div>
+          </div>
+          
+          <div class="footer" style="background: ${colors.header}">
+            Combate em Massa
+          </div>
+        </div>
+      `;
+    }).join('');
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -65,52 +153,125 @@ export function MassCombatCultureList() {
           <title>Cartas de Cultura - Combate em Massa</title>
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
-            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-            .card { border: 2px solid #ccc; border-radius: 8px; overflow: hidden; break-inside: avoid; }
-            .header { padding: 16px; border-bottom: 1px solid #eee; background: #f9f9f9; }
-            .header h3 { font-size: 18px; font-weight: bold; text-align: center; }
-            .affinities { padding: 16px; border-bottom: 1px solid #eee; }
-            .affinities h4 { font-size: 10px; text-transform: uppercase; text-align: center; margin-bottom: 12px; color: #666; }
-            .affinity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-            .affinity-item { text-align: center; padding: 8px; background: #f5f5f5; border-radius: 4px; }
-            .affinity-label { font-size: 9px; color: #888; display: block; }
-            .affinity-value { font-size: 11px; font-weight: 500; }
-            .ability { padding: 16px; }
-            .ability h4 { font-size: 10px; text-transform: uppercase; text-align: center; margin-bottom: 8px; color: #666; }
-            .ability-text { padding: 12px; background: #f9f9f9; border-radius: 4px; font-size: 11px; text-align: center; line-height: 1.4; }
-            @media print { .grid { grid-template-columns: repeat(2, 1fr); } }
+            body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; background: #f0f0f0; }
+            .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+            .card { 
+              width: 200px; 
+              min-height: 320px;
+              border-radius: 12px; 
+              border: 3px solid;
+              overflow: hidden; 
+              break-inside: avoid;
+              display: flex;
+              flex-direction: column;
+              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }
+            .card-header { 
+              padding: 16px 12px 8px;
+              text-align: center;
+              color: white;
+            }
+            .card-header h3 { 
+              font-size: 22px; 
+              font-weight: bold;
+              margin: 0;
+              text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            }
+            .card-header .subtitle {
+              font-size: 9px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              opacity: 0.8;
+            }
+            .affinities { 
+              padding: 12px 8px;
+            }
+            .affinity-row {
+              display: flex;
+              flex-direction: column;
+              gap: 6px;
+            }
+            .affinity-item { 
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 6px 8px;
+              background: rgba(255,255,255,0.7);
+              border-radius: 6px;
+            }
+            .affinity-icon {
+              font-size: 18px;
+              width: 28px;
+              text-align: center;
+            }
+            .affinity-content {
+              display: flex;
+              flex-direction: column;
+            }
+            .affinity-label { 
+              font-size: 8px; 
+              color: #666;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .affinity-value { 
+              font-size: 12px; 
+              font-weight: 600;
+            }
+            .ability { 
+              flex: 1;
+              padding: 8px;
+              display: flex;
+              flex-direction: column;
+            }
+            .ability-header {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 6px;
+              padding: 6px;
+              border-radius: 6px 6px 0 0;
+              font-size: 9px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              border: 1px solid;
+              border-bottom: none;
+            }
+            .tap-icon {
+              font-size: 14px;
+            }
+            .ability-text { 
+              flex: 1;
+              padding: 10px;
+              background: white;
+              border-radius: 0 0 6px 6px;
+              font-size: 10px;
+              text-align: center;
+              line-height: 1.5;
+              border: 1px solid;
+              border-top: none;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .footer {
+              padding: 6px;
+              text-align: center;
+              color: white;
+              font-size: 8px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+            @media print { 
+              body { background: white; padding: 0; }
+              .grid { grid-template-columns: repeat(5, 1fr); gap: 10px; } 
+              .card { box-shadow: none; }
+            }
           </style>
         </head>
         <body>
-          <div class="grid">
-            ${cultures.map(culture => `
-              <div class="card">
-                <div class="header"><h3>${culture.name}</h3></div>
-                <div class="affinities">
-                  <h4>Afinidades</h4>
-                  <div class="affinity-grid">
-                    <div class="affinity-item">
-                      <span class="affinity-label">Terreno</span>
-                      <span class="affinity-value">${culture.terrain_affinity}</span>
-                    </div>
-                    <div class="affinity-item">
-                      <span class="affinity-label">Estação</span>
-                      <span class="affinity-value">${culture.season_affinity}</span>
-                    </div>
-                    <div class="affinity-item">
-                      <span class="affinity-label">Especialização</span>
-                      <span class="affinity-value">${culture.specialization}</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="ability">
-                  <h4>Habilidade Especial</h4>
-                  <div class="ability-text">${culture.special_ability}</div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
+          <div class="grid">${cardsHtml}</div>
           <script>window.onload = () => window.print();</script>
         </body>
       </html>
