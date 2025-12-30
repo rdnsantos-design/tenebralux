@@ -1018,6 +1018,191 @@ export type Database = {
         }
         Relationships: []
       }
+      unit_instances: {
+        Row: {
+          army_id: string | null
+          attack: number
+          background_image: string | null
+          battles_fought: number
+          battles_won: number
+          commander_id: string | null
+          created_at: string
+          creation_cost: number
+          current_posture: Database["public"]["Enums"]["unit_posture"] | null
+          current_xp: number
+          custom_background_image: string | null
+          defense: number
+          experience: Database["public"]["Enums"]["experience_level"]
+          hits: number
+          id: string
+          is_disbanded: boolean
+          is_garrisoned: boolean
+          maintenance_cost: number
+          morale: number
+          movement: number
+          name: string
+          normal_pressure: number
+          permanent_pressure: number
+          province_id: string | null
+          ranged: number
+          regent_id: string | null
+          special_abilities: Json
+          template_id: string | null
+          total_force: number
+          unit_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          army_id?: string | null
+          attack?: number
+          background_image?: string | null
+          battles_fought?: number
+          battles_won?: number
+          commander_id?: string | null
+          created_at?: string
+          creation_cost?: number
+          current_posture?: Database["public"]["Enums"]["unit_posture"] | null
+          current_xp?: number
+          custom_background_image?: string | null
+          defense?: number
+          experience?: Database["public"]["Enums"]["experience_level"]
+          hits?: number
+          id?: string
+          is_disbanded?: boolean
+          is_garrisoned?: boolean
+          maintenance_cost?: number
+          morale?: number
+          movement?: number
+          name: string
+          normal_pressure?: number
+          permanent_pressure?: number
+          province_id?: string | null
+          ranged?: number
+          regent_id?: string | null
+          special_abilities?: Json
+          template_id?: string | null
+          total_force?: number
+          unit_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          army_id?: string | null
+          attack?: number
+          background_image?: string | null
+          battles_fought?: number
+          battles_won?: number
+          commander_id?: string | null
+          created_at?: string
+          creation_cost?: number
+          current_posture?: Database["public"]["Enums"]["unit_posture"] | null
+          current_xp?: number
+          custom_background_image?: string | null
+          defense?: number
+          experience?: Database["public"]["Enums"]["experience_level"]
+          hits?: number
+          id?: string
+          is_disbanded?: boolean
+          is_garrisoned?: boolean
+          maintenance_cost?: number
+          morale?: number
+          movement?: number
+          name?: string
+          normal_pressure?: number
+          permanent_pressure?: number
+          province_id?: string | null
+          ranged?: number
+          regent_id?: string | null
+          special_abilities?: Json
+          template_id?: string | null
+          total_force?: number
+          unit_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unit_instances_commander_id_fkey"
+            columns: ["commander_id"]
+            isOneToOne: false
+            referencedRelation: "field_commanders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_instances_province_id_fkey"
+            columns: ["province_id"]
+            isOneToOne: false
+            referencedRelation: "provinces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_instances_regent_id_fkey"
+            columns: ["regent_id"]
+            isOneToOne: false
+            referencedRelation: "regents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_instances_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "unit_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unit_templates: {
+        Row: {
+          attack: number
+          background_image: string | null
+          created_at: string
+          defense: number
+          experience: Database["public"]["Enums"]["experience_level"]
+          id: string
+          maintenance_cost: number
+          morale: number
+          movement: number
+          name: string
+          ranged: number
+          source_file: string | null
+          special_abilities: Json
+          total_force: number
+          updated_at: string
+        }
+        Insert: {
+          attack?: number
+          background_image?: string | null
+          created_at?: string
+          defense?: number
+          experience?: Database["public"]["Enums"]["experience_level"]
+          id?: string
+          maintenance_cost?: number
+          morale?: number
+          movement?: number
+          name: string
+          ranged?: number
+          source_file?: string | null
+          special_abilities?: Json
+          total_force?: number
+          updated_at?: string
+        }
+        Update: {
+          attack?: number
+          background_image?: string | null
+          created_at?: string
+          defense?: number
+          experience?: Database["public"]["Enums"]["experience_level"]
+          id?: string
+          maintenance_cost?: number
+          morale?: number
+          movement?: number
+          name?: string
+          ranged?: number
+          source_file?: string | null
+          special_abilities?: Json
+          total_force?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1034,10 +1219,18 @@ export type Database = {
         | "Milicia"
         | "Elite"
         | "Naval"
+      experience_level:
+        | "Amador"
+        | "Recruta"
+        | "Profissional"
+        | "Veterano"
+        | "Elite"
+        | "Lendário"
       holding_type: "ordem" | "guilda" | "templo" | "fonte_magica"
       tactical_card_subtype: "Buff" | "Debuff" | "Neutra" | "Instantânea"
       tactical_card_type: "Ataque" | "Defesa" | "Movimento" | "Moral"
       tactical_culture: "Anuire" | "Khinasi" | "Vos" | "Rjurik" | "Brecht"
+      unit_posture: "Ofensiva" | "Defensiva" | "Carga" | "Reorganização"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1174,10 +1367,19 @@ export const Constants = {
         "Elite",
         "Naval",
       ],
+      experience_level: [
+        "Amador",
+        "Recruta",
+        "Profissional",
+        "Veterano",
+        "Elite",
+        "Lendário",
+      ],
       holding_type: ["ordem", "guilda", "templo", "fonte_magica"],
       tactical_card_subtype: ["Buff", "Debuff", "Neutra", "Instantânea"],
       tactical_card_type: ["Ataque", "Defesa", "Movimento", "Moral"],
       tactical_culture: ["Anuire", "Khinasi", "Vos", "Rjurik", "Brecht"],
+      unit_posture: ["Ofensiva", "Defensiva", "Carga", "Reorganização"],
     },
   },
 } as const
