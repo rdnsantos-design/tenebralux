@@ -158,40 +158,24 @@ export function MassCombatTacticalCardList() {
             <div class="vet-badge">VET ${card.vet_cost}</div>
           </div>
           
-          <div class="card-name">
-            ${card.name}
-            ${card.culture ? `<div class="culture">Cultura: ${card.culture}</div>` : ''}
+          <div class="card-name">${card.name}</div>
+          
+          <div class="effect-section">
+            <div class="effect-label">EFEITO</div>
+            <div class="effect-text">${card.description || 'Sem efeito definido'}</div>
           </div>
           
-          <div class="bonuses">
-            <div class="bonus-item ${card.attack_bonus > 0 ? 'active attack' : ''}">
-              <div class="bonus-icon">⚔️</div>
-              <div class="bonus-label">Ataque</div>
-              <div class="bonus-value">${card.attack_bonus > 0 ? `+${card.attack_bonus}` : '-'}</div>
-            </div>
-            <div class="bonus-item ${card.defense_bonus > 0 ? 'active defense' : ''}">
-              <div class="bonus-icon">🛡️</div>
-              <div class="bonus-label">Defesa</div>
-              <div class="bonus-value">${card.defense_bonus > 0 ? `+${card.defense_bonus}` : '-'}</div>
-            </div>
-            <div class="bonus-item ${card.mobility_bonus > 0 ? 'active mobility' : ''}">
-              <div class="bonus-icon">⚡</div>
-              <div class="bonus-label">Mobilidade</div>
-              <div class="bonus-value">${card.mobility_bonus > 0 ? `+${card.mobility_bonus}` : '-'}</div>
-            </div>
-          </div>
-          
-          <div class="requirements">
-            <div class="req-item single">
+          <div class="requirements-footer">
+            <div class="req-item">
               <span class="req-icon">👑</span>
               <span>Comando <strong>${card.command_required}</strong></span>
             </div>
-          </div>
-          
-          ${card.description ? `<div class="description"><span class="condition-label">Condição:</span> ${card.description}</div>` : ''}
-          
-          <div class="card-footer" style="background: ${colors.secondary}; border-top: 2px solid ${colors.primary};">
-            <div class="footer-decoration" style="background: ${colors.primary};"></div>
+            ${card.culture ? `
+            <div class="req-item">
+              <span class="req-icon">🌍</span>
+              <span><strong>${card.culture}</strong></span>
+            </div>
+            ` : ''}
           </div>
         </div>
       `;
@@ -280,78 +264,52 @@ export function MassCombatTacticalCardList() {
           .card-name {
             padding: 12px;
             text-align: center;
-            border-bottom: 1px solid #e5e7eb;
-          }
-          
-          .card-name {
             font-size: 14px;
             font-weight: 700;
             color: #1f2937;
+            border-bottom: 1px solid #e5e7eb;
           }
           
-          .culture {
+          .effect-section {
+            padding: 16px 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
+          
+          .effect-label {
             font-size: 10px;
-            color: #6b7280;
-            margin-top: 4px;
-            font-weight: 400;
-          }
-          
-          .bonuses {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            border-bottom: 1px solid #e5e7eb;
-          }
-          
-          .bonus-item {
-            padding: 10px 5px;
-            text-align: center;
-            border-right: 1px solid #e5e7eb;
-          }
-          
-          .bonus-item:last-child {
-            border-right: none;
-          }
-          
-          .bonus-icon {
-            font-size: 16px;
-            margin-bottom: 3px;
-          }
-          
-          .bonus-label {
-            font-size: 9px;
-            color: #9ca3af;
+            font-weight: 600;
+            color: #6366f1;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 1px;
+            text-align: center;
+            margin-bottom: 8px;
           }
           
-          .bonus-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #d1d5db;
-            margin-top: 2px;
+          .effect-text {
+            font-size: 11px;
+            color: #374151;
+            text-align: center;
+            line-height: 1.5;
           }
           
-          .bonus-item.active.attack .bonus-value { color: #dc2626; }
-          .bonus-item.active.defense .bonus-value { color: #2563eb; }
-          .bonus-item.active.mobility .bonus-value { color: #ca8a04; }
-          
-          .requirements {
-            background: #f9fafb;
-            border-bottom: 1px solid #e5e7eb;
+          .requirements-footer {
+            background: #f3f4f6;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e5e7eb;
           }
           
           .req-item {
-            padding: 8px;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 6px;
             font-size: 11px;
             color: #4b5563;
-          }
-          
-          .req-item.single {
-            width: 100%;
           }
           
           .req-icon {
@@ -360,36 +318,6 @@ export function MassCombatTacticalCardList() {
           
           .req-item strong {
             color: #1f2937;
-          }
-          
-          .description {
-            padding: 10px 12px;
-            font-size: 10px;
-            color: #6b7280;
-            text-align: center;
-            line-height: 1.4;
-            border-bottom: 1px solid #e5e7eb;
-          }
-          
-          .condition-label {
-            font-weight: 600;
-            color: #d97706;
-            font-style: normal;
-          }
-          
-          .card-footer {
-            height: 8px;
-            position: relative;
-          }
-          
-          .footer-decoration {
-            position: absolute;
-            left: 50%;
-            top: -4px;
-            transform: translateX(-50%);
-            width: 30px;
-            height: 8px;
-            border-radius: 0 0 10px 10px;
           }
           
           @media print {

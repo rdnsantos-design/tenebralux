@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   MassCombatTacticalCard,
 } from '@/types/MassCombatTacticalCard';
-import { Swords, Shield, Zap, Crown, Users, Sword, Crosshair, Castle, Flag, Mountain, Cloud, Sparkles } from 'lucide-react';
+import { Crown, Users, Sword, Crosshair, Castle, Flag, Mountain, Cloud, Sparkles, Globe } from 'lucide-react';
 
 interface MassCombatTacticalCardPreviewProps {
   card: MassCombatTacticalCard;
@@ -27,9 +27,9 @@ export function MassCombatTacticalCardPreview({ card }: MassCombatTacticalCardPr
   const UnitIcon = config.icon;
 
   return (
-    <Card className={`overflow-hidden border-2 ${config.bg} transition-all hover:scale-[1.02]`}>
-      <CardContent className="p-0">
-        {/* Header with unit type */}
+    <Card className={`overflow-hidden border-2 ${config.bg} transition-all hover:scale-[1.02] flex flex-col`}>
+      <CardContent className="p-0 flex flex-col flex-1">
+        {/* Header with unit type and VET */}
         <div className={`p-3 border-b ${config.bg}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -48,55 +48,33 @@ export function MassCombatTacticalCardPreview({ card }: MassCombatTacticalCardPr
         {/* Card Name */}
         <div className="p-3 border-b border-border/50">
           <h3 className="font-bold text-lg text-center">{card.name}</h3>
-          {card.culture && (
-            <p className="text-center text-xs text-muted-foreground mt-1">
-              Cultura: {card.culture}
-            </p>
-          )}
         </div>
 
-        {/* Bonuses */}
-        <div className="grid grid-cols-3 divide-x divide-border/50 border-b border-border/50">
-          <div className="p-3 text-center">
-            <Swords className="h-4 w-4 text-red-500 mx-auto mb-1" />
-            <div className="text-xs text-muted-foreground">Ataque</div>
-            <div className={`text-xl font-bold ${card.attack_bonus > 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
-              {card.attack_bonus > 0 ? `+${card.attack_bonus}` : '-'}
-            </div>
-          </div>
-          <div className="p-3 text-center">
-            <Shield className="h-4 w-4 text-blue-500 mx-auto mb-1" />
-            <div className="text-xs text-muted-foreground">Defesa</div>
-            <div className={`text-xl font-bold ${card.defense_bonus > 0 ? 'text-blue-500' : 'text-muted-foreground'}`}>
-              {card.defense_bonus > 0 ? `+${card.defense_bonus}` : '-'}
-            </div>
-          </div>
-          <div className="p-3 text-center">
-            <Zap className="h-4 w-4 text-yellow-500 mx-auto mb-1" />
-            <div className="text-xs text-muted-foreground">Mobilidade</div>
-            <div className={`text-xl font-bold ${card.mobility_bonus > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`}>
-              {card.mobility_bonus > 0 ? `+${card.mobility_bonus}` : '-'}
-            </div>
-          </div>
+        {/* Effect - Main Body */}
+        <div className="p-4 flex-1 flex flex-col justify-center">
+          <p className="text-xs font-semibold text-primary mb-2 text-center uppercase tracking-wide">Efeito</p>
+          <p className="text-sm text-center leading-relaxed">
+            {card.description || "Sem efeito definido"}
+          </p>
         </div>
 
-        {/* Requirements */}
-        <div className="bg-muted/30 p-2 flex items-center justify-center gap-2">
-          <Crown className="h-4 w-4 text-purple-500" />
-          <span className="text-sm">
-            Comando <span className="font-bold">{card.command_required}</span>
-          </span>
-        </div>
-
-        {/* Condition */}
-        {card.description && (
-          <div className="p-3 border-t border-border/50">
-            <p className="text-xs font-semibold text-amber-600 mb-1 text-center">Condição:</p>
-            <p className="text-xs text-muted-foreground italic text-center">
-              {card.description}
-            </p>
+        {/* Requirements Footer */}
+        <div className="bg-muted/50 p-3 border-t border-border/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Crown className="h-4 w-4 text-purple-500" />
+              <span className="text-sm">
+                Comando <span className="font-bold">{card.command_required}</span>
+              </span>
+            </div>
+            {card.culture && (
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-blue-500" />
+                <span className="text-sm font-medium">{card.culture}</span>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
