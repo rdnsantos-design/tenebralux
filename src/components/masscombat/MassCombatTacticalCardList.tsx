@@ -19,9 +19,22 @@ import {
   Copy, 
   Trash2, 
   Loader2,
-  Filter 
+  Filter,
+  Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+const UNIT_TYPE_COLORS: Record<string, { primary: string; secondary: string; text: string }> = {
+  Infantaria: { primary: '#ea580c', secondary: '#fed7aa', text: '#9a3412' },
+  Cavalaria: { primary: '#d97706', secondary: '#fef3c7', text: '#92400e' },
+  Arqueiros: { primary: '#16a34a', secondary: '#dcfce7', text: '#166534' },
+  Arqueria: { primary: '#16a34a', secondary: '#dcfce7', text: '#166534' },
+  Cerco: { primary: '#78716c', secondary: '#e7e5e4', text: '#44403c' },
+  Geral: { primary: '#9333ea', secondary: '#f3e8ff', text: '#6b21a8' },
+  Genérica: { primary: '#9333ea', secondary: '#f3e8ff', text: '#6b21a8' },
+  Terreno: { primary: '#059669', secondary: '#d1fae5', text: '#065f46' },
+  Estação: { primary: '#0284c7', secondary: '#e0f2fe', text: '#075985' },
+};
 import * as XLSX from 'xlsx';
 import {
   AlertDialog,
@@ -128,6 +141,300 @@ export function MassCombatTacticalCardList() {
     event.target.value = '';
   };
 
+  const handlePrintCards = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Não foi possível abrir a janela de impressão');
+      return;
+    }
+
+    const cardsHtml = filteredCards.map(card => {
+      const colors = UNIT_TYPE_COLORS[card.unit_type] || UNIT_TYPE_COLORS.Geral;
+      
+      return `
+        <div class="card">
+          <div class="card-header" style="background: linear-gradient(135deg, ${colors.primary}, ${colors.primary}dd);">
+            <div class="unit-type-badge">${card.unit_type}</div>
+            <div class="vet-badge">VET ${card.vet_cost}</div>
+          </div>
+          
+          <div class="card-name">
+            ${card.name}
+            ${card.culture ? `<div class="culture">Cultura: ${card.culture}</div>` : ''}
+          </div>
+          
+          <div class="bonuses">
+            <div class="bonus-item ${card.attack_bonus > 0 ? 'active attack' : ''}">
+              <div class="bonus-icon">⚔️</div>
+              <div class="bonus-label">Ataque</div>
+              <div class="bonus-value">${card.attack_bonus > 0 ? `+${card.attack_bonus}` : '-'}</div>
+            </div>
+            <div class="bonus-item ${card.defense_bonus > 0 ? 'active defense' : ''}">
+              <div class="bonus-icon">🛡️</div>
+              <div class="bonus-label">Defesa</div>
+              <div class="bonus-value">${card.defense_bonus > 0 ? `+${card.defense_bonus}` : '-'}</div>
+            </div>
+            <div class="bonus-item ${card.mobility_bonus > 0 ? 'active mobility' : ''}">
+              <div class="bonus-icon">⚡</div>
+              <div class="bonus-label">Mobilidade</div>
+              <div class="bonus-value">${card.mobility_bonus > 0 ? `+${card.mobility_bonus}` : '-'}</div>
+            </div>
+          </div>
+          
+          <div class="requirements">
+            <div class="req-item">
+              <span class="req-icon">👑</span>
+              <span>Comando <strong>${card.command_required}</strong></span>
+            </div>
+            <div class="req-item">
+              <span class="req-icon">🎯</span>
+              <span>Estratégia <strong>${card.strategy_required}</strong></span>
+            </div>
+          </div>
+          
+          ${card.description ? `<div class="description">"${card.description}"</div>` : ''}
+          
+          <div class="card-footer" style="background: ${colors.secondary}; border-top: 2px solid ${colors.primary};">
+            <div class="footer-decoration" style="background: ${colors.primary};"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Cartas de Combate Estratégico</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: white;
+            border-radius: 12px;
+          }
+          
+          .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+          }
+          
+          .header p {
+            opacity: 0.8;
+            font-size: 14px;
+          }
+          
+          .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+          }
+          
+          .card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          
+          .card-header {
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+          }
+          
+          .unit-type-badge {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+          }
+          
+          .vet-badge {
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(0,0,0,0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+          }
+          
+          .card-name {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          
+          .card-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1f2937;
+          }
+          
+          .culture {
+            font-size: 10px;
+            color: #6b7280;
+            margin-top: 4px;
+            font-weight: 400;
+          }
+          
+          .bonuses {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            border-bottom: 1px solid #e5e7eb;
+          }
+          
+          .bonus-item {
+            padding: 10px 5px;
+            text-align: center;
+            border-right: 1px solid #e5e7eb;
+          }
+          
+          .bonus-item:last-child {
+            border-right: none;
+          }
+          
+          .bonus-icon {
+            font-size: 16px;
+            margin-bottom: 3px;
+          }
+          
+          .bonus-label {
+            font-size: 9px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+          }
+          
+          .bonus-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #d1d5db;
+            margin-top: 2px;
+          }
+          
+          .bonus-item.active.attack .bonus-value { color: #dc2626; }
+          .bonus-item.active.defense .bonus-value { color: #2563eb; }
+          .bonus-item.active.mobility .bonus-value { color: #ca8a04; }
+          
+          .requirements {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          
+          .req-item {
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #4b5563;
+          }
+          
+          .req-item:first-child {
+            border-right: 1px solid #e5e7eb;
+          }
+          
+          .req-icon {
+            font-size: 12px;
+          }
+          
+          .req-item strong {
+            color: #1f2937;
+          }
+          
+          .description {
+            padding: 10px 12px;
+            font-size: 10px;
+            color: #6b7280;
+            font-style: italic;
+            text-align: center;
+            line-height: 1.4;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          
+          .card-footer {
+            height: 8px;
+            position: relative;
+          }
+          
+          .footer-decoration {
+            position: absolute;
+            left: 50%;
+            top: -4px;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 8px;
+            border-radius: 0 0 10px 10px;
+          }
+          
+          @media print {
+            body {
+              background: white;
+              padding: 10px;
+            }
+            
+            .header {
+              margin-bottom: 20px;
+              padding: 15px;
+            }
+            
+            .cards-grid {
+              gap: 15px;
+            }
+            
+            .card {
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              border: 1px solid #e5e7eb;
+            }
+          }
+          
+          @page {
+            size: A4;
+            margin: 10mm;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>⚔️ Cartas de Combate Estratégico</h1>
+          <p>${filteredCards.length} cartas para impressão</p>
+        </div>
+        <div class="cards-grid">
+          ${cardsHtml}
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   const handleExportExcel = () => {
     const exportData = cards.map(card => ({
       'Nome': card.name,
@@ -213,6 +520,10 @@ export function MassCombatTacticalCardList() {
           <Button variant="outline" onClick={handleExportExcel} disabled={cards.length === 0}>
             <Download className="h-4 w-4 mr-2" />
             Exportar
+          </Button>
+          <Button variant="outline" onClick={handlePrintCards} disabled={filteredCards.length === 0}>
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimir
           </Button>
           <Button onClick={handleCreateNew}>
             <Plus className="h-4 w-4 mr-2" />
