@@ -807,30 +807,48 @@ export type Database = {
       }
       regents: {
         Row: {
+          character: string | null
           code: string | null
+          comando: number
           created_at: string
+          domain: string | null
+          estrategia: number
           full_name: string | null
+          gold_bars: number
           id: string
           name: string
           notes: string | null
+          regency_points: number
           updated_at: string
         }
         Insert: {
+          character?: string | null
           code?: string | null
+          comando?: number
           created_at?: string
+          domain?: string | null
+          estrategia?: number
           full_name?: string | null
+          gold_bars?: number
           id?: string
           name: string
           notes?: string | null
+          regency_points?: number
           updated_at?: string
         }
         Update: {
+          character?: string | null
           code?: string | null
+          comando?: number
           created_at?: string
+          domain?: string | null
+          estrategia?: number
           full_name?: string | null
+          gold_bars?: number
           id?: string
           name?: string
           notes?: string | null
+          regency_points?: number
           updated_at?: string
         }
         Relationships: []

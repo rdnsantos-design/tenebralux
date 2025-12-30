@@ -315,10 +315,10 @@ export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps)
                     </div>
                     <div></div>
                     <div>
-                      Gold Bars: <Badge variant="outline">{selectedRegent.goldBars} GB</Badge>
+                      Gold Bars: <Badge variant="outline">{selectedRegent.gold_bars} GB</Badge>
                     </div>
                     <div>
-                      Regency Points: <Badge variant="outline">{selectedRegent.regencyPoints} RP</Badge>
+                      Regency Points: <Badge variant="outline">{selectedRegent.regency_points} RP</Badge>
                     </div>
                   </div>
                 </div>
