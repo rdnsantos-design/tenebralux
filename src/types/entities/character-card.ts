@@ -215,6 +215,44 @@ export function calculateAbilityCost(
   return Math.max(0, calculatedCost);
 }
 
+// Calculate ability cost showing breakdown
+export function calculateAbilityCostBreakdown(
+  ability: Partial<CharacterAbility>,
+  config: SystemConfig = DEFAULT_CONFIG
+): { total: number; breakdown: { label: string; value: number }[] } {
+  const rules = config.ability_cost_rules || DEFAULT_ABILITY_COST_RULES;
+  const breakdown: { label: string; value: number }[] = [];
+  
+  const modifierCost = Math.abs(ability.attribute_modifier || 0) * rules.per_modifier_point;
+  if (modifierCost > 0) {
+    breakdown.push({ label: `Modificador (${Math.abs(ability.attribute_modifier || 0)} × ${rules.per_modifier_point})`, value: modifierCost });
+  }
+  
+  const rangeCost = rules.range_costs[ability.range_type || 'self'] || 0;
+  if (rangeCost !== 0) {
+    breakdown.push({ label: `Alcance (${RANGE_TYPE_LABELS[ability.range_type || 'self']})`, value: rangeCost });
+  }
+  
+  const typeCost = rules.type_costs[ability.ability_type || 'Ativável'] || 0;
+  if (typeCost !== 0) {
+    breakdown.push({ label: `Tipo (${ability.ability_type || 'Ativável'})`, value: typeCost });
+  }
+  
+  const effectCost = rules.effect_costs[ability.effect_type || 'buff_self'] || 0;
+  if (effectCost !== 0) {
+    breakdown.push({ label: `Efeito (${EFFECT_TYPE_LABELS[ability.effect_type || 'buff_self']})`, value: effectCost });
+  }
+  
+  const discount = config.conditional_discounts[ability.conditional_type || 'none'] || 0;
+  if (discount > 0) {
+    breakdown.push({ label: `Condicional (${CONDITIONAL_TYPE_LABELS[ability.conditional_type || 'none']})`, value: -discount });
+  }
+  
+  const total = Math.max(0, modifierCost + rangeCost + typeCost + effectCost - discount);
+  
+  return { total, breakdown };
+}
+
 // Label helpers
 export const EFFECT_TYPE_LABELS: Record<EffectType, string> = {
   buff_self: 'Buff para si/aliados',

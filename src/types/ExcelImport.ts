@@ -1,21 +1,7 @@
-export interface ImportedUnit {
-  name: string;
-  movement: number;
-  defense: number;
-  morale: number;
-  attack: number;
-  charge: number;      // Carga
-  ranged: number;      // Tiro
-  ability: string;     // Habilidade
-  experience: string;  // Experiência
-  power: number;       // Poder
-  maintenance: number; // Manutenção
-}
+// Re-exporta para compatibilidade com código existente
+// Fonte única de verdade: src/types/import/
 
-export interface ExcelImport {
-  id: string;
-  fileName: string;
-  importDate: Date;
-  unitCount: number;
-  units: ImportedUnit[];
-}
+export {
+  type ImportedUnit,
+  type ExcelImport
+} from './import/excel-import';

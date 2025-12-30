@@ -1,18 +1,8 @@
-export interface Province {
-  id: string;
-  name: string;
-  countryId: string;
-}
+// Re-exporta para compatibilidade com código existente
+// Fonte única de verdade: src/types/travel/
 
-export interface Country {
-  id: string;
-  name: string;
-  provinces: Province[];
-}
-
-export interface LocationImport {
-  id: string;
-  fileName: string;
-  importDate: Date;
-  countries: Country[];
-}
+export {
+  type Province,
+  type Country,
+  type LocationImport
+} from './travel/location';

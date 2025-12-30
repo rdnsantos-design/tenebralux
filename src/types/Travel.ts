@@ -1,25 +1,8 @@
-export interface ProvinceDistance {
-  id: string;
-  from_province_name: string;
-  to_province_name: string;
-  distance_km: number;
-  created_at: string;
-}
+// Re-exporta para compatibilidade com código existente
+// Fonte única de verdade: src/types/travel/
 
-export interface TravelSpeed {
-  id: string;
-  travel_type: 'individual' | 'army';
-  label: string;
-  speed_km_per_day: number;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TravelCalculation {
-  from: string;
-  to: string;
-  distance_km: number;
-  individual_days: number;
-  army_days: number;
-}
+export {
+  type ProvinceDistance,
+  type TravelSpeed,
+  type TravelCalculation
+} from './travel/travel';
