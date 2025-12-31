@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { 
   MassCombatTacticalCard, 
   MassCombatUnitType,
@@ -13,14 +14,13 @@ import {
   MASS_COMBAT_CULTURES,
   calculateMassCombatVetCost,
   calculateMinCommand,
-  calculateMinStrategy,
   validateMassCombatCard
 } from '@/types/MassCombatTacticalCard';
-import { Swords, Shield, Zap, Crown, Target, Save, X, Sparkles } from 'lucide-react';
+import { Swords, Shield, Zap, Crown, Save, X, Sparkles, TrendingDown, Star, AlertTriangle } from 'lucide-react';
 
 interface MassCombatTacticalCardEditorProps {
   card?: MassCombatTacticalCard;
-  onSave: (card: Omit<MassCombatTacticalCard, 'id' | 'created_at' | 'updated_at' | 'vet_cost'>) => void;
+  onSave: (card: Omit<MassCombatTacticalCard, 'id' | 'created_at' | 'updated_at'>) => void;
   onCancel: () => void;
 }
 
@@ -31,26 +31,33 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
     attack_bonus: card?.attack_bonus || 0,
     defense_bonus: card?.defense_bonus || 0,
     mobility_bonus: card?.mobility_bonus || 0,
+    attack_penalty: card?.attack_penalty || 0,
+    defense_penalty: card?.defense_penalty || 0,
+    mobility_penalty: card?.mobility_penalty || 0,
     command_required: card?.command_required || 1,
     strategy_required: card?.strategy_required || 1,
     culture: card?.culture || '',
     description: card?.description || '',
+    minor_effect: card?.minor_effect || '',
+    major_effect: card?.major_effect || '',
+    minor_condition: card?.minor_condition || '',
+    major_condition: card?.major_condition || '',
+    vet_cost_override: card?.vet_cost_override ?? null,
   });
 
-  const vetCost = calculateMassCombatVetCost(formData);
+  const [useVetOverride, setUseVetOverride] = React.useState(card?.vet_cost_override !== null && card?.vet_cost_override !== undefined);
+
+  const calculatedVetCost = calculateMassCombatVetCost(formData);
+  const finalVetCost = useVetOverride && formData.vet_cost_override !== null ? formData.vet_cost_override : calculatedVetCost;
   const minCommand = calculateMinCommand(formData);
-  const minStrategy = calculateMinStrategy(formData);
   const errors = validateMassCombatCard(formData);
 
-  // Auto-adjust command and strategy when bonuses change
+  // Auto-adjust command when bonuses change
   React.useEffect(() => {
     if (formData.command_required < minCommand) {
       setFormData(prev => ({ ...prev, command_required: minCommand }));
     }
-    if (formData.strategy_required < minStrategy) {
-      setFormData(prev => ({ ...prev, strategy_required: minStrategy }));
-    }
-  }, [formData.attack_bonus, formData.defense_bonus, formData.mobility_bonus, minCommand, minStrategy]);
+  }, [formData.attack_bonus, formData.defense_bonus, formData.mobility_bonus, minCommand]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,11 +67,16 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
       ...formData,
       culture: formData.culture || undefined,
       description: formData.description || undefined,
+      minor_effect: formData.minor_effect || undefined,
+      major_effect: formData.major_effect || undefined,
+      minor_condition: formData.minor_condition || undefined,
+      major_condition: formData.major_condition || undefined,
+      vet_cost: finalVetCost,
+      vet_cost_override: useVetOverride ? formData.vet_cost_override : null,
     });
   };
 
   const generateSuggestion = () => {
-    // Generate a random card based on unit type
     const bonusTypes = ['attack', 'defense', 'mobility'];
     const randomBonus = bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
     const bonusValue = Math.floor(Math.random() * 3) + 1;
@@ -86,8 +98,10 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
       attack_bonus: randomBonus === 'attack' ? bonusValue : 0,
       defense_bonus: randomBonus === 'defense' ? bonusValue : 0,
       mobility_bonus: randomBonus === 'mobility' ? bonusValue : 0,
+      attack_penalty: 0,
+      defense_penalty: 0,
+      mobility_penalty: 0,
       command_required: bonusValue,
-      strategy_required: bonusValue,
     }));
   };
 
@@ -135,13 +149,16 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
 
           {/* Bonuses */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold">Bônus (0-3 pontos cada)</Label>
+            <Label className="text-base font-semibold flex items-center gap-2">
+              <Swords className="h-4 w-4 text-green-500" />
+              Bônus (+2 VET cada)
+            </Label>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Swords className="h-4 w-4 text-red-500" />
-                  <Label>Ataque: {formData.attack_bonus}</Label>
+                  <Label>Ataque: +{formData.attack_bonus}</Label>
                 </div>
                 <Slider
                   value={[formData.attack_bonus]}
@@ -155,7 +172,7 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-blue-500" />
-                  <Label>Defesa: {formData.defense_bonus}</Label>
+                  <Label>Defesa: +{formData.defense_bonus}</Label>
                 </div>
                 <Slider
                   value={[formData.defense_bonus]}
@@ -169,7 +186,7 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Zap className="h-4 w-4 text-yellow-500" />
-                  <Label>Mobilidade: {formData.mobility_bonus}</Label>
+                  <Label>Mobilidade: +{formData.mobility_bonus}</Label>
                 </div>
                 <Slider
                   value={[formData.mobility_bonus]}
@@ -177,6 +194,122 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
                   max={3}
                   step={1}
                   className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Penalties */}
+          <div className="space-y-4">
+            <Label className="text-base font-semibold flex items-center gap-2">
+              <TrendingDown className="h-4 w-4 text-red-500" />
+              Penalidades (-1 VET cada)
+            </Label>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Swords className="h-4 w-4 text-red-400" />
+                  <Label>Ataque: -{formData.attack_penalty}</Label>
+                </div>
+                <Slider
+                  value={[formData.attack_penalty]}
+                  onValueChange={([value]) => setFormData(prev => ({ ...prev, attack_penalty: value }))}
+                  max={3}
+                  step={1}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-blue-400" />
+                  <Label>Defesa: -{formData.defense_penalty}</Label>
+                </div>
+                <Slider
+                  value={[formData.defense_penalty]}
+                  onValueChange={([value]) => setFormData(prev => ({ ...prev, defense_penalty: value }))}
+                  max={3}
+                  step={1}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-yellow-400" />
+                  <Label>Mobilidade: -{formData.mobility_penalty}</Label>
+                </div>
+                <Slider
+                  value={[formData.mobility_penalty]}
+                  onValueChange={([value]) => setFormData(prev => ({ ...prev, mobility_penalty: value }))}
+                  max={3}
+                  step={1}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Effects and Conditions */}
+          <div className="space-y-4 border-t pt-4">
+            <Label className="text-base font-semibold flex items-center gap-2">
+              <Star className="h-4 w-4 text-amber-500" />
+              Efeitos e Condições
+            </Label>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="minor_effect" className="text-sm">
+                  Efeito Menor (+2 VET)
+                </Label>
+                <Textarea
+                  id="minor_effect"
+                  value={formData.minor_effect}
+                  onChange={(e) => setFormData(prev => ({ ...prev, minor_effect: e.target.value }))}
+                  placeholder="Descreva um efeito menor..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="major_effect" className="text-sm">
+                  Efeito Maior (+4 VET)
+                </Label>
+                <Textarea
+                  id="major_effect"
+                  value={formData.major_effect}
+                  onChange={(e) => setFormData(prev => ({ ...prev, major_effect: e.target.value }))}
+                  placeholder="Descreva um efeito maior..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="minor_condition" className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="h-3 w-3 text-orange-500" />
+                  Condição Menor (-1 VET)
+                </Label>
+                <Textarea
+                  id="minor_condition"
+                  value={formData.minor_condition}
+                  onChange={(e) => setFormData(prev => ({ ...prev, minor_condition: e.target.value }))}
+                  placeholder="Descreva uma condição menor..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="major_condition" className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="h-3 w-3 text-red-500" />
+                  Condição Maior (-2 VET)
+                </Label>
+                <Textarea
+                  id="major_condition"
+                  value={formData.major_condition}
+                  onChange={(e) => setFormData(prev => ({ ...prev, major_condition: e.target.value }))}
+                  placeholder="Descreva uma condição maior..."
+                  rows={2}
                 />
               </div>
             </div>
@@ -199,24 +332,6 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
               />
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-emerald-500" />
-                <Label>Estratégia Requerida: {formData.strategy_required} (mín: {minStrategy})</Label>
-              </div>
-              <Slider
-                value={[formData.strategy_required]}
-                onValueChange={([value]) => setFormData(prev => ({ ...prev, strategy_required: Math.max(value, minStrategy) }))}
-                min={1}
-                max={5}
-                step={1}
-                className="w-full"
-              />
-            </div>
-          </div>
-
-          {/* Culture and Description */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="culture">Cultura (opcional)</Label>
               <Select
@@ -234,12 +349,51 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center justify-center p-4 bg-primary/10 rounded-lg">
+          </div>
+
+          {/* VET Cost */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+            <div className="flex items-center justify-between">
               <div className="text-center">
-                <div className="text-sm text-muted-foreground">Custo Total</div>
-                <div className="text-3xl font-bold text-primary">{vetCost} VET</div>
+                <div className="text-sm text-muted-foreground">Custo Calculado</div>
+                <div className="text-2xl font-bold text-muted-foreground">{calculatedVetCost} VET</div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Label htmlFor="vet-override" className="text-sm">Override Manual</Label>
+                <Switch
+                  id="vet-override"
+                  checked={useVetOverride}
+                  onCheckedChange={(checked) => {
+                    setUseVetOverride(checked);
+                    if (!checked) {
+                      setFormData(prev => ({ ...prev, vet_cost_override: null }));
+                    } else {
+                      setFormData(prev => ({ ...prev, vet_cost_override: calculatedVetCost }));
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground">Custo Final</div>
+                <div className="text-3xl font-bold text-primary">{finalVetCost} VET</div>
               </div>
             </div>
+
+            {useVetOverride && (
+              <div className="flex items-center gap-4">
+                <Label htmlFor="vet_manual">Custo VET Manual:</Label>
+                <Input
+                  id="vet_manual"
+                  type="number"
+                  min={0}
+                  value={formData.vet_cost_override ?? 0}
+                  onChange={(e) => setFormData(prev => ({ ...prev, vet_cost_override: parseInt(e.target.value) || 0 }))}
+                  className="w-24"
+                />
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

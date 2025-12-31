@@ -73,7 +73,7 @@ export function MassCombatTacticalCardList() {
     setIsEditorOpen(true);
   };
 
-  const handleSave = async (cardData: Omit<MassCombatTacticalCard, 'id' | 'created_at' | 'updated_at' | 'vet_cost'>) => {
+  const handleSave = async (cardData: Omit<MassCombatTacticalCard, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       if (editingCard) {
         await updateCard(editingCard.id, cardData);
@@ -113,16 +113,25 @@ export function MassCombatTacticalCardList() {
 
         let imported = 0;
         for (const row of jsonData as Record<string, unknown>[]) {
-          const cardData = {
+          const cardData: Omit<MassCombatTacticalCard, 'id' | 'created_at' | 'updated_at'> = {
             name: String(row['Nome'] || row['name'] || ''),
             unit_type: (row['Tipo de Unidade'] || row['unit_type'] || 'Geral') as MassCombatUnitType,
             attack_bonus: Number(row['Bônus em Ataque'] || row['attack_bonus'] || 0),
             defense_bonus: Number(row['Bônus em Defesa'] || row['defense_bonus'] || 0),
             mobility_bonus: Number(row['Bônus em Mobilidade'] || row['mobility_bonus'] || 0),
+            attack_penalty: Number(row['Penalidade em Ataque'] || row['attack_penalty'] || 0),
+            defense_penalty: Number(row['Penalidade em Defesa'] || row['defense_penalty'] || 0),
+            mobility_penalty: Number(row['Penalidade em Mobilidade'] || row['mobility_penalty'] || 0),
             command_required: Number(row['Comando Necessário'] || row['command_required'] || 1),
             strategy_required: Number(row['Estratégia Requerida'] || row['strategy_required'] || 1),
             culture: String(row['Cultura'] || row['culture'] || '') || undefined,
             description: String(row['Descrição'] || row['description'] || '') || undefined,
+            minor_effect: String(row['Efeito Menor'] || row['minor_effect'] || '') || undefined,
+            major_effect: String(row['Efeito Maior'] || row['major_effect'] || '') || undefined,
+            minor_condition: String(row['Condição Menor'] || row['minor_condition'] || '') || undefined,
+            major_condition: String(row['Condição Maior'] || row['major_condition'] || '') || undefined,
+            vet_cost: Number(row['Custo VET'] || row['vet_cost'] || 0),
+            vet_cost_override: row['VET Manual'] !== undefined ? Number(row['VET Manual']) : null,
           };
 
           if (cardData.name) {
