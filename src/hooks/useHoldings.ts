@@ -3,28 +3,48 @@ import { supabase } from '@/integrations/supabase/client';
 import { Holding, HoldingWithRegent, HoldingType } from '@/types/Domain';
 import { toast } from 'sonner';
 
+// Helper to fetch all records with pagination (Supabase default limit is 1000)
+async function fetchAllHoldings(provinceId?: string): Promise<HoldingWithRegent[]> {
+  const PAGE_SIZE = 1000;
+  let allData: HoldingWithRegent[] = [];
+  let from = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    let query = supabase
+      .from('holdings')
+      .select(`
+        *,
+        regent:regents(*)
+      `)
+      .order('holding_type')
+      .order('level', { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+    
+    if (provinceId) {
+      query = query.eq('province_id', provinceId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    if (data && data.length > 0) {
+      allData = [...allData, ...(data as HoldingWithRegent[])];
+      from += PAGE_SIZE;
+      hasMore = data.length === PAGE_SIZE;
+    } else {
+      hasMore = false;
+    }
+  }
+
+  return allData;
+}
+
 export const useHoldings = (provinceId?: string) => {
   return useQuery({
     queryKey: ['holdings', provinceId],
-    queryFn: async () => {
-      let query = supabase
-        .from('holdings')
-        .select(`
-          *,
-          regent:regents(*)
-        `)
-        .order('holding_type')
-        .order('level', { ascending: false });
-      
-      if (provinceId) {
-        query = query.eq('province_id', provinceId);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      return data as HoldingWithRegent[];
-    },
+    queryFn: () => fetchAllHoldings(provinceId),
   });
 };
 
