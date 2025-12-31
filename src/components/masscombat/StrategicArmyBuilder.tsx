@@ -549,8 +549,8 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
                     >
                       <div className="flex items-center gap-2">
                         {cmd.isGeneral && <Crown className="w-4 h-4 text-primary" />}
-                        <Badge variant="outline">#{cmd.templateNumber}</Badge>
-                        <span className="text-sm">{cmd.especializacao}</span>
+                        <span className="text-sm font-medium">Comandante {cmd.templateNumber}</span>
+                        <Badge variant="outline">{cmd.especializacao}</Badge>
                         <span className="text-xs text-muted-foreground">
                           (CMD {cmd.comando} / EST {cmd.estrategia} / GUA {cmd.guarda})
                         </span>
@@ -600,8 +600,8 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
                         onClick={() => handleAddCommander(template)}
                       >
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline">#{template.numero}</Badge>
-                          <span className="text-sm">{template.especializacao}</span>
+                          <span className="text-sm font-medium">Comandante {template.numero}</span>
+                          <Badge variant="outline">{template.especializacao}</Badge>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">

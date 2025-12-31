@@ -405,7 +405,7 @@ export function MassCombatCommanderTemplateList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-16">Nº</TableHead>
+              <TableHead>Nome</TableHead>
               <TableHead>
                 <div className="flex items-center gap-1">
                   <Crown className="h-4 w-4" /> CMD
@@ -433,7 +433,7 @@ export function MassCombatCommanderTemplateList() {
           <TableBody>
             {templates.map((template) => (
               <TableRow key={template.id}>
-                <TableCell className="font-medium">#{template.numero}</TableCell>
+                <TableCell className="font-medium">Comandante {template.numero}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{template.comando}</Badge>
                 </TableCell>
