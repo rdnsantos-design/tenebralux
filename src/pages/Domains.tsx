@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
-import { Home, FileSpreadsheet, Map, Upload, Crown } from 'lucide-react';
+import { Home, FileSpreadsheet, Map, Upload, Crown, Search } from 'lucide-react';
 import { RealmList } from '@/components/domains/RealmList';
 import { DomainImporter } from '@/components/domains/DomainImporter';
 import { HoldingsImporter } from '@/components/domains/HoldingsImporter';
+import { HoldingsVerifier } from '@/components/domains/HoldingsVerifier';
 import { FullDomainImporter } from '@/components/domains/FullDomainImporter';
 import { RegentDomainList } from '@/components/domains/RegentDomainList';
 import { RealmProvinceHoldingView } from '@/components/domains/RealmProvinceHoldingView';
@@ -17,6 +18,7 @@ const Domains = () => {
   const [showImporter, setShowImporter] = useState(false);
   const [showHoldingsImporter, setShowHoldingsImporter] = useState(false);
   const [showFullImporter, setShowFullImporter] = useState(false);
+  const [showVerifier, setShowVerifier] = useState(false);
   const [activeTab, setActiveTab] = useState('reinos');
   const [selectedRegentId, setSelectedRegentId] = useState<string | null>(null);
 
@@ -53,9 +55,24 @@ const Domains = () => {
           <div className="flex gap-2 flex-wrap">
             <Button
               onClick={() => {
+                setShowVerifier(!showVerifier);
+                setShowFullImporter(false);
+                setShowImporter(false);
+                setShowHoldingsImporter(false);
+              }}
+              variant={showVerifier ? 'secondary' : 'outline'}
+              size="lg"
+              className="flex items-center gap-2"
+            >
+              <Search className="w-5 h-5" />
+              {showVerifier ? 'Fechar' : 'Verificar Faltantes'}
+            </Button>
+            <Button
+              onClick={() => {
                 setShowFullImporter(!showFullImporter);
                 setShowImporter(false);
                 setShowHoldingsImporter(false);
+                setShowVerifier(false);
               }}
               variant={showFullImporter ? 'secondary' : 'default'}
               size="lg"
@@ -69,6 +86,7 @@ const Domains = () => {
                 setShowHoldingsImporter(!showHoldingsImporter);
                 setShowFullImporter(false);
                 setShowImporter(false);
+                setShowVerifier(false);
               }}
               variant={showHoldingsImporter ? 'secondary' : 'outline'}
               size="lg"
@@ -82,6 +100,7 @@ const Domains = () => {
                 setShowImporter(!showImporter);
                 setShowFullImporter(false);
                 setShowHoldingsImporter(false);
+                setShowVerifier(false);
               }}
               variant={showImporter ? 'secondary' : 'outline'}
               size="lg"
@@ -92,6 +111,13 @@ const Domains = () => {
             </Button>
           </div>
         </div>
+
+        {/* Verifier Section */}
+        {showVerifier && (
+          <div className="mb-6">
+            <HoldingsVerifier onClose={() => setShowVerifier(false)} />
+          </div>
+        )}
 
         {/* Import Sections */}
         {showFullImporter && (
