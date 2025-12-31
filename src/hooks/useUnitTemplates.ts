@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
-import { useAuth } from './useAuth';
 
 // Tipos baseados no schema do Supabase
 export type ExperienceLevel = 'Amador' | 'Recruta' | 'Profissional' | 'Veterano' | 'Elite' | 'Lendário';
@@ -60,18 +59,14 @@ export const useUnitTemplates = () => {
 // Hook para criar template
 export const useCreateUnitTemplate = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (template: UnitTemplateInsert) => {
-      if (!user) throw new Error('User not authenticated');
-      
       const { data, error } = await supabase
         .from('unit_templates')
         .insert({
           ...template,
           special_abilities: template.special_abilities as unknown as Database['public']['Tables']['unit_templates']['Insert']['special_abilities'],
-          user_id: user.id,
         })
         .select()
         .single();

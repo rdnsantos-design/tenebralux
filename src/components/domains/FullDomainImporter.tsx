@@ -217,12 +217,6 @@ export const FullDomainImporter = ({ onClose }: FullDomainImporterProps) => {
     try {
       setIsImporting(true);
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('Usuário não autenticado');
-        return;
-      }
-      
       // Step 1: Create/update regents
       setProgressMessage('Importando regentes...');
       setProgress(10);
@@ -231,52 +225,38 @@ export const FullDomainImporter = ({ onClose }: FullDomainImporterProps) => {
       let regentsUpdated = 0;
       
       for (const regent of preview.regents) {
-        // First check if regent exists for this user
-        const { data: existingForUser } = await supabase
+        // Check if regent exists by code
+        const { data: existing } = await supabase
           .from('regents')
           .select('id')
           .eq('code', regent.code)
-          .eq('user_id', user.id)
           .maybeSingle();
         
-        if (existingForUser) {
-          // Update existing regent for this user
+        if (existing) {
+          // Update existing regent
           await supabase
             .from('regents')
             .update({ name: regent.name, full_name: regent.name })
-            .eq('id', existingForUser.id);
+            .eq('id', existing.id);
           regentsUpdated++;
         } else {
-          // Check if regent code exists globally (due to unique constraint)
-          const { data: existingGlobal } = await supabase
+          // Create new regent
+          const { error } = await supabase
             .from('regents')
-            .select('id')
-            .eq('code', regent.code)
-            .maybeSingle();
+            .insert({ 
+              code: regent.code, 
+              name: regent.name, 
+              full_name: regent.name,
+              gold_bars: 0,
+              regency_points: 0,
+              comando: 1,
+              estrategia: 1,
+            });
           
-          if (existingGlobal) {
-            // Regent exists for another user, skip creating (can't duplicate code)
-            regentsUpdated++;
-          } else {
-            // Create new regent
-            const { error } = await supabase
-              .from('regents')
-              .insert({ 
-                code: regent.code, 
-                name: regent.name, 
-                full_name: regent.name,
-                user_id: user.id,
-                gold_bars: 0,
-                regency_points: 0,
-                comando: 1,
-                estrategia: 1,
-              });
-            
-            if (error && error.code !== '23505') {
-              throw error;
-            }
-            regentsCreated++;
+          if (error && error.code !== '23505') {
+            throw error;
           }
+          regentsCreated++;
         }
       }
       
@@ -287,37 +267,24 @@ export const FullDomainImporter = ({ onClose }: FullDomainImporterProps) => {
       const realmMap = new Map<string, string>();
       
       for (const realmName of preview.realms) {
-        // First check if realm exists for this user
+        // Check if realm exists
         const { data: existing } = await supabase
           .from('realms')
           .select('id')
           .eq('name', realmName)
-          .eq('user_id', user.id)
           .maybeSingle();
         
         if (existing) {
           realmMap.set(realmName, existing.id);
         } else {
-          // Check if realm exists for ANY user (due to unique constraint on name)
-          const { data: existingAny } = await supabase
+          const { data: newRealm, error } = await supabase
             .from('realms')
+            .insert({ name: realmName })
             .select('id')
-            .eq('name', realmName)
-            .maybeSingle();
+            .single();
           
-          if (existingAny) {
-            // Realm exists but belongs to another user, just use that ID
-            realmMap.set(realmName, existingAny.id);
-          } else {
-            const { data: newRealm, error } = await supabase
-              .from('realms')
-              .insert({ name: realmName, user_id: user.id })
-              .select('id')
-              .single();
-            
-            if (error) throw error;
-            realmMap.set(realmName, newRealm.id);
-          }
+          if (error) throw error;
+          realmMap.set(realmName, newRealm.id);
         }
       }
       
@@ -362,7 +329,6 @@ export const FullDomainImporter = ({ onClose }: FullDomainImporterProps) => {
               development: province.development,
               magic: province.magic,
               cultura: province.culture || null,
-              user_id: user.id,
             })
             .select('id')
             .single();
@@ -421,7 +387,6 @@ export const FullDomainImporter = ({ onClose }: FullDomainImporterProps) => {
               holding_type: holding.holdingType,
               regent_id: regentId,
               level: holding.level,
-              user_id: user.id,
             });
           
           if (!error) holdingsCreated++;

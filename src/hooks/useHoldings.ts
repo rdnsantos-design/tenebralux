@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Holding, HoldingWithRegent, HoldingType } from '@/types/Domain';
 import { toast } from 'sonner';
-import { useAuth } from './useAuth';
 
 export const useHoldings = (provinceId?: string) => {
   return useQuery({
@@ -31,15 +30,12 @@ export const useHoldings = (provinceId?: string) => {
 
 export const useCreateHolding = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (holding: Omit<Holding, 'id' | 'created_at' | 'updated_at'>) => {
-      if (!user) throw new Error('User not authenticated');
-      
       const { data, error } = await supabase
         .from('holdings')
-        .insert({ ...holding, user_id: user.id })
+        .insert(holding)
         .select()
         .single();
       

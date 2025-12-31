@@ -27,12 +27,9 @@ export function useCreateFieldCommander() {
   
   return useMutation({
     mutationFn: async (commander: Omit<FieldCommander, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
       const { data, error } = await supabase
         .from('field_commanders')
-        .insert([{ ...commander, user_id: user.id }])
+        .insert([commander])
         .select()
         .single();
       
