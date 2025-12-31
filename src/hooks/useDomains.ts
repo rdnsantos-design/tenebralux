@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Realm, Province, ProvinceWithRealm } from '@/types/Domain';
 import { toast } from 'sonner';
-import { useAuth } from './useAuth';
 
 // Realms hooks
 export const useRealms = () => {
@@ -22,15 +21,12 @@ export const useRealms = () => {
 
 export const useCreateRealm = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (name: string) => {
-      if (!user) throw new Error('User not authenticated');
-      
       const { data, error } = await supabase
         .from('realms')
-        .insert({ name, user_id: user.id })
+        .insert({ name })
         .select()
         .single();
       
@@ -123,15 +119,12 @@ export const useProvinces = (realmId?: string) => {
 
 export const useCreateProvince = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (province: Omit<Province, 'id' | 'created_at' | 'updated_at'>) => {
-      if (!user) throw new Error('User not authenticated');
-      
       const { data, error } = await supabase
         .from('provinces')
-        .insert({ ...province, user_id: user.id })
+        .insert(province)
         .select()
         .single();
       

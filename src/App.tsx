@@ -3,8 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
 import ArmyManagement from "./pages/ArmyManagement";
@@ -29,21 +27,20 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/cards" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-          <Route path="/army" element={<ProtectedRoute><ArmyManagement /></ProtectedRoute>} />
-          <Route path="/tactical-cards" element={<ProtectedRoute><TacticalCards /></ProtectedRoute>} />
-          <Route path="/characters" element={<ProtectedRoute><CharacterCards /></ProtectedRoute>} />
-          <Route path="/domains" element={<ProtectedRoute><Domains /></ProtectedRoute>} />
-          <Route path="/battlemap" element={<ProtectedRoute><BattleMap /></ProtectedRoute>} />
-          <Route path="/battle-map" element={<ProtectedRoute><BattleMap /></ProtectedRoute>} />
-          <Route path="/mass-combat" element={<ProtectedRoute><MassCombat /></ProtectedRoute>} />
-          <Route path="/mass-combat-cards" element={<ProtectedRoute><MassCombatCards /></ProtectedRoute>} />
-          <Route path="/travel" element={<ProtectedRoute><Travel /></ProtectedRoute>} />
-          <Route path="/tactical-game" element={<ProtectedRoute><TacticalGame /></ProtectedRoute>} />
-          <Route path="/strategic-game" element={<ProtectedRoute><StrategicGame /></ProtectedRoute>} />
-          <Route path="/field-commanders" element={<ProtectedRoute><FieldCommanders /></ProtectedRoute>} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/cards" element={<Index />} />
+          <Route path="/army" element={<ArmyManagement />} />
+          <Route path="/tactical-cards" element={<TacticalCards />} />
+          <Route path="/characters" element={<CharacterCards />} />
+          <Route path="/domains" element={<Domains />} />
+          <Route path="/battlemap" element={<BattleMap />} />
+          <Route path="/battle-map" element={<BattleMap />} />
+          <Route path="/mass-combat" element={<MassCombat />} />
+          <Route path="/mass-combat-cards" element={<MassCombatCards />} />
+          <Route path="/travel" element={<Travel />} />
+          <Route path="/tactical-game" element={<TacticalGame />} />
+          <Route path="/strategic-game" element={<StrategicGame />} />
+          <Route path="/field-commanders" element={<FieldCommanders />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

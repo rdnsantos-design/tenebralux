@@ -23,12 +23,9 @@ export const useCreateRegent = () => {
   
   return useMutation({
     mutationFn: async (regent: Omit<Regent, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
       const { data, error } = await supabase
         .from('regents')
-        .insert({ ...regent, user_id: user.id })
+        .insert(regent)
         .select()
         .single();
       
@@ -99,9 +96,6 @@ export const useBulkImportRegents = () => {
   
   return useMutation({
     mutationFn: async (regents: Array<{ code: string; name: string; full_name?: string }>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
       let created = 0;
       let updated = 0;
       
@@ -122,7 +116,7 @@ export const useBulkImportRegents = () => {
         } else {
           await supabase
             .from('regents')
-            .insert({ ...regent, user_id: user.id });
+            .insert(regent);
           created++;
         }
       }

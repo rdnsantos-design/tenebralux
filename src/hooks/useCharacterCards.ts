@@ -11,10 +11,8 @@ import {
   PassiveBonusType
 } from '@/types/CharacterCard';
 import { toast } from 'sonner';
-import { useAuth } from './useAuth';
 
 export function useCharacterCards() {
-  const { user } = useAuth();
   const [cards, setCards] = useState<CharacterCard[]>([]);
   const [abilities, setAbilities] = useState<CharacterAbility[]>([]);
   const [config, setConfig] = useState<SystemConfig>(DEFAULT_CONFIG);
@@ -138,11 +136,6 @@ export function useCharacterCards() {
 
   // Create a new character card
   const createCard = async (card: Omit<CharacterCard, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!user) {
-      toast.error('Você precisa estar logado para criar personagens');
-      throw new Error('User not authenticated');
-    }
-    
     try {
       const { data, error } = await supabase
         .from('character_cards')
@@ -170,7 +163,6 @@ export function useCharacterCards() {
           coat_of_arms_url: card.coat_of_arms_url,
           domain: card.domain,
           notes: card.notes,
-          user_id: user.id,
         })
         .select()
         .single();
