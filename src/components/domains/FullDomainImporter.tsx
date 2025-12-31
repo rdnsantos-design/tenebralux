@@ -231,32 +231,52 @@ export const FullDomainImporter = ({ onClose }: FullDomainImporterProps) => {
       let regentsUpdated = 0;
       
       for (const regent of preview.regents) {
-        const { data: existing } = await supabase
+        // First check if regent exists for this user
+        const { data: existingForUser } = await supabase
           .from('regents')
           .select('id')
           .eq('code', regent.code)
+          .eq('user_id', user.id)
           .maybeSingle();
         
-        if (existing) {
+        if (existingForUser) {
+          // Update existing regent for this user
           await supabase
             .from('regents')
             .update({ name: regent.name, full_name: regent.name })
-            .eq('id', existing.id);
+            .eq('id', existingForUser.id);
           regentsUpdated++;
         } else {
-          await supabase
+          // Check if regent code exists globally (due to unique constraint)
+          const { data: existingGlobal } = await supabase
             .from('regents')
-            .insert({ 
-              code: regent.code, 
-              name: regent.name, 
-              full_name: regent.name,
-              user_id: user.id,
-              gold_bars: 0,
-              regency_points: 0,
-              comando: 1,
-              estrategia: 1,
-            });
-          regentsCreated++;
+            .select('id')
+            .eq('code', regent.code)
+            .maybeSingle();
+          
+          if (existingGlobal) {
+            // Regent exists for another user, skip creating (can't duplicate code)
+            regentsUpdated++;
+          } else {
+            // Create new regent
+            const { error } = await supabase
+              .from('regents')
+              .insert({ 
+                code: regent.code, 
+                name: regent.name, 
+                full_name: regent.name,
+                user_id: user.id,
+                gold_bars: 0,
+                regency_points: 0,
+                comando: 1,
+                estrategia: 1,
+              });
+            
+            if (error && error.code !== '23505') {
+              throw error;
+            }
+            regentsCreated++;
+          }
         }
       }
       
