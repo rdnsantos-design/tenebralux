@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
 import { ExperienceLevel, SpecialAbility } from './useUnitTemplates';
+import { useAuth } from './useAuth';
 
 export type UnitPosture = 'Ofensiva' | 'Defensiva' | 'Carga' | 'Reorganização';
 
@@ -96,14 +97,18 @@ export const useArmyUnits = (armyId?: string) => {
 // Hook para criar instância de unidade
 export const useCreateUnitInstance = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (unit: UnitInstanceInsert) => {
+      if (!user) throw new Error('User not authenticated');
+      
       const { data, error } = await supabase
         .from('unit_instances')
         .insert({
           ...unit,
           special_abilities: unit.special_abilities as unknown as Database['public']['Tables']['unit_instances']['Insert']['special_abilities'],
+          user_id: user.id,
         })
         .select()
         .single();
