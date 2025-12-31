@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTravelSpeeds } from '@/hooks/useTravel';
+import { useProvinces, useRealms } from '@/hooks/useDomains';
 import { MapPin, Route, Clock, User, Users, Plus, Trash2, Mountain, TreePine, Waves, Snowflake, Sun, Milestone } from 'lucide-react';
 
 // Terrain types with their travel time modifiers (1.0 = normal, higher = slower)
@@ -44,9 +45,21 @@ export function TravelCalculator() {
   ]);
 
   const { data: speeds } = useTravelSpeeds();
+  const { data: provinces } = useProvinces();
+  const { data: realms } = useRealms();
 
   const individualSpeed = speeds?.find(s => s.travel_type === 'individual');
   const armySpeed = speeds?.find(s => s.travel_type === 'army');
+
+  // Group provinces by realm for better organization in dropdown
+  const provincesGroupedByRealm = useMemo(() => {
+    if (!provinces || !realms) return [];
+    
+    return realms.map(realm => ({
+      realm,
+      provinces: provinces.filter(p => p.realm_id === realm.id).sort((a, b) => a.name.localeCompare(b.name))
+    })).filter(g => g.provinces.length > 0).sort((a, b) => a.realm.name.localeCompare(b.realm.name));
+  }, [provinces, realms]);
 
   // Add a new destination segment
   const addSegment = () => {
@@ -202,24 +215,57 @@ export function TravelCalculator() {
                   <MapPin className="w-3 h-3 text-green-500" />
                   Origem
                 </Label>
-                <Input
+                <Select
                   value={segment.from}
-                  onChange={(e) => updateSegment(segmentIndex, 'from', e.target.value)}
-                  placeholder="Nome da origem"
+                  onValueChange={(value) => updateSegment(segmentIndex, 'from', value)}
                   disabled={segmentIndex > 0}
-                  className={segmentIndex > 0 ? 'bg-muted' : ''}
-                />
+                >
+                  <SelectTrigger className={segmentIndex > 0 ? 'bg-muted' : ''}>
+                    <SelectValue placeholder="Selecione a origem" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px] bg-popover z-50">
+                    {provincesGroupedByRealm.map(group => (
+                      <div key={group.realm.id}>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted sticky top-0">
+                          {group.realm.name}
+                        </div>
+                        {group.provinces.map(province => (
+                          <SelectItem key={province.id} value={province.name}>
+                            {province.name}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-xs">
                   <MapPin className="w-3 h-3 text-red-500" />
                   Destino
                 </Label>
-                <Input
+                <Select
                   value={segment.to}
-                  onChange={(e) => updateSegment(segmentIndex, 'to', e.target.value)}
-                  placeholder="Nome do destino"
-                />
+                  onValueChange={(value) => updateSegment(segmentIndex, 'to', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o destino" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px] bg-popover z-50">
+                    {provincesGroupedByRealm.map(group => (
+                      <div key={group.realm.id}>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted sticky top-0">
+                          {group.realm.name}
+                        </div>
+                        {group.provinces.map(province => (
+                          <SelectItem key={province.id} value={province.name}>
+                            {province.name}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
