@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Layers, Cloud, Mountain, Swords, ArrowLeft, Users } from "lucide-react";
+import { Layers, Cloud, Mountain, Swords, ArrowLeft, Users, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StrategicArmyList } from "@/components/masscombat/StrategicArmyList";
+import { MassCombatCommanderTemplateList } from "@/components/masscombat/MassCombatCommanderTemplateList";
 
 const StrategicGame = () => {
   const navigate = useNavigate();
@@ -30,10 +31,14 @@ const StrategicGame = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="armies" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Exércitos
+            </TabsTrigger>
+            <TabsTrigger value="commanders" className="flex items-center gap-2">
+              <Crown className="w-4 h-4" />
+              Comandantes
             </TabsTrigger>
             <TabsTrigger value="terrains" className="flex items-center gap-2">
               <Mountain className="w-4 h-4" />
@@ -52,6 +57,11 @@ const StrategicGame = () => {
           {/* Aba de Exércitos */}
           <TabsContent value="armies">
             <StrategicArmyList />
+          </TabsContent>
+
+          {/* Aba de Comandantes */}
+          <TabsContent value="commanders">
+            <MassCombatCommanderTemplateList />
           </TabsContent>
 
           {/* Aba de Terrenos */}
