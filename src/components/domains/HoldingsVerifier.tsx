@@ -24,6 +24,7 @@ interface DbHolding {
   holding_type: string;
   level: number;
   regent_id: string | null;
+  regent?: { code: string | null } | null;
 }
 
 interface MissingHolding {
@@ -150,14 +151,32 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
 
       console.log(`Parsed ${excelHoldings.length} holdings from Excel`);
 
-      // 2. Get database data
-      const { data: provinces } = await supabase
-        .from('provinces')
-        .select('id, name, realm_id, realms(name)');
+      // 2. Get database data (paginate to avoid the 1000 row default limit)
+      const fetchAll = async <T,>(table: string, select: string, pageSize = 1000): Promise<T[]> => {
+        const all: T[] = [];
+        let from = 0;
 
-      const { data: holdings } = await supabase
-        .from('holdings')
-        .select('province_id, holding_type, level, regent_id');
+        while (true) {
+          // Supabase client is strongly typed by table name; for pagination helper we use a safe any-cast.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data, error } = await (supabase as any)
+            .from(table)
+            .select(select)
+            .range(from, from + pageSize - 1);
+
+          if (error) throw error;
+          const page = (data ?? []) as T[];
+          all.push(...page);
+
+          if (page.length < pageSize) break;
+          from += pageSize;
+        }
+
+        return all;
+      };
+
+      const provinces = await fetchAll<any>('provinces', 'id, name, realm_id, realms(name)');
+      const holdings = await fetchAll<DbHolding>('holdings', 'province_id, holding_type, level, regent_id, regent:regents(code)');
 
       const provinceMap = new Map<string, { id: string; realm: string; name: string }>();
       provinces?.forEach((p: any) => {
@@ -167,14 +186,14 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
       });
 
       const dbByProvince = new Map<string, DbHolding[]>();
-      holdings?.forEach((h: any) => {
+      holdings?.forEach((h: DbHolding) => {
         if (!dbByProvince.has(h.province_id)) {
           dbByProvince.set(h.province_id, []);
         }
         dbByProvince.get(h.province_id)!.push(h);
       });
 
-      // 3. Compare and find missing
+      // 3. Compare and find missing (multiset compare by type+level+holderCode)
       const provincesWithMissing: ProvinceMissing[] = [];
       const missingByType: Record<string, number> = {
         ordem: 0,
@@ -193,56 +212,41 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
 
         const dbList = dbByProvince.get(provinceInfo.id) || [];
         const dbTypes = new Set(dbList.map(h => h.holding_type));
-        
-        // Group Excel holdings by type
-        const excelByType = new Map<string, ExcelHolding[]>();
-        excelList.forEach(h => {
-          if (!excelByType.has(h.holdingType)) {
-            excelByType.set(h.holdingType, []);
-          }
-          excelByType.get(h.holdingType)!.push(h);
+
+        const makeKey = (type: string, level: number, holderCode: string) => `${type}|${level}|${holderCode}`;
+
+        const excelCount = new Map<string, number>();
+        excelList.forEach(eh => {
+          const k = makeKey(eh.holdingType, eh.holdingLevel, (eh.holderCode || '').trim());
+          excelCount.set(k, (excelCount.get(k) || 0) + 1);
         });
 
-        // Count DB holdings by type
-        const dbByType = new Map<string, DbHolding[]>();
-        dbList.forEach(h => {
-          if (!dbByType.has(h.holding_type)) {
-            dbByType.set(h.holding_type, []);
-          }
-          dbByType.get(h.holding_type)!.push(h);
+        const dbCount = new Map<string, number>();
+        dbList.forEach(dh => {
+          const holderCode = (dh.regent?.code || '').trim();
+          const k = makeKey(dh.holding_type, dh.level, holderCode);
+          dbCount.set(k, (dbCount.get(k) || 0) + 1);
         });
 
         const missing: MissingHolding[] = [];
 
-        // For each type in Excel, check if same count in DB
-        excelByType.forEach((excelOfType, type) => {
-          const dbOfType = dbByType.get(type) || [];
-          
-          if (excelOfType.length > dbOfType.length) {
-            // Some are missing - try to identify which specific ones
-            excelOfType.forEach(eh => {
-              const excelWithLevel = excelOfType.filter(e => e.holdingLevel === eh.holdingLevel && e.holderCode === eh.holderCode).length;
-              const dbWithLevel = dbOfType.filter(d => d.level === eh.holdingLevel).length;
-              
-              if (excelWithLevel > dbWithLevel) {
-                // Check if already added
-                const alreadyAdded = missing.filter(
-                  m => m.type === type && m.level === eh.holdingLevel && m.holderCode === eh.holderCode
-                ).length;
-                const shouldAdd = excelWithLevel - dbWithLevel - alreadyAdded;
-                
-                if (shouldAdd > 0) {
-                  missing.push({
-                    type,
-                    holderCode: eh.holderCode,
-                    level: eh.holdingLevel,
-                    provinceId: provinceInfo.id,
-                  });
-                  missingByType[type] = (missingByType[type] || 0) + 1;
-                  totalMissing++;
-                }
-              }
-            });
+        excelCount.forEach((needed, k) => {
+          const have = dbCount.get(k) || 0;
+          if (needed > have) {
+            const [type, levelStr, holderCode] = k.split('|');
+            const diff = needed - have;
+
+            for (let i = 0; i < diff; i++) {
+              missing.push({
+                type,
+                holderCode,
+                level: Number(levelStr) || 0,
+                provinceId: provinceInfo.id,
+              });
+            }
+
+            missingByType[type] = (missingByType[type] || 0) + diff;
+            totalMissing += diff;
           }
         });
 
