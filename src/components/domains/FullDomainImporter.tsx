@@ -217,48 +217,79 @@ export const FullDomainImporter = ({ onClose }: FullDomainImporterProps) => {
     try {
       setIsImporting(true);
       
-      // Step 1: Create/update regents
+      // Step 1: Create/update regents (batched + limited concurrency to avoid "travando")
       setProgressMessage('Importando regentes...');
       setProgress(10);
-      
+
       let regentsCreated = 0;
       let regentsUpdated = 0;
-      
-      for (const regent of preview.regents) {
-        // Check if regent exists by code
-        const { data: existing } = await supabase
-          .from('regents')
-          .select('id')
-          .eq('code', regent.code)
-          .maybeSingle();
-        
-        if (existing) {
-          // Update existing regent
-          await supabase
-            .from('regents')
-            .update({ name: regent.name, full_name: regent.name })
-            .eq('id', existing.id);
-          regentsUpdated++;
-        } else {
-          // Create new regent
+
+      const runWithConcurrency = async <T,>(items: T[], limit: number, worker: (item: T, index: number) => Promise<void>) => {
+        const queue = [...items];
+        let idx = 0;
+        const runners = Array.from({ length: Math.max(1, limit) }, async () => {
+          while (queue.length) {
+            const item = queue.shift() as T;
+            const current = idx++;
+            await worker(item, current);
+          }
+        });
+        await Promise.all(runners);
+      };
+
+      // Fetch all existing regents once to avoid 1 GET per regent
+      const { data: existingRegents, error: existingRegentsError } = await supabase
+        .from('regents')
+        .select('id, code');
+      if (existingRegentsError) throw existingRegentsError;
+
+      const existingByCode = new Map<string, string>();
+      existingRegents?.forEach((r) => {
+        if (r.code) existingByCode.set(r.code, r.id);
+      });
+
+      const uniqueRegents = Array.from(
+        new Map(preview.regents.filter(r => r.code).map(r => [r.code, r])).values()
+      );
+
+      await runWithConcurrency(uniqueRegents, 8, async (regent, index) => {
+        // Update progress occasionally
+        if (index % 25 === 0) {
+          const pct = 10 + Math.round((index / Math.max(1, uniqueRegents.length)) * 15);
+          setProgress(pct);
+          setProgressMessage(`Importando regentes... (${index}/${uniqueRegents.length})`);
+        }
+
+        const existingId = existingByCode.get(regent.code);
+
+        if (existingId) {
           const { error } = await supabase
             .from('regents')
-            .insert({ 
-              code: regent.code, 
-              name: regent.name, 
-              full_name: regent.name,
-              gold_bars: 0,
-              regency_points: 0,
-              comando: 1,
-              estrategia: 1,
-            });
-          
-          if (error && error.code !== '23505') {
-            throw error;
-          }
-          regentsCreated++;
+            .update({ name: regent.name, full_name: regent.name })
+            .eq('id', existingId);
+          if (error) throw error;
+          regentsUpdated++;
+          return;
         }
-      }
+
+        const { error } = await supabase
+          .from('regents')
+          .insert({
+            code: regent.code,
+            name: regent.name,
+            full_name: regent.name,
+            gold_bars: 0,
+            regency_points: 0,
+            comando: 1,
+            estrategia: 1,
+          });
+
+        if (error && error.code !== '23505') {
+          throw error;
+        }
+
+        regentsCreated++;
+      });
       
       // Step 2: Create/update realms
       setProgressMessage('Importando reinos...');
