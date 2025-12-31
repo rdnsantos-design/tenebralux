@@ -267,23 +267,37 @@ export const FullDomainImporter = ({ onClose }: FullDomainImporterProps) => {
       const realmMap = new Map<string, string>();
       
       for (const realmName of preview.realms) {
+        // First check if realm exists for this user
         const { data: existing } = await supabase
           .from('realms')
           .select('id')
           .eq('name', realmName)
+          .eq('user_id', user.id)
           .maybeSingle();
         
         if (existing) {
           realmMap.set(realmName, existing.id);
         } else {
-          const { data: newRealm, error } = await supabase
+          // Check if realm exists for ANY user (due to unique constraint on name)
+          const { data: existingAny } = await supabase
             .from('realms')
-            .insert({ name: realmName, user_id: user.id })
             .select('id')
-            .single();
+            .eq('name', realmName)
+            .maybeSingle();
           
-          if (error) throw error;
-          realmMap.set(realmName, newRealm.id);
+          if (existingAny) {
+            // Realm exists but belongs to another user, just use that ID
+            realmMap.set(realmName, existingAny.id);
+          } else {
+            const { data: newRealm, error } = await supabase
+              .from('realms')
+              .insert({ name: realmName, user_id: user.id })
+              .select('id')
+              .single();
+            
+            if (error) throw error;
+            realmMap.set(realmName, newRealm.id);
+          }
         }
       }
       
