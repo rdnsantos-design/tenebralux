@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   MassCombatTacticalCard, 
   MassCombatUnitType,
@@ -38,16 +39,24 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
     strategy_required: card?.strategy_required || 1,
     culture: card?.culture || '',
     description: card?.description || '',
-    minor_effect: card?.minor_effect || '',
-    major_effect: card?.major_effect || '',
-    minor_condition: card?.minor_condition || '',
-    major_condition: card?.major_condition || '',
+    has_minor_effect: !!card?.minor_effect,
+    has_major_effect: !!card?.major_effect,
+    has_minor_condition: !!card?.minor_condition,
+    has_major_condition: !!card?.major_condition,
     vet_cost_override: card?.vet_cost_override ?? null,
   });
 
   const [useVetOverride, setUseVetOverride] = React.useState(card?.vet_cost_override !== null && card?.vet_cost_override !== undefined);
 
-  const calculatedVetCost = calculateMassCombatVetCost(formData);
+  // Convert checkbox state to the format expected by calculateMassCombatVetCost
+  const vetCalcData = {
+    ...formData,
+    minor_effect: formData.has_minor_effect ? 'yes' : '',
+    major_effect: formData.has_major_effect ? 'yes' : '',
+    minor_condition: formData.has_minor_condition ? 'yes' : '',
+    major_condition: formData.has_major_condition ? 'yes' : '',
+  };
+  const calculatedVetCost = calculateMassCombatVetCost(vetCalcData);
   const finalVetCost = useVetOverride && formData.vet_cost_override !== null ? formData.vet_cost_override : calculatedVetCost;
   const minCommand = calculateMinCommand(formData);
   const errors = validateMassCombatCard(formData);
@@ -64,13 +73,22 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
     if (errors.length > 0) return;
     
     onSave({
-      ...formData,
+      name: formData.name,
+      unit_type: formData.unit_type,
+      attack_bonus: formData.attack_bonus,
+      defense_bonus: formData.defense_bonus,
+      mobility_bonus: formData.mobility_bonus,
+      attack_penalty: formData.attack_penalty,
+      defense_penalty: formData.defense_penalty,
+      mobility_penalty: formData.mobility_penalty,
+      command_required: formData.command_required,
+      strategy_required: formData.strategy_required,
       culture: formData.culture || undefined,
       description: formData.description || undefined,
-      minor_effect: formData.minor_effect || undefined,
-      major_effect: formData.major_effect || undefined,
-      minor_condition: formData.minor_condition || undefined,
-      major_condition: formData.major_condition || undefined,
+      minor_effect: formData.has_minor_effect ? 'Sim' : undefined,
+      major_effect: formData.has_major_effect ? 'Sim' : undefined,
+      minor_condition: formData.has_minor_condition ? 'Sim' : undefined,
+      major_condition: formData.has_major_condition ? 'Sim' : undefined,
       vet_cost: finalVetCost,
       vet_cost_override: useVetOverride ? formData.vet_cost_override : null,
     });
@@ -258,59 +276,51 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
               Efeitos e Condições
             </Label>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="minor_effect" className="text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="minor_effect"
+                  checked={formData.has_minor_effect}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, has_minor_effect: !!checked }))}
+                />
+                <Label htmlFor="minor_effect" className="text-sm cursor-pointer">
                   Efeito Menor (+2 VET)
                 </Label>
-                <Textarea
-                  id="minor_effect"
-                  value={formData.minor_effect}
-                  onChange={(e) => setFormData(prev => ({ ...prev, minor_effect: e.target.value }))}
-                  placeholder="Descreva um efeito menor..."
-                  rows={2}
-                />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="major_effect" className="text-sm">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="major_effect"
+                  checked={formData.has_major_effect}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, has_major_effect: !!checked }))}
+                />
+                <Label htmlFor="major_effect" className="text-sm cursor-pointer">
                   Efeito Maior (+4 VET)
                 </Label>
-                <Textarea
-                  id="major_effect"
-                  value={formData.major_effect}
-                  onChange={(e) => setFormData(prev => ({ ...prev, major_effect: e.target.value }))}
-                  placeholder="Descreva um efeito maior..."
-                  rows={2}
-                />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="minor_condition" className="text-sm flex items-center gap-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="minor_condition"
+                  checked={formData.has_minor_condition}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, has_minor_condition: !!checked }))}
+                />
+                <Label htmlFor="minor_condition" className="text-sm cursor-pointer flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3 text-orange-500" />
                   Condição Menor (-1 VET)
                 </Label>
-                <Textarea
-                  id="minor_condition"
-                  value={formData.minor_condition}
-                  onChange={(e) => setFormData(prev => ({ ...prev, minor_condition: e.target.value }))}
-                  placeholder="Descreva uma condição menor..."
-                  rows={2}
-                />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="major_condition" className="text-sm flex items-center gap-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="major_condition"
+                  checked={formData.has_major_condition}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, has_major_condition: !!checked }))}
+                />
+                <Label htmlFor="major_condition" className="text-sm cursor-pointer flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3 text-red-500" />
                   Condição Maior (-2 VET)
                 </Label>
-                <Textarea
-                  id="major_condition"
-                  value={formData.major_condition}
-                  onChange={(e) => setFormData(prev => ({ ...prev, major_condition: e.target.value }))}
-                  placeholder="Descreva uma condição maior..."
-                  rows={2}
-                />
               </div>
             </div>
           </div>
