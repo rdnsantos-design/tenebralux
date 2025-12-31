@@ -364,20 +364,27 @@ export const FullDomainImporter = ({ onClose }: FullDomainImporterProps) => {
         const provinceId = provinceMap.get(key);
         
         if (!provinceId) {
+          console.log(`Holding skipped - province not found: ${key}`);
           holdingsSkipped++;
           continue;
         }
         
         const regentId = holding.regentCode ? regentIdMap.get(holding.regentCode) : null;
         
-        // Check if holding already exists
-        const { data: existingHolding } = await supabase
+        // Check if holding already exists - build query properly for nullable regent_id
+        let existingQuery = supabase
           .from('holdings')
           .select('id')
           .eq('province_id', provinceId)
-          .eq('holding_type', holding.holdingType)
-          .eq('regent_id', regentId || '')
-          .maybeSingle();
+          .eq('holding_type', holding.holdingType);
+        
+        if (regentId) {
+          existingQuery = existingQuery.eq('regent_id', regentId);
+        } else {
+          existingQuery = existingQuery.is('regent_id', null);
+        }
+        
+        const { data: existingHolding } = await existingQuery.maybeSingle();
         
         if (!existingHolding) {
           const { error } = await supabase
@@ -389,9 +396,18 @@ export const FullDomainImporter = ({ onClose }: FullDomainImporterProps) => {
               level: holding.level,
             });
           
-          if (!error) holdingsCreated++;
-          else holdingsSkipped++;
+          if (!error) {
+            holdingsCreated++;
+          } else {
+            console.error(`Error creating holding for ${holding.province}:`, error);
+            holdingsSkipped++;
+          }
         } else {
+          // Update existing holding level
+          await supabase
+            .from('holdings')
+            .update({ level: holding.level })
+            .eq('id', existingHolding.id);
           holdingsSkipped++;
         }
       }
