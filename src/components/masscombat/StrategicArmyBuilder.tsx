@@ -54,7 +54,7 @@ export function StrategicArmyBuilder({ army, onSave, onCancel }: StrategicArmyBu
   const { data: provinces } = useProvinces();
   const { cards: tacticalCards } = useMassCombatTacticalCards();
   const { templates: commanderTemplates } = useMassCombatCommanderTemplates();
-  const { cultures } = useMassCombatCultures();
+  const { data: cultures = [] } = useMassCombatCultures();
 
   const [formData, setFormData] = useState<Partial<StrategicArmy>>(() => {
     return army || createEmptyStrategicArmy();

@@ -1,121 +1,122 @@
-import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FieldCommander } from '@/types/FieldCommander';
 import { toast } from 'sonner';
 
+// ========================
+// FIELD COMMANDERS HOOKS
+// ========================
+
 export function useFieldCommanders() {
-  const [commanders, setCommanders] = useState<FieldCommander[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchCommanders = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { data, error: fetchError } = await supabase
+  return useQuery({
+    queryKey: ['field-commanders'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('field_commanders')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as FieldCommander[];
+    },
+  });
+}
 
-      if (fetchError) throw fetchError;
-
-      setCommanders(data as FieldCommander[]);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar comandantes';
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createCommander = async (commander: Omit<FieldCommander, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
+export function useCreateFieldCommander() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (commander: Omit<FieldCommander, 'id' | 'created_at' | 'updated_at'>) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
-      const { error: insertError } = await supabase
+      const { data, error } = await supabase
         .from('field_commanders')
-        .insert([{ ...commander, user_id: user.id }]);
-
-      if (insertError) throw insertError;
-
+        .insert([{ ...commander, user_id: user.id }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['field-commanders'] });
       toast.success('Comandante criado com sucesso!');
-      await fetchCommanders();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao criar comandante';
-      toast.error(message);
-      throw err;
-    }
-  };
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao criar comandante');
+    },
+  });
+}
 
-  const updateCommander = async (id: string, updates: Partial<FieldCommander>) => {
-    try {
-      const { error: updateError } = await supabase
+export function useUpdateFieldCommander() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<FieldCommander> & { id: string }) => {
+      const { data, error } = await supabase
         .from('field_commanders')
         .update(updates)
-        .eq('id', id);
-
-      if (updateError) throw updateError;
-
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['field-commanders'] });
       toast.success('Comandante atualizado com sucesso!');
-      await fetchCommanders();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao atualizar comandante';
-      toast.error(message);
-      throw err;
-    }
-  };
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao atualizar comandante');
+    },
+  });
+}
 
-  const deleteCommander = async (id: string) => {
-    try {
-      const { error: deleteError } = await supabase
+export function useDeleteFieldCommander() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
         .from('field_commanders')
         .delete()
         .eq('id', id);
-
-      if (deleteError) throw deleteError;
-
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['field-commanders'] });
       toast.success('Comandante removido com sucesso!');
-      await fetchCommanders();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao remover comandante';
-      toast.error(message);
-      throw err;
-    }
-  };
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao remover comandante');
+    },
+  });
+}
 
-  const evolveCommander = async (id: string, updates: Partial<FieldCommander>) => {
-    try {
-      const { error: updateError } = await supabase
+export function useEvolveFieldCommander() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<FieldCommander> & { id: string }) => {
+      const { data, error } = await supabase
         .from('field_commanders')
         .update(updates)
-        .eq('id', id);
-
-      if (updateError) throw updateError;
-
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['field-commanders'] });
       toast.success('Comandante evoluído com sucesso!');
-      await fetchCommanders();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao evoluir comandante';
-      toast.error(message);
-      throw err;
-    }
-  };
-
-  useEffect(() => {
-    fetchCommanders();
-  }, []);
-
-  return {
-    commanders,
-    loading,
-    error,
-    fetchCommanders,
-    createCommander,
-    updateCommander,
-    deleteCommander,
-    evolveCommander
-  };
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao evoluir comandante');
+    },
+  });
 }

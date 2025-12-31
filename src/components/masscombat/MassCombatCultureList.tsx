@@ -1,6 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { useMassCombatCultures } from '@/hooks/useMassCombatCultures';
+import { 
+  useMassCombatCultures, 
+  useCreateMassCombatCulture, 
+  useUpdateMassCombatCulture, 
+  useDeleteMassCombatCulture 
+} from '@/hooks/useMassCombatCultures';
 import { MassCombatCultureCardPreview } from './MassCombatCultureCardPreview';
 import { MassCombatCultureEditor } from './MassCombatCultureEditor';
 import { MassCombatCulture } from '@/types/combat/mass-combat-culture';
@@ -18,7 +23,11 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export function MassCombatCultureList() {
-  const { cultures, loading, createCulture, updateCulture, deleteCulture } = useMassCombatCultures();
+  const { data: cultures = [], isLoading } = useMassCombatCultures();
+  const createCulture = useCreateMassCombatCulture();
+  const updateCulture = useUpdateMassCombatCulture();
+  const deleteCulture = useDeleteMassCombatCulture();
+  
   const [editingCulture, setEditingCulture] = useState<MassCombatCulture | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -27,10 +36,10 @@ export function MassCombatCultureList() {
   const handleSave = async (data: Omit<MassCombatCulture, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       if (editingCulture) {
-        await updateCulture(editingCulture.id, data);
+        await updateCulture.mutateAsync({ id: editingCulture.id, ...data });
         toast.success('Cultura atualizada com sucesso!');
       } else {
-        await createCulture(data);
+        await createCulture.mutateAsync(data);
         toast.success('Cultura criada com sucesso!');
       }
       setEditingCulture(null);
@@ -43,7 +52,7 @@ export function MassCombatCultureList() {
   const handleDelete = async () => {
     if (!deleteConfirm) return;
     try {
-      await deleteCulture(deleteConfirm);
+      await deleteCulture.mutateAsync(deleteConfirm);
       toast.success('Cultura excluída com sucesso!');
       setDeleteConfirm(null);
     } catch (error) {
@@ -279,7 +288,7 @@ export function MassCombatCultureList() {
     printWindow.document.close();
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
