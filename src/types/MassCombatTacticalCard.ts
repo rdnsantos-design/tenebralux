@@ -8,6 +8,7 @@ export {
   MASS_COMBAT_UNIT_TYPES,
   MASS_COMBAT_CULTURES,
   calculateMassCombatVetCost,
+  getFinalVetCost,
   calculateMinCommand,
   calculateMinStrategy,
   validateMassCombatCard

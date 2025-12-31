@@ -629,57 +629,81 @@ export type Database = {
       mass_combat_tactical_cards: {
         Row: {
           attack_bonus: number
+          attack_penalty: number
           command_required: number
           created_at: string
           culture: string | null
           defense_bonus: number
+          defense_penalty: number
           description: string | null
           effect_tag: string | null
           effect_type: string | null
           game_mode: string
           id: string
+          major_condition: string | null
+          major_effect: string | null
+          minor_condition: string | null
+          minor_effect: string | null
           mobility_bonus: number
+          mobility_penalty: number
           name: string
           strategy_required: number
           unit_type: string
           updated_at: string
           vet_cost: number
+          vet_cost_override: number | null
         }
         Insert: {
           attack_bonus?: number
+          attack_penalty?: number
           command_required?: number
           created_at?: string
           culture?: string | null
           defense_bonus?: number
+          defense_penalty?: number
           description?: string | null
           effect_tag?: string | null
           effect_type?: string | null
           game_mode?: string
           id?: string
+          major_condition?: string | null
+          major_effect?: string | null
+          minor_condition?: string | null
+          minor_effect?: string | null
           mobility_bonus?: number
+          mobility_penalty?: number
           name: string
           strategy_required?: number
           unit_type: string
           updated_at?: string
           vet_cost?: number
+          vet_cost_override?: number | null
         }
         Update: {
           attack_bonus?: number
+          attack_penalty?: number
           command_required?: number
           created_at?: string
           culture?: string | null
           defense_bonus?: number
+          defense_penalty?: number
           description?: string | null
           effect_tag?: string | null
           effect_type?: string | null
           game_mode?: string
           id?: string
+          major_condition?: string | null
+          major_effect?: string | null
+          minor_condition?: string | null
+          minor_effect?: string | null
           mobility_bonus?: number
+          mobility_penalty?: number
           name?: string
           strategy_required?: number
           unit_type?: string
           updated_at?: string
           vet_cost?: number
+          vet_cost_override?: number | null
         }
         Relationships: []
       }
