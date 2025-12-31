@@ -317,6 +317,155 @@ export type Database = {
         }
         Relationships: []
       }
+      game_played_cards: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          phase: string
+          player_number: number
+          round: number
+          session_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          phase: string
+          player_number: number
+          round: number
+          session_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          phase?: string
+          player_number?: number
+          round?: number
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_played_cards_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "mass_combat_tactical_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_played_cards_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_round_results: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          player1_result: Json | null
+          player2_result: Json | null
+          round: number
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player1_result?: Json | null
+          player2_result?: Json | null
+          round: number
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player1_result?: Json | null
+          player2_result?: Json | null
+          round?: number
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_round_results_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_sessions: {
+        Row: {
+          created_at: string
+          current_phase: string | null
+          current_round: number | null
+          game_state: Json | null
+          id: string
+          player1_army_id: string | null
+          player1_nickname: string | null
+          player1_ready: boolean | null
+          player2_army_id: string | null
+          player2_nickname: string | null
+          player2_ready: boolean | null
+          room_code: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_phase?: string | null
+          current_round?: number | null
+          game_state?: Json | null
+          id?: string
+          player1_army_id?: string | null
+          player1_nickname?: string | null
+          player1_ready?: boolean | null
+          player2_army_id?: string | null
+          player2_nickname?: string | null
+          player2_ready?: boolean | null
+          room_code: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_phase?: string | null
+          current_round?: number | null
+          game_state?: Json | null
+          id?: string
+          player1_army_id?: string | null
+          player1_nickname?: string | null
+          player1_ready?: boolean | null
+          player2_army_id?: string | null
+          player2_nickname?: string | null
+          player2_ready?: boolean | null
+          room_code?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_sessions_player1_army_id_fkey"
+            columns: ["player1_army_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_armies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_sessions_player2_army_id_fkey"
+            columns: ["player2_army_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_armies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hexagon_background_images: {
         Row: {
           description: string | null
@@ -912,6 +1061,86 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      strategic_armies: {
+        Row: {
+          attack: number
+          commanders: Json
+          created_at: string
+          culture_id: string | null
+          defense: number
+          id: string
+          mobility: number
+          name: string
+          province_id: string | null
+          realm_id: string | null
+          regent_id: string | null
+          tactical_cards: Json
+          total_vet: number
+          updated_at: string
+        }
+        Insert: {
+          attack?: number
+          commanders?: Json
+          created_at?: string
+          culture_id?: string | null
+          defense?: number
+          id?: string
+          mobility?: number
+          name: string
+          province_id?: string | null
+          realm_id?: string | null
+          regent_id?: string | null
+          tactical_cards?: Json
+          total_vet?: number
+          updated_at?: string
+        }
+        Update: {
+          attack?: number
+          commanders?: Json
+          created_at?: string
+          culture_id?: string | null
+          defense?: number
+          id?: string
+          mobility?: number
+          name?: string
+          province_id?: string | null
+          realm_id?: string | null
+          regent_id?: string | null
+          tactical_cards?: Json
+          total_vet?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_armies_culture_id_fkey"
+            columns: ["culture_id"]
+            isOneToOne: false
+            referencedRelation: "mass_combat_cultures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_armies_province_id_fkey"
+            columns: ["province_id"]
+            isOneToOne: false
+            referencedRelation: "provinces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_armies_realm_id_fkey"
+            columns: ["realm_id"]
+            isOneToOne: false
+            referencedRelation: "realms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_armies_regent_id_fkey"
+            columns: ["regent_id"]
+            isOneToOne: false
+            referencedRelation: "regents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tactical_cards: {
         Row: {
