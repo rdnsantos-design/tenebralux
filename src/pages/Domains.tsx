@@ -6,6 +6,7 @@ import { Home, FileSpreadsheet, Map, Upload, Crown } from 'lucide-react';
 import { RealmList } from '@/components/domains/RealmList';
 import { DomainImporter } from '@/components/domains/DomainImporter';
 import { HoldingsImporter } from '@/components/domains/HoldingsImporter';
+import { FullDomainImporter } from '@/components/domains/FullDomainImporter';
 import { RegentDomainList } from '@/components/domains/RegentDomainList';
 import { RealmProvinceHoldingView } from '@/components/domains/RealmProvinceHoldingView';
 import { Realm } from '@/types/Domain';
@@ -15,6 +16,7 @@ const Domains = () => {
   const [selectedRealm, setSelectedRealm] = useState<Realm | null>(null);
   const [showImporter, setShowImporter] = useState(false);
   const [showHoldingsImporter, setShowHoldingsImporter] = useState(false);
+  const [showFullImporter, setShowFullImporter] = useState(false);
   const [activeTab, setActiveTab] = useState('reinos');
   const [selectedRegentId, setSelectedRegentId] = useState<string | null>(null);
 
@@ -48,9 +50,26 @@ const Domains = () => {
               Gerencie reinos, províncias, regentes e holdings
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
-              onClick={() => setShowHoldingsImporter(!showHoldingsImporter)}
+              onClick={() => {
+                setShowFullImporter(!showFullImporter);
+                setShowImporter(false);
+                setShowHoldingsImporter(false);
+              }}
+              variant={showFullImporter ? 'secondary' : 'default'}
+              size="lg"
+              className="flex items-center gap-2"
+            >
+              <FileSpreadsheet className="w-5 h-5" />
+              {showFullImporter ? 'Fechar' : 'Importar Completo'}
+            </Button>
+            <Button
+              onClick={() => {
+                setShowHoldingsImporter(!showHoldingsImporter);
+                setShowFullImporter(false);
+                setShowImporter(false);
+              }}
               variant={showHoldingsImporter ? 'secondary' : 'outline'}
               size="lg"
               className="flex items-center gap-2"
@@ -59,18 +78,28 @@ const Domains = () => {
               {showHoldingsImporter ? 'Fechar' : 'Importar Holdings'}
             </Button>
             <Button
-              onClick={() => setShowImporter(!showImporter)}
+              onClick={() => {
+                setShowImporter(!showImporter);
+                setShowFullImporter(false);
+                setShowHoldingsImporter(false);
+              }}
               variant={showImporter ? 'secondary' : 'outline'}
               size="lg"
               className="flex items-center gap-2"
             >
               <FileSpreadsheet className="w-5 h-5" />
-              {showImporter ? 'Fechar' : 'Importar Domínios'}
+              {showImporter ? 'Fechar' : 'Importar Províncias'}
             </Button>
           </div>
         </div>
 
         {/* Import Sections */}
+        {showFullImporter && (
+          <div className="mb-6">
+            <FullDomainImporter onClose={() => setShowFullImporter(false)} />
+          </div>
+        )}
+
         {showHoldingsImporter && (
           <div className="mb-6">
             <HoldingsImporter onClose={() => setShowHoldingsImporter(false)} />
