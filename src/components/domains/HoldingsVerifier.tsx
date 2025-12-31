@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileSpreadsheet, Upload, X, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, Upload, X, AlertTriangle, CheckCircle, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { useQueryClient } from '@tanstack/react-query';
+import { HoldingType } from '@/types/Domain';
 
 interface ExcelHolding {
   realm: string;
   province: string;
+  provinceId?: string;
   holdingType: string;
   holderCode: string;
   holdingLevel: number;
@@ -23,14 +26,18 @@ interface DbHolding {
   regent_id: string | null;
 }
 
+interface MissingHolding {
+  type: string;
+  holderCode: string;
+  level: number;
+  provinceId?: string;
+}
+
 interface ProvinceMissing {
   realm: string;
   province: string;
-  missing: {
-    type: string;
-    holderCode: string;
-    level: number;
-  }[];
+  provinceId: string;
+  missing: MissingHolding[];
   existing: string[];
 }
 
@@ -62,10 +69,13 @@ const HOLDING_TYPE_LABELS: Record<string, string> = {
 
 export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [fileName, setFileName] = useState('');
   const [filterRealm, setFilterRealm] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('');
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+  const queryClient = useQueryClient();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -202,23 +212,16 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
           dbByType.get(h.holding_type)!.push(h);
         });
 
-        const missing: { type: string; holderCode: string; level: number }[] = [];
+        const missing: MissingHolding[] = [];
 
         // For each type in Excel, check if same count in DB
         excelByType.forEach((excelOfType, type) => {
           const dbOfType = dbByType.get(type) || [];
           
           if (excelOfType.length > dbOfType.length) {
-            // Some are missing
-            const missingCount = excelOfType.length - dbOfType.length;
-            
-            // Try to identify which specific ones are missing by level matching
-            const dbLevels = new Set(dbOfType.map(h => h.level));
-            
+            // Some are missing - try to identify which specific ones
             excelOfType.forEach(eh => {
-              // Simple heuristic: if level not in DB, it might be missing
-              // More accurate: count occurrences
-              const excelWithLevel = excelOfType.filter(e => e.holdingLevel === eh.holdingLevel).length;
+              const excelWithLevel = excelOfType.filter(e => e.holdingLevel === eh.holdingLevel && e.holderCode === eh.holderCode).length;
               const dbWithLevel = dbOfType.filter(d => d.level === eh.holdingLevel).length;
               
               if (excelWithLevel > dbWithLevel) {
@@ -233,6 +236,7 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
                     type,
                     holderCode: eh.holderCode,
                     level: eh.holdingLevel,
+                    provinceId: provinceInfo.id,
                   });
                   missingByType[type] = (missingByType[type] || 0) + 1;
                   totalMissing++;
@@ -246,6 +250,7 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
           provincesWithMissing.push({
             realm: provinceInfo.realm,
             province: provinceInfo.name,
+            provinceId: provinceInfo.id,
             missing,
             existing: Array.from(dbTypes),
           });
@@ -277,6 +282,110 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
     event.target.value = '';
   };
 
+  // Import missing holdings
+  const handleImportMissing = async () => {
+    if (!result || result.missingCount === 0) return;
+
+    setImporting(true);
+    let imported = 0;
+    let failed = 0;
+
+    try {
+      // Get all regents for mapping
+      const { data: regents } = await supabase.from('regents').select('id, code');
+      const regentMap = new Map<string, string>();
+      regents?.forEach(r => {
+        if (r.code) regentMap.set(r.code, r.id);
+      });
+
+      // Collect all missing holdings to import
+      const toImport: { province_id: string; holding_type: HoldingType; regent_id: string | null; level: number }[] = [];
+      
+      result.provincesWithMissing.forEach(p => {
+        p.missing.forEach(m => {
+          const regentId = m.holderCode ? regentMap.get(m.holderCode) : null;
+          
+          // First, ensure regent exists if we have a code
+          if (m.holderCode && !regentId) {
+            console.warn(`Regent not found: ${m.holderCode}`);
+          }
+          
+          toImport.push({
+            province_id: p.provinceId,
+            holding_type: m.type as HoldingType,
+            regent_id: regentId || null,
+            level: m.level,
+          });
+        });
+      });
+
+      setImportProgress({ current: 0, total: toImport.length });
+
+      // Create missing regents first
+      const missingRegentCodes = new Set<string>();
+      result.provincesWithMissing.forEach(p => {
+        p.missing.forEach(m => {
+          if (m.holderCode && !regentMap.has(m.holderCode)) {
+            missingRegentCodes.add(m.holderCode);
+          }
+        });
+      });
+
+      for (const code of missingRegentCodes) {
+        const { data: created } = await supabase
+          .from('regents')
+          .insert({ code, name: code })
+          .select('id')
+          .single();
+        
+        if (created) {
+          regentMap.set(code, created.id);
+        }
+      }
+
+      // Import holdings
+      for (let i = 0; i < toImport.length; i++) {
+        const h = toImport[i];
+        
+        // Re-check regent after creating missing ones
+        const holdingData = {
+          province_id: h.province_id,
+          holding_type: h.holding_type,
+          regent_id: h.regent_id || (result.provincesWithMissing.find(p => p.provinceId === h.province_id)?.missing.find(m => m.type === h.holding_type && m.level === h.level)?.holderCode ? regentMap.get(result.provincesWithMissing.find(p => p.provinceId === h.province_id)!.missing.find(m => m.type === h.holding_type && m.level === h.level)!.holderCode) : null) || null,
+          level: h.level,
+        };
+
+        const { error } = await supabase.from('holdings').insert(holdingData);
+        
+        if (error) {
+          console.error('Failed to insert:', holdingData, error);
+          failed++;
+        } else {
+          imported++;
+        }
+
+        setImportProgress({ current: i + 1, total: toImport.length });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['holdings'] });
+      queryClient.invalidateQueries({ queryKey: ['regents'] });
+
+      if (failed === 0) {
+        toast.success(`${imported} holdings importados com sucesso!`);
+      } else {
+        toast.warning(`${imported} importados, ${failed} falharam`);
+      }
+
+      // Clear result to force re-verification
+      setResult(null);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast.error(`Erro: ${error.message}`);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const filteredProvinces = result?.provincesWithMissing.filter(p => {
     if (filterRealm && !p.realm.toLowerCase().includes(filterRealm.toLowerCase())) return false;
     if (filterType && !p.missing.some(m => m.type === filterType)) return false;
@@ -292,7 +401,7 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
           <FileSpreadsheet className="w-5 h-5" />
           Verificar Holdings Faltantes
         </CardTitle>
-        <Button size="icon" variant="ghost" onClick={onClose}>
+        <Button size="icon" variant="ghost" onClick={onClose} disabled={importing}>
           <X className="w-4 h-4" />
         </Button>
       </CardHeader>
@@ -301,6 +410,20 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
           <div className="py-12 text-center">
             <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
             <p className="mt-4 text-muted-foreground">Comparando dados...</p>
+          </div>
+        ) : importing ? (
+          <div className="py-12 text-center space-y-4">
+            <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
+            <p className="font-medium">Importando holdings faltantes...</p>
+            <p className="text-sm text-muted-foreground">
+              {importProgress.current} de {importProgress.total}
+            </p>
+            <div className="w-full bg-muted rounded-full h-2 max-w-md mx-auto">
+              <div
+                className="bg-primary h-2 rounded-full transition-all"
+                style={{ width: importProgress.total > 0 ? `${(importProgress.current / importProgress.total) * 100}%` : '0%' }}
+              />
+            </div>
           </div>
         ) : !result ? (
           <div className="border-2 border-dashed rounded-lg p-8 text-center">
@@ -417,7 +540,7 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
             </ScrollArea>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button variant="outline" onClick={() => setResult(null)}>
                 <Upload className="w-4 h-4 mr-2" />
                 Novo Arquivo
@@ -425,7 +548,6 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
               <Button 
                 variant="outline" 
                 onClick={() => {
-                  // Export missing to console for now
                   console.log('=== HOLDINGS FALTANTES ===');
                   filteredProvinces.forEach(p => {
                     p.missing.forEach(m => {
@@ -437,6 +559,12 @@ export function HoldingsVerifier({ onClose }: HoldingsVerifierProps) {
               >
                 Exportar Lista
               </Button>
+              {result.missingCount > 0 && (
+                <Button onClick={handleImportMissing} className="ml-auto">
+                  <Download className="w-4 h-4 mr-2" />
+                  Importar {result.missingCount} Faltantes
+                </Button>
+              )}
             </div>
           </>
         )}
