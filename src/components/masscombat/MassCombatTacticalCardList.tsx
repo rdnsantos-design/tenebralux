@@ -160,6 +160,17 @@ export function MassCombatTacticalCardList() {
     const cardsHtml = filteredCards.map(card => {
       const colors = UNIT_TYPE_COLORS[card.unit_type] || UNIT_TYPE_COLORS.Geral;
       
+      const hasAnyBonus = card.attack_bonus > 0 || card.defense_bonus > 0 || card.mobility_bonus > 0;
+      const hasAnyPenalty = card.attack_penalty > 0 || card.defense_penalty > 0 || card.mobility_penalty > 0;
+      const hasEffectsOrConditions = card.minor_effect || card.major_effect || card.minor_condition || card.major_condition;
+      
+      const formatAttr = (bonus: number, penalty: number) => {
+        if (bonus > 0 && penalty > 0) return `<span class="bonus">+${bonus}</span> / <span class="penalty">-${penalty}</span>`;
+        if (bonus > 0) return `<span class="bonus">+${bonus}</span>`;
+        if (penalty > 0) return `<span class="penalty">-${penalty}</span>`;
+        return '<span class="neutral">-</span>';
+      };
+      
       return `
         <div class="card">
           <div class="card-header" style="background: linear-gradient(135deg, ${colors.primary}, ${colors.primary}dd);">
@@ -169,10 +180,43 @@ export function MassCombatTacticalCardList() {
           
           <div class="card-name">${card.name}</div>
           
-          <div class="effect-section">
-            <div class="effect-label">EFEITO</div>
-            <div class="effect-text">${card.description || 'Sem efeito definido'}</div>
+          ${(hasAnyBonus || hasAnyPenalty) ? `
+          <div class="attributes-section">
+            <div class="attr-grid">
+              <div class="attr-item">
+                <span class="attr-icon">⚔️</span>
+                <span class="attr-label">ATQ</span>
+                <span class="attr-value">${formatAttr(card.attack_bonus, card.attack_penalty)}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-icon">🛡️</span>
+                <span class="attr-label">DEF</span>
+                <span class="attr-value">${formatAttr(card.defense_bonus, card.defense_penalty)}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-icon">⚡</span>
+                <span class="attr-label">MOB</span>
+                <span class="attr-value">${formatAttr(card.mobility_bonus, card.mobility_penalty)}</span>
+              </div>
+            </div>
           </div>
+          ` : ''}
+          
+          ${hasEffectsOrConditions ? `
+          <div class="effects-conditions-section">
+            <div class="section-title">⭐ Efeitos e Condições</div>
+            ${card.minor_effect ? `<div class="effect-item"><span class="effect-label-small">Efeito Menor:</span> ${card.minor_effect}</div>` : ''}
+            ${card.major_effect ? `<div class="effect-item major"><span class="effect-label-small">Efeito Maior:</span> ${card.major_effect}</div>` : ''}
+            ${card.minor_condition ? `<div class="condition-item"><span class="condition-icon">⚠️</span> ${card.minor_condition}</div>` : ''}
+            ${card.major_condition ? `<div class="condition-item major"><span class="condition-icon">🔺</span> ${card.major_condition}</div>` : ''}
+          </div>
+          ` : ''}
+          
+          ${card.description ? `
+          <div class="description-section">
+            <div class="description-text">${card.description}</div>
+          </div>
+          ` : ''}
           
           <div class="requirements-footer">
             <div class="req-item">
@@ -231,7 +275,7 @@ export function MassCombatTacticalCardList() {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
           }
           
@@ -242,6 +286,8 @@ export function MassCombatTacticalCardList() {
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             break-inside: avoid;
             page-break-inside: avoid;
+            display: flex;
+            flex-direction: column;
           }
           
           .card-header {
@@ -253,7 +299,7 @@ export function MassCombatTacticalCardList() {
           }
           
           .unit-type-badge {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -263,7 +309,7 @@ export function MassCombatTacticalCardList() {
           }
           
           .vet-badge {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             background: rgba(0,0,0,0.3);
             padding: 4px 10px;
@@ -271,58 +317,145 @@ export function MassCombatTacticalCardList() {
           }
           
           .card-name {
-            padding: 12px;
+            padding: 10px 12px;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             color: #1f2937;
             border-bottom: 1px solid #e5e7eb;
           }
           
-          .effect-section {
-            padding: 16px 12px;
-            flex: 1;
+          .attributes-section {
+            padding: 8px 10px;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          
+          .attr-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            text-align: center;
+          }
+          
+          .attr-item {
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            align-items: center;
+            gap: 2px;
           }
           
-          .effect-label {
+          .attr-icon {
             font-size: 10px;
-            font-weight: 600;
-            color: #6366f1;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-align: center;
-            margin-bottom: 8px;
           }
           
-          .effect-text {
+          .attr-label {
+            font-size: 8px;
+            color: #6b7280;
+            font-weight: 600;
+            text-transform: uppercase;
+          }
+          
+          .attr-value {
             font-size: 11px;
+            font-weight: 700;
+          }
+          
+          .bonus {
+            color: #059669;
+          }
+          
+          .penalty {
+            color: #dc2626;
+          }
+          
+          .neutral {
+            color: #9ca3af;
+          }
+          
+          .effects-conditions-section {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #fffbeb;
+          }
+          
+          .section-title {
+            font-size: 9px;
+            font-weight: 700;
+            color: #b45309;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+          }
+          
+          .effect-item {
+            font-size: 9px;
             color: #374151;
+            margin-bottom: 4px;
+            line-height: 1.4;
+          }
+          
+          .effect-item.major {
+            color: #1f2937;
+            font-weight: 500;
+          }
+          
+          .effect-label-small {
+            color: #d97706;
+            font-weight: 600;
+          }
+          
+          .condition-item {
+            font-size: 9px;
+            color: #6b7280;
+            margin-bottom: 4px;
+            line-height: 1.4;
+            display: flex;
+            align-items: flex-start;
+            gap: 4px;
+          }
+          
+          .condition-item.major {
+            color: #991b1b;
+          }
+          
+          .condition-icon {
+            font-size: 8px;
+          }
+          
+          .description-section {
+            padding: 10px 12px;
+            flex: 1;
+          }
+          
+          .description-text {
+            font-size: 10px;
+            color: #6b7280;
             text-align: center;
             line-height: 1.5;
+            font-style: italic;
           }
           
           .requirements-footer {
             background: #f3f4f6;
-            padding: 10px 12px;
+            padding: 8px 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-top: 1px solid #e5e7eb;
+            margin-top: auto;
           }
           
           .req-item {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 11px;
+            gap: 4px;
+            font-size: 10px;
             color: #4b5563;
           }
           
           .req-icon {
-            font-size: 12px;
+            font-size: 10px;
           }
           
           .req-item strong {
@@ -336,23 +469,27 @@ export function MassCombatTacticalCardList() {
             }
             
             .header {
-              margin-bottom: 20px;
-              padding: 15px;
+              margin-bottom: 15px;
+              padding: 12px;
+            }
+            
+            .header h1 {
+              font-size: 22px;
             }
             
             .cards-grid {
-              gap: 15px;
+              gap: 12px;
             }
             
             .card {
-              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-              border: 1px solid #e5e7eb;
+              box-shadow: none;
+              border: 1px solid #d1d5db;
             }
           }
           
           @page {
             size: A4;
-            margin: 10mm;
+            margin: 8mm;
           }
         </style>
       </head>
@@ -378,10 +515,18 @@ export function MassCombatTacticalCardList() {
       'Bônus em Ataque': card.attack_bonus,
       'Bônus em Defesa': card.defense_bonus,
       'Bônus em Mobilidade': card.mobility_bonus,
+      'Penalidade em Ataque': card.attack_penalty || 0,
+      'Penalidade em Defesa': card.defense_penalty || 0,
+      'Penalidade em Mobilidade': card.mobility_penalty || 0,
+      'Efeito Menor': card.minor_effect || '',
+      'Efeito Maior': card.major_effect || '',
+      'Condição Menor': card.minor_condition || '',
+      'Condição Maior': card.major_condition || '',
       'Comando Necessário': card.command_required,
       'Cultura': card.culture || '',
       'Descrição': card.description || '',
       'Custo VET': card.vet_cost,
+      'VET Manual': card.vet_cost_override ?? '',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
