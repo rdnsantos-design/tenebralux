@@ -20,7 +20,7 @@ interface ArmyEditorProps {
 }
 
 export const ArmyEditor = ({ army, regents, onSave, onCancel }: ArmyEditorProps) => {
-  const { commanders } = useFieldCommanders();
+  const { data: commanders = [] } = useFieldCommanders();
   const [formData, setFormData] = useState({
     name: army?.name || "",
     regentId: army?.regentId || "",

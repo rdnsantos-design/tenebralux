@@ -75,7 +75,7 @@ export interface UseArmyDataResult {
 export const useArmyData = (regentId?: string): UseArmyDataResult => {
   // Busca dados base
   const { data: units = [], isLoading: unitsLoading, isError: unitsError } = useUnitInstances(regentId);
-  const { commanders, loading: commandersLoading, error: commandersError } = useFieldCommanders();
+  const { data: commanders = [], isLoading: commandersLoading, isError: commandersError } = useFieldCommanders();
   const { data: regents = [] } = useRegents();
   const { data: provinces = [] } = useProvinces();
 
@@ -164,7 +164,7 @@ export const useArmyData = (regentId?: string): UseArmyDataResult => {
     enrichedUnits,
     summary,
     isLoading: unitsLoading || commandersLoading,
-    isError: unitsError || !!commandersError,
+    isError: unitsError || commandersError,
     getUnitsByRegent,
     getUnitsByCommander,
     getUnitsByProvince,

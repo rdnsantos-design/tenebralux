@@ -4,7 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Plus, Users, BookOpen, Loader2 } from 'lucide-react';
-import { useFieldCommanders } from '@/hooks/useFieldCommanders';
+import { 
+  useFieldCommanders, 
+  useCreateFieldCommander, 
+  useUpdateFieldCommander, 
+  useDeleteFieldCommander, 
+  useEvolveFieldCommander 
+} from '@/hooks/useFieldCommanders';
 import { CommanderList } from '@/components/CommanderList';
 import { CommanderEditor } from '@/components/CommanderEditor';
 import { CommanderEvolution } from '@/components/CommanderEvolution';
@@ -15,7 +21,12 @@ type ViewMode = 'list' | 'create' | 'edit' | 'evolve';
 
 export default function FieldCommanders() {
   const navigate = useNavigate();
-  const { commanders, loading, createCommander, updateCommander, deleteCommander, evolveCommander } = useFieldCommanders();
+  const { data: commanders = [], isLoading } = useFieldCommanders();
+  const createCommander = useCreateFieldCommander();
+  const updateCommander = useUpdateFieldCommander();
+  const deleteCommander = useDeleteFieldCommander();
+  const evolveCommander = useEvolveFieldCommander();
+  
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedCommander, setSelectedCommander] = useState<FieldCommander | null>(null);
   const [regents, setRegents] = useState<Regent[]>([]);
@@ -49,12 +60,20 @@ export default function FieldCommanders() {
 
   const handleSaveCommander = async (data: Omit<FieldCommander, 'id' | 'created_at' | 'updated_at'>) => {
     if (viewMode === 'edit' && selectedCommander) {
-      await updateCommander(selectedCommander.id, data);
+      await updateCommander.mutateAsync({ id: selectedCommander.id, ...data });
     } else {
-      await createCommander(data);
+      await createCommander.mutateAsync(data);
     }
     setViewMode('list');
     setSelectedCommander(null);
+  };
+
+  const handleDeleteCommander = async (id: string) => {
+    await deleteCommander.mutateAsync(id);
+  };
+
+  const handleEvolveCommanderSubmit = async (id: string, updates: Partial<FieldCommander>) => {
+    await evolveCommander.mutateAsync({ id, ...updates });
   };
 
   const handleCancel = () => {
@@ -62,7 +81,7 @@ export default function FieldCommanders() {
     setSelectedCommander(null);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin" />
@@ -103,7 +122,7 @@ export default function FieldCommanders() {
         ) : viewMode === 'evolve' && selectedCommander ? (
           <CommanderEvolution
             commander={selectedCommander}
-            onEvolve={evolveCommander}
+            onEvolve={handleEvolveCommanderSubmit}
             onBack={handleCancel}
           />
         ) : (
@@ -139,7 +158,7 @@ export default function FieldCommanders() {
                   commanders={commanders}
                   onEdit={handleEditCommander}
                   onEvolve={handleEvolveCommander}
-                  onDelete={deleteCommander}
+                  onDelete={handleDeleteCommander}
                 />
               )}
             </TabsContent>

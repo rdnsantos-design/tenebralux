@@ -25,7 +25,7 @@ import { ArmyExporter } from "@/components/ArmyExporter";
 
 const ArmyManagement = () => {
   const navigate = useNavigate();
-  const { commanders } = useFieldCommanders();
+  const { data: commanders = [] } = useFieldCommanders();
   
   // Regentes agora vêm do Supabase via hook
   const { data: regents = [], isLoading: isLoadingRegents } = useRegents();
