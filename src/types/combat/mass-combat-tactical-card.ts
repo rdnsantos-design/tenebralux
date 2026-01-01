@@ -48,19 +48,15 @@ export const MASS_COMBAT_CULTURES: MassCombatCulture[] = [
   'Brecht'
 ];
 
-// Calculate VET cost with new rules:
-// +1 bonus = +2 VET
-// -1 penalty = -1 VET
+// Calculate VET cost with rules:
+// +1 bonus = +1 VET
 // Minor effect = +2 VET
 // Major effect = +4 VET
 // Minor condition = -1 VET
 // Major condition = -2 VET
 export function calculateMassCombatVetCost(card: Partial<MassCombatTacticalCard>): number {
-  // Bonus costs (each +1 = +2 VET)
-  const bonusCost = ((card.attack_bonus || 0) + (card.defense_bonus || 0) + (card.mobility_bonus || 0)) * 2;
-  
-  // Penalty reductions (each -1 = -1 VET)
-  const penaltyReduction = (card.attack_penalty || 0) + (card.defense_penalty || 0) + (card.mobility_penalty || 0);
+  // Bonus costs (each +1 = +1 VET)
+  const bonusCost = (card.attack_bonus || 0) + (card.defense_bonus || 0) + (card.mobility_bonus || 0);
   
   // Effect costs
   const minorEffectCost = card.minor_effect?.trim() ? 2 : 0;
@@ -70,7 +66,7 @@ export function calculateMassCombatVetCost(card: Partial<MassCombatTacticalCard>
   const minorConditionReduction = card.minor_condition?.trim() ? 1 : 0;
   const majorConditionReduction = card.major_condition?.trim() ? 2 : 0;
   
-  const calculatedCost = bonusCost - penaltyReduction + minorEffectCost + majorEffectCost - minorConditionReduction - majorConditionReduction;
+  const calculatedCost = bonusCost + minorEffectCost + majorEffectCost - minorConditionReduction - majorConditionReduction;
   
   // Minimum cost is 0
   return Math.max(0, calculatedCost);

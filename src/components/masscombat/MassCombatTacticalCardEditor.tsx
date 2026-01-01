@@ -169,7 +169,7 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
           <div className="space-y-4">
             <Label className="text-base font-semibold flex items-center gap-2">
               <Swords className="h-4 w-4 text-green-500" />
-              Bônus (+2 VET cada)
+              Bônus (+1 VET cada)
             </Label>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -221,7 +221,7 @@ export function MassCombatTacticalCardEditor({ card, onSave, onCancel }: MassCom
           <div className="space-y-4">
             <Label className="text-base font-semibold flex items-center gap-2">
               <TrendingDown className="h-4 w-4 text-red-500" />
-              Penalidades (-1 VET cada)
+              Penalidades (não afetam VET)
             </Label>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
