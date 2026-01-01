@@ -11,6 +11,16 @@ import { useMassCombatTacticalCards } from '@/hooks/useMassCombatTacticalCards';
 import { MassCombatTacticalCardEditor } from './MassCombatTacticalCardEditor';
 import { MassCombatTacticalCard } from '@/types/MassCombatTacticalCard';
 
+// Calculate VET cost locally for display
+function calculateVetCost(card: any): number {
+  const bonusCost = (card.attack_bonus || 0) + (card.defense_bonus || 0) + (card.mobility_bonus || 0);
+  const minorEffectCost = card.minor_effect?.trim() ? 2 : 0;
+  const majorEffectCost = card.major_effect?.trim() ? 4 : 0;
+  const minorConditionReduction = card.minor_condition?.trim() ? 1 : 0;
+  const majorConditionReduction = card.major_condition?.trim() ? 2 : 0;
+  return Math.max(0, bonusCost + minorEffectCost + majorEffectCost - minorConditionReduction - majorConditionReduction);
+}
+
 interface CardAnalysis {
   id: string;
   name: string;
@@ -24,6 +34,7 @@ interface CardAnalysis {
   majorEffect: string;
   minorCondition: string;
   majorCondition: string;
+  vetCost: number;
   originalCard: any;
 }
 
@@ -90,6 +101,7 @@ function analyzeCard(card: any): CardAnalysis {
     majorEffect: majorEffect || '-',
     minorCondition: minorCondition || '-',
     majorCondition: majorCondition || '-',
+    vetCost: calculateVetCost(card),
     originalCard: card
   };
 }
@@ -302,6 +314,7 @@ export function CardAnalysisTable() {
                   <TableHead className="font-semibold text-center">Cmd</TableHead>
                   <TableHead className="font-semibold">Atributos</TableHead>
                   <TableHead className="font-semibold">Fase</TableHead>
+                  <TableHead className="font-semibold text-center">VET</TableHead>
                   <TableHead className="font-semibold">Efeito Menor</TableHead>
                   <TableHead className="font-semibold">Efeito Maior</TableHead>
                   <TableHead className="font-semibold">Cond. Menor</TableHead>
@@ -347,6 +360,11 @@ export function CardAnalysisTable() {
                             {card.phaseType}
                           </Badge>
                         </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary" className="font-mono font-bold">
+                            {card.vetCost}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-sm max-w-[120px] truncate" title={card.minorEffect}>
                           {card.minorEffect}
                         </TableCell>
@@ -375,7 +393,7 @@ export function CardAnalysisTable() {
                       </TableRow>
                       {isExpanded && (
                         <TableRow className="bg-muted/20">
-                          <TableCell colSpan={12} className="py-3 px-4">
+                          <TableCell colSpan={13} className="py-3 px-4">
                             <div className="space-y-2">
                               <div className="text-sm font-medium text-muted-foreground">Descrição:</div>
                               <div className="text-sm p-3 bg-background rounded-md border">
