@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Search, Swords, Shield, Zap, RotateCcw, Filter, Edit2, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { useMassCombatTacticalCards } from '@/hooks/useMassCombatTacticalCards';
 import { MassCombatTacticalCardEditor } from './MassCombatTacticalCardEditor';
-import { MassCombatTacticalCard } from '@/types/MassCombatTacticalCard';
+import { MassCombatTacticalCard, calculateMinCommand } from '@/types/MassCombatTacticalCard';
 
 // Calculate VET cost locally for display
 function calculateVetCost(card: any): number {
@@ -27,7 +27,10 @@ interface CardAnalysis {
   description: string;
   specialization: string;
   culture: string | null;
+  /** Calculado pelas regras atuais (fonte: calculateMinCommand) */
   command: number;
+  /** Valor salvo no banco (para conferência) */
+  commandStored: number;
   attributes: string;
   phaseType: 'Ataque' | 'Defesa' | 'Iniciativa' | 'Reação';
   minorEffect: string;
@@ -94,7 +97,8 @@ function analyzeCard(card: any): CardAnalysis {
     description: card.description || '',
     specialization: card.unit_type || 'Genérica',
     culture: card.culture,
-    command: card.command_required,
+    command: calculateMinCommand(card),
+    commandStored: card.command_required,
     attributes: attrs.length > 0 ? attrs.join(', ') : '-',
     phaseType,
     minorEffect: minorEffect || '-',
@@ -348,7 +352,7 @@ export function CardAnalysisTable() {
                   <TableHead className="font-semibold">Efeito Maior</TableHead>
                   <TableHead className="font-semibold">Cond. Menor</TableHead>
                   <TableHead className="font-semibold">Cond. Maior</TableHead>
-                  <TableHead className="font-semibold w-[60px]">Ações</TableHead>
+                  <TableHead className="font-semibold w-[60px] sticky right-0 bg-muted/50">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -381,7 +385,16 @@ export function CardAnalysisTable() {
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-center font-mono">{card.command}</TableCell>
+                        <TableCell className="text-center font-mono">
+                          <div className="leading-tight">
+                            <div>{card.command}</div>
+                            {card.commandStored !== card.command && (
+                              <div className="text-[10px] text-muted-foreground" title="Valor salvo no banco">
+                                ({card.commandStored})
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-sm">{card.attributes}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={phaseConfig[card.phaseType].color}>
@@ -406,7 +419,7 @@ export function CardAnalysisTable() {
                         <TableCell className="text-sm max-w-[120px] truncate" title={card.majorCondition}>
                           {card.majorCondition}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="sticky right-0 bg-background/80 backdrop-blur border-l">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -415,6 +428,7 @@ export function CardAnalysisTable() {
                               e.stopPropagation();
                               handleEditCard(card);
                             }}
+                            aria-label={`Editar carta ${card.name}`}
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
