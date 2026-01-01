@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Swords, Crown, Settings2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MassCombatTacticalCardList } from '@/components/masscombat/MassCombatTacticalCardList';
 import { MassCombatCommanderTemplateList } from '@/components/masscombat/MassCombatCommanderTemplateList';
-import { Swords, Crown } from 'lucide-react';
+import { CardAnalysisTable } from '@/components/masscombat/CardAnalysisTable';
 
 export default function MassCombatCards() {
   return (
@@ -39,6 +39,10 @@ export default function MassCombatCards() {
               <Crown className="h-4 w-4" />
               Comandantes (VET)
             </TabsTrigger>
+            <TabsTrigger value="analysis" className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4" />
+              Análise
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="cards">
@@ -47,6 +51,10 @@ export default function MassCombatCards() {
 
           <TabsContent value="commanders">
             <MassCombatCommanderTemplateList />
+          </TabsContent>
+
+          <TabsContent value="analysis">
+            <CardAnalysisTable />
           </TabsContent>
         </Tabs>
       </main>
