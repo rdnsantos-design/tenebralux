@@ -80,24 +80,20 @@ export function getFinalVetCost(card: Partial<MassCombatTacticalCard>): number {
   return calculateMassCombatVetCost(card);
 }
 
-// Calculate minimum required command (highest bonus)
+// Calculate minimum required command
+// +1 for each positive attribute point, +1 for minor effect, +2 for major effect
 export function calculateMinCommand(card: Partial<MassCombatTacticalCard>): number {
-  return Math.max(
-    card.attack_bonus || 0,
-    card.defense_bonus || 0,
-    card.mobility_bonus || 0,
-    1
-  );
+  const bonusTotal = (card.attack_bonus || 0) + (card.defense_bonus || 0) + (card.mobility_bonus || 0);
+  const minorEffectCost = card.minor_effect?.trim() ? 1 : 0;
+  const majorEffectCost = card.major_effect?.trim() ? 2 : 0;
+  
+  const calculated = bonusTotal + minorEffectCost + majorEffectCost;
+  return Math.max(1, calculated); // Minimum of 1
 }
 
-// Calculate minimum required strategy (highest bonus)
+// Calculate minimum required strategy (same as command for now)
 export function calculateMinStrategy(card: Partial<MassCombatTacticalCard>): number {
-  return Math.max(
-    card.attack_bonus || 0,
-    card.defense_bonus || 0,
-    card.mobility_bonus || 0,
-    1
-  );
+  return calculateMinCommand(card);
 }
 
 // Validate card requirements
