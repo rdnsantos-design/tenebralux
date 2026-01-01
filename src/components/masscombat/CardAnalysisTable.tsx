@@ -3,13 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Swords, Shield, Zap, RotateCcw, Filter } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Search, Swords, Shield, Zap, RotateCcw, Filter, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMassCombatTacticalCards } from '@/hooks/useMassCombatTacticalCards';
+import { MassCombatTacticalCardEditor } from './MassCombatTacticalCardEditor';
+import { MassCombatTacticalCard } from '@/types/MassCombatTacticalCard';
 
 interface CardAnalysis {
   id: string;
   name: string;
+  description: string;
   specialization: string;
   culture: string | null;
   command: number;
@@ -19,6 +24,7 @@ interface CardAnalysis {
   majorEffect: string;
   minorCondition: string;
   majorCondition: string;
+  originalCard: any;
 }
 
 // Análise automática baseada no conteúdo da carta
@@ -74,6 +80,7 @@ function analyzeCard(card: any): CardAnalysis {
   return {
     id: card.id,
     name: card.name,
+    description: card.description || '',
     specialization: card.unit_type || 'Genérica',
     culture: card.culture,
     command: card.command_required,
@@ -82,7 +89,8 @@ function analyzeCard(card: any): CardAnalysis {
     minorEffect: minorEffect || '-',
     majorEffect: majorEffect || '-',
     minorCondition: minorCondition || '-',
-    majorCondition: majorCondition || '-'
+    majorCondition: majorCondition || '-',
+    originalCard: card
   };
 }
 
@@ -112,10 +120,12 @@ const cultureColors: Record<string, string> = {
 };
 
 export function CardAnalysisTable() {
-  const { cards, loading } = useMassCombatTacticalCards();
+  const { cards, loading, updateCard, fetchCards } = useMassCombatTacticalCards();
   const [search, setSearch] = useState('');
   const [phaseFilter, setPhaseFilter] = useState<string>('all');
   const [specFilter, setSpecFilter] = useState<string>('all');
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [editingCard, setEditingCard] = useState<MassCombatTacticalCard | null>(null);
   
   const analyzedCards = useMemo(() => {
     return cards.map(analyzeCard);
@@ -123,7 +133,8 @@ export function CardAnalysisTable() {
   
   const filteredCards = useMemo(() => {
     return analyzedCards.filter(card => {
-      const matchesSearch = card.name.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = card.name.toLowerCase().includes(search.toLowerCase()) ||
+                           card.description.toLowerCase().includes(search.toLowerCase());
       const matchesPhase = phaseFilter === 'all' || card.phaseType === phaseFilter;
       const matchesSpec = specFilter === 'all' || card.specialization === specFilter;
       return matchesSearch && matchesPhase && matchesSpec;
@@ -146,6 +157,30 @@ export function CardAnalysisTable() {
     
     return { byPhase, bySpec, withCulture, total: analyzedCards.length };
   }, [analyzedCards]);
+
+  const toggleRowExpansion = (id: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleEditCard = (card: CardAnalysis) => {
+    setEditingCard(card.originalCard);
+  };
+
+  const handleSaveCard = async (cardData: Omit<MassCombatTacticalCard, 'id' | 'created_at' | 'updated_at'>) => {
+    if (editingCard) {
+      await updateCard(editingCard.id, cardData);
+      await fetchCards();
+      setEditingCard(null);
+    }
+  };
   
   if (loading) {
     return (
@@ -159,6 +194,22 @@ export function CardAnalysisTable() {
   
   return (
     <div className="space-y-6">
+      {/* Dialog de Edição */}
+      <Dialog open={!!editingCard} onOpenChange={(open) => !open && setEditingCard(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Carta: {editingCard?.name}</DialogTitle>
+          </DialogHeader>
+          {editingCard && (
+            <MassCombatTacticalCardEditor
+              card={editingCard}
+              onSave={handleSaveCard}
+              onCancel={() => setEditingCard(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Estatísticas Resumidas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Object.entries(phaseConfig).map(([phase, config]) => {
@@ -193,7 +244,7 @@ export function CardAnalysisTable() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar carta..."
+                  placeholder="Buscar por nome ou descrição..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
@@ -236,7 +287,7 @@ export function CardAnalysisTable() {
         <CardHeader>
           <CardTitle>Análise de Cartas</CardTitle>
           <CardDescription>
-            {filteredCards.length} de {stats.total} cartas | {stats.withCulture} com cultura específica
+            {filteredCards.length} de {stats.total} cartas | {stats.withCulture} com cultura específica | Clique em uma linha para ver a descrição
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -244,6 +295,7 @@ export function CardAnalysisTable() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
+                  <TableHead className="w-[40px]"></TableHead>
                   <TableHead className="font-semibold">Nome</TableHead>
                   <TableHead className="font-semibold">Especialização</TableHead>
                   <TableHead className="font-semibold">Cultura</TableHead>
@@ -254,49 +306,86 @@ export function CardAnalysisTable() {
                   <TableHead className="font-semibold">Efeito Maior</TableHead>
                   <TableHead className="font-semibold">Cond. Menor</TableHead>
                   <TableHead className="font-semibold">Cond. Maior</TableHead>
+                  <TableHead className="font-semibold w-[60px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCards.map((card) => {
                   const PhaseIcon = phaseConfig[card.phaseType].icon;
+                  const isExpanded = expandedRows.has(card.id);
                   return (
-                    <TableRow key={card.id} className="hover:bg-muted/30">
-                      <TableCell className="font-medium">{card.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={specializationColors[card.specialization] || ''}>
-                          {card.specialization}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {card.culture ? (
-                          <Badge variant="outline" className={cultureColors[card.culture] || ''}>
-                            {card.culture}
+                    <React.Fragment key={card.id}>
+                      <TableRow 
+                        className="hover:bg-muted/30 cursor-pointer"
+                        onClick={() => toggleRowExpansion(card.id)}
+                      >
+                        <TableCell className="p-2">
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="font-medium">{card.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={specializationColors[card.specialization] || ''}>
+                            {card.specialization}
                           </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center font-mono">{card.command}</TableCell>
-                      <TableCell className="text-sm">{card.attributes}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={phaseConfig[card.phaseType].color}>
-                          <PhaseIcon className="h-3 w-3 mr-1" />
-                          {card.phaseType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm max-w-[120px] truncate" title={card.minorEffect}>
-                        {card.minorEffect}
-                      </TableCell>
-                      <TableCell className="text-sm max-w-[120px] truncate" title={card.majorEffect}>
-                        {card.majorEffect}
-                      </TableCell>
-                      <TableCell className="text-sm max-w-[120px] truncate" title={card.minorCondition}>
-                        {card.minorCondition}
-                      </TableCell>
-                      <TableCell className="text-sm max-w-[120px] truncate" title={card.majorCondition}>
-                        {card.majorCondition}
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell>
+                          {card.culture ? (
+                            <Badge variant="outline" className={cultureColors[card.culture] || ''}>
+                              {card.culture}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center font-mono">{card.command}</TableCell>
+                        <TableCell className="text-sm">{card.attributes}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={phaseConfig[card.phaseType].color}>
+                            <PhaseIcon className="h-3 w-3 mr-1" />
+                            {card.phaseType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm max-w-[120px] truncate" title={card.minorEffect}>
+                          {card.minorEffect}
+                        </TableCell>
+                        <TableCell className="text-sm max-w-[120px] truncate" title={card.majorEffect}>
+                          {card.majorEffect}
+                        </TableCell>
+                        <TableCell className="text-sm max-w-[120px] truncate" title={card.minorCondition}>
+                          {card.minorCondition}
+                        </TableCell>
+                        <TableCell className="text-sm max-w-[120px] truncate" title={card.majorCondition}>
+                          {card.majorCondition}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditCard(card);
+                            }}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && (
+                        <TableRow className="bg-muted/20">
+                          <TableCell colSpan={12} className="py-3 px-4">
+                            <div className="space-y-2">
+                              <div className="text-sm font-medium text-muted-foreground">Descrição:</div>
+                              <div className="text-sm p-3 bg-background rounded-md border">
+                                {card.description || <span className="text-muted-foreground italic">Sem descrição</span>}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </TableBody>
