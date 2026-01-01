@@ -17,12 +17,19 @@ import {
   Trash2,
   ChevronRight,
   Flag,
-  Eye
+  Eye,
+  Sparkles
 } from 'lucide-react';
 import { GameSession, PlayedCard, RoundResult } from '@/hooks/useGameSession';
 import { StrategicArmy, calculateDefense, calculateHitPoints } from '@/types/combat/strategic-army';
 import { MassCombatTacticalCard } from '@/types/MassCombatTacticalCard';
 import { MassCombatTacticalCardPreview } from '@/components/masscombat/MassCombatTacticalCardPreview';
+import { 
+  processAllPlayedCards, 
+  EffectResult, 
+  GameContext,
+  getEffectDescription 
+} from '@/utils/cardEffectEngine';
 
 interface GameBoardProps {
   session: GameSession;
@@ -112,6 +119,34 @@ export function GameBoard({
   // Função para obter carta completa
   const getCardById = (cardId: string) => allCards.find(c => c.id === cardId);
 
+  // Contexto do jogo para processamento de efeitos
+  const gameContext: GameContext = useMemo(() => ({
+    currentRound: session.current_round,
+    currentPhase: session.current_phase,
+    // Estes podem ser configurados via UI no futuro
+    terrain: undefined,
+    season: undefined,
+    isDefending: false,
+    hasInitiative: false,
+  }), [session.current_round, session.current_phase]);
+
+  // Processa efeitos das cartas jogadas por mim
+  const myActiveEffects: EffectResult = useMemo(() => {
+    const myCards = myPlayedThisPhase
+      .map(pc => getCardById(pc.card_id))
+      .filter(Boolean) as MassCombatTacticalCard[];
+    return processAllPlayedCards(myCards, gameContext);
+  }, [myPlayedThisPhase, gameContext, allCards]);
+
+  // Processa efeitos das cartas jogadas pelo oponente (visível após ambos prontos)
+  const enemyActiveEffects: EffectResult = useMemo(() => {
+    if (!bothReady) return { specialEffects: [], attackModifier: 0, defenseModifier: 0, mobilityModifier: 0, enemyAttackModifier: 0, enemyDefenseModifier: 0, damageReduction: 0, extraDamageOnWin: 0, retaliationDamage: 0, blockedCardTypes: [], returnToHand: false, drawCards: 0, forceEnemyDisadvantage: false, untapCommander: false, forceTapEnemyCommander: false, ignoreClimate: null, ignoreTerrain: [] };
+    const enemyCards = opponentPlayedThisPhase
+      .map(pc => getCardById(pc.card_id))
+      .filter(Boolean) as MassCombatTacticalCard[];
+    return processAllPlayedCards(enemyCards, gameContext);
+  }, [opponentPlayedThisPhase, bothReady, gameContext, allCards]);
+
   // Submeter resultados
   const handleSubmitResults = () => {
     onSubmitResults({
@@ -191,12 +226,20 @@ export function GameBoard({
                   const card = getCardById(pc.card_id);
                   return card ? (
                     <div key={pc.id} className="flex items-center justify-between bg-muted p-2 rounded text-sm">
-                      <span 
-                        className="cursor-pointer hover:underline"
-                        onClick={() => setSelectedCardPreview(card)}
-                      >
-                        {card.name}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span 
+                          className="cursor-pointer hover:underline"
+                          onClick={() => setSelectedCardPreview(card)}
+                        >
+                          {card.name}
+                        </span>
+                        {card.effect_type && (
+                          <Badge variant="secondary" className="text-[10px] h-4">
+                            <Sparkles className="w-2 h-2 mr-1" />
+                            Efeito
+                          </Badge>
+                        )}
+                      </div>
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -210,6 +253,59 @@ export function GameBoard({
                 })}
               </div>
             </div>
+
+            {/* Efeitos ativos das minhas cartas */}
+            {myActiveEffects.specialEffects.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    Efeitos Ativos
+                  </h4>
+                  <div className="space-y-1">
+                    {myActiveEffects.specialEffects.map((effect, idx) => (
+                      <div key={idx} className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-300 p-2 rounded">
+                        {effect}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Resumo de modificadores */}
+                  <div className="mt-2 grid grid-cols-3 gap-1 text-xs">
+                    {myActiveEffects.attackModifier !== 0 && (
+                      <Badge variant="outline" className="justify-center">
+                        Atq: {myActiveEffects.attackModifier > 0 ? '+' : ''}{myActiveEffects.attackModifier}
+                      </Badge>
+                    )}
+                    {myActiveEffects.defenseModifier !== 0 && (
+                      <Badge variant="outline" className="justify-center">
+                        Def: {myActiveEffects.defenseModifier > 0 ? '+' : ''}{myActiveEffects.defenseModifier}
+                      </Badge>
+                    )}
+                    {myActiveEffects.damageReduction > 0 && (
+                      <Badge variant="outline" className="justify-center text-green-600">
+                        -{myActiveEffects.damageReduction} dano
+                      </Badge>
+                    )}
+                    {myActiveEffects.extraDamageOnWin > 0 && (
+                      <Badge variant="outline" className="justify-center text-red-600">
+                        +{myActiveEffects.extraDamageOnWin} PV
+                      </Badge>
+                    )}
+                    {myActiveEffects.enemyAttackModifier !== 0 && (
+                      <Badge variant="outline" className="justify-center text-purple-600">
+                        Inim. Atq: {myActiveEffects.enemyAttackModifier}
+                      </Badge>
+                    )}
+                    {myActiveEffects.enemyDefenseModifier !== 0 && (
+                      <Badge variant="outline" className="justify-center text-purple-600">
+                        Inim. Def: {myActiveEffects.enemyDefenseModifier}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -343,10 +439,16 @@ export function GameBoard({
                     return card ? (
                       <div 
                         key={pc.id} 
-                        className="bg-destructive/10 p-2 rounded text-sm cursor-pointer hover:bg-destructive/20"
+                        className="bg-destructive/10 p-2 rounded text-sm cursor-pointer hover:bg-destructive/20 flex items-center gap-2"
                         onClick={() => setSelectedCardPreview(card)}
                       >
-                        {card.name}
+                        <span>{card.name}</span>
+                        {card.effect_type && (
+                          <Badge variant="secondary" className="text-[10px] h-4">
+                            <Sparkles className="w-2 h-2 mr-1" />
+                            Efeito
+                          </Badge>
+                        )}
                       </div>
                     ) : null;
                   })
@@ -357,6 +459,26 @@ export function GameBoard({
                 )}
               </div>
             </div>
+
+            {/* Efeitos ativos das cartas inimigas (visível após ambos prontos) */}
+            {bothReady && enemyActiveEffects.specialEffects.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2 text-destructive">
+                    <Sparkles className="w-3 h-3" />
+                    Efeitos Inimigos Ativos
+                  </h4>
+                  <div className="space-y-1">
+                    {enemyActiveEffects.specialEffects.map((effect, idx) => (
+                      <div key={idx} className="text-xs bg-destructive/10 text-destructive p-2 rounded">
+                        {effect}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
