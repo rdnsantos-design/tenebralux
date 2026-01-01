@@ -24,6 +24,8 @@ export interface MassCombatTacticalCard {
   major_effect?: string;
   minor_condition?: string;
   major_condition?: string;
+  effect_type?: string | null;
+  effect_tag?: string | null;
   vet_cost: number;
   vet_cost_override?: number | null;
   created_at?: string;
