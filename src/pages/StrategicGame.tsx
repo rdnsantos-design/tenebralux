@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Layers, Cloud, Mountain, Swords, ArrowLeft, Users, Crown, Globe, Settings2 } from "lucide-react";
+import { Layers, Cloud, Mountain, Swords, ArrowLeft, Users, Crown, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StrategicArmyList } from "@/components/masscombat/StrategicArmyList";
 import { MassCombatCommanderTemplateList } from "@/components/masscombat/MassCombatCommanderTemplateList";
 import { MassCombatTerrainList } from "@/components/masscombat/MassCombatTerrainList";
 import { ClimateViewer } from "@/components/masscombat/ClimateViewer";
 import { MassCombatCultureList } from "@/components/masscombat/MassCombatCultureList";
-import { MassCombatTacticalCardList } from "@/components/masscombat/MassCombatTacticalCardList";
 import { CardAnalysisTable } from "@/components/masscombat/CardAnalysisTable";
 
 const StrategicGame = () => {
@@ -35,7 +34,7 @@ const StrategicGame = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="armies" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Exércitos</span>
@@ -59,10 +58,6 @@ const StrategicGame = () => {
             <TabsTrigger value="cards" className="flex items-center gap-2">
               <Swords className="w-4 h-4" />
               <span className="hidden sm:inline">Cartas</span>
-            </TabsTrigger>
-            <TabsTrigger value="analysis" className="flex items-center gap-2">
-              <Settings2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Análise</span>
             </TabsTrigger>
           </TabsList>
 
@@ -91,13 +86,8 @@ const StrategicGame = () => {
             <MassCombatCultureList />
           </TabsContent>
 
-          {/* Aba de Cartas - Abre diretamente o componente */}
+          {/* Aba de Cartas - Tabela de análise com edição e criação */}
           <TabsContent value="cards">
-            <MassCombatTacticalCardList />
-          </TabsContent>
-
-          {/* Aba de Análise - Tabela de análise das cartas */}
-          <TabsContent value="analysis">
             <CardAnalysisTable />
           </TabsContent>
         </Tabs>

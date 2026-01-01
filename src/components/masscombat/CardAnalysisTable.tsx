@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, Swords, Shield, Zap, RotateCcw, Filter, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Swords, Shield, Zap, RotateCcw, Filter, Edit2, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { useMassCombatTacticalCards } from '@/hooks/useMassCombatTacticalCards';
 import { MassCombatTacticalCardEditor } from './MassCombatTacticalCardEditor';
 import { MassCombatTacticalCard } from '@/types/MassCombatTacticalCard';
@@ -132,12 +132,13 @@ const cultureColors: Record<string, string> = {
 };
 
 export function CardAnalysisTable() {
-  const { cards, loading, updateCard, fetchCards } = useMassCombatTacticalCards();
+  const { cards, loading, createCard, updateCard, fetchCards } = useMassCombatTacticalCards();
   const [search, setSearch] = useState('');
   const [phaseFilter, setPhaseFilter] = useState<string>('all');
   const [specFilter, setSpecFilter] = useState<string>('all');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [editingCard, setEditingCard] = useState<MassCombatTacticalCard | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   
   const analyzedCards = useMemo(() => {
     return cards.map(analyzeCard);
@@ -193,6 +194,12 @@ export function CardAnalysisTable() {
       setEditingCard(null);
     }
   };
+
+  const handleCreateCard = async (cardData: Omit<MassCombatTacticalCard, 'id' | 'created_at' | 'updated_at'>) => {
+    await createCard(cardData);
+    await fetchCards();
+    setIsCreating(false);
+  };
   
   if (loading) {
     return (
@@ -221,6 +228,28 @@ export function CardAnalysisTable() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de Criação */}
+      <Dialog open={isCreating} onOpenChange={setIsCreating}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Criar Nova Carta</DialogTitle>
+          </DialogHeader>
+          <MassCombatTacticalCardEditor
+            onSave={handleCreateCard}
+            onCancel={() => setIsCreating(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Botão de Criar + Estatísticas */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Cartas Táticas</h2>
+        <Button onClick={() => setIsCreating(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Nova Carta
+        </Button>
+      </div>
 
       {/* Estatísticas Resumidas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
