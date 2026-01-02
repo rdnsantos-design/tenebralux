@@ -779,6 +779,7 @@ export type Database = {
         Row: {
           attack_bonus: number
           attack_penalty: number
+          card_type: string
           command_required: number
           created_at: string
           culture: string | null
@@ -805,6 +806,7 @@ export type Database = {
         Insert: {
           attack_bonus?: number
           attack_penalty?: number
+          card_type?: string
           command_required?: number
           created_at?: string
           culture?: string | null
@@ -831,6 +833,7 @@ export type Database = {
         Update: {
           attack_bonus?: number
           attack_penalty?: number
+          card_type?: string
           command_required?: number
           created_at?: string
           culture?: string | null
@@ -2130,15 +2133,25 @@ export type Database = {
         Args: { p_card_index: number; p_room_id: string; p_session_id: string }
         Returns: Json
       }
-      select_maneuver_card: {
-        Args: {
-          p_card_index: number
-          p_commander_instance_id: string
-          p_room_id: string
-          p_session_id: string
-        }
-        Returns: Json
-      }
+      select_maneuver_card:
+        | {
+            Args: {
+              p_card_index: number
+              p_commander_instance_id: string
+              p_room_id: string
+              p_session_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_card_index: number
+              p_commander_instance_id: string
+              p_room_id: string
+              p_session_id: string
+            }
+            Returns: Json
+          }
       select_reaction_card: {
         Args: { p_card_index: number; p_room_id: string; p_session_id: string }
         Returns: Json
