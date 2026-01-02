@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Plus, LogIn, ListOrdered, Swords } from 'lucide-react';
+import { ArrowLeft, Plus, LogIn, ListOrdered, Swords, Map } from 'lucide-react';
 
 export function TacticalHomeMenu() {
   const navigate = useNavigate();
@@ -27,6 +27,13 @@ export function TacticalHomeMenu() {
       icon: ListOrdered,
       path: '/tactical/my-matches',
       color: 'text-amber-500',
+    },
+    {
+      title: 'Testar Mapa',
+      description: 'Visualize e teste o grid hexagonal',
+      icon: Map,
+      path: '/tactical/battle-test',
+      color: 'text-purple-500',
     },
   ];
 
