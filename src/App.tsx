@@ -20,6 +20,13 @@ import FieldCommanders from "./pages/FieldCommanders";
 import GameRoom from "./pages/GameRoom";
 import NotFound from "./pages/NotFound";
 
+// Tactical Battle Pages
+import TacticalHomePage from "./pages/TacticalHomePage";
+import CreateTacticalMatchPage from "./pages/CreateTacticalMatchPage";
+import JoinTacticalMatchPage from "./pages/JoinTacticalMatchPage";
+import TacticalLobbyPage from "./pages/TacticalLobbyPage";
+import MyTacticalMatchesPage from "./pages/MyTacticalMatchesPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -46,6 +53,14 @@ const App = () => (
           <Route path="/field-commanders" element={<FieldCommanders />} />
           <Route path="/game" element={<GameRoom />} />
           <Route path="/game/:roomCode" element={<GameRoom />} />
+          
+          {/* Tactical Battle Routes */}
+          <Route path="/tactical" element={<TacticalHomePage />} />
+          <Route path="/tactical/create" element={<CreateTacticalMatchPage />} />
+          <Route path="/tactical/join" element={<JoinTacticalMatchPage />} />
+          <Route path="/tactical/lobby/:matchId" element={<TacticalLobbyPage />} />
+          <Route path="/tactical/my-matches" element={<MyTacticalMatchesPage />} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
