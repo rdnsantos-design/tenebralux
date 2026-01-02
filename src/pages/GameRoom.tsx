@@ -159,7 +159,7 @@ export default function GameRoom() {
             />
           )}
 
-          {(currentPhase as string) === 'deployment' && (
+          {currentPhase === 'deployment' && (
             <DeploymentScreen
               room={room}
               players={players}

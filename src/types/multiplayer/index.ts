@@ -12,6 +12,7 @@ export type GamePhase =
   | 'scenario_selection'
   | 'scenario_tiebreak'
   | 'deckbuilding'
+  | 'deployment'
   | 'combat_setup'
   | 'combat'
   | 'resolution';
