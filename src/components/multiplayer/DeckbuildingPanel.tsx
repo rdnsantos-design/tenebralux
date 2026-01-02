@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
 import { 
   Loader2, Sword, Shield, Zap, Plus, Minus, Crown, 
-  CheckCircle2, Clock, Users, Scroll as ScrollIcon
+  CheckCircle2, Clock, Users, Scroll as ScrollIcon, Search, Star
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,34 +37,21 @@ interface TacticalCard {
   name: string;
   unit_type: string;
   vet_cost: number;
+  vet_cost_override: number | null;
   attack_bonus: number;
   defense_bonus: number;
   mobility_bonus: number;
   command_required: number;
+  strategy_required: number;
   description?: string;
+  culture?: string;
+  effect_tag?: string;
 }
 
 interface ArmyAttributes {
   attack: number;
   defense: number;
   mobility: number;
-}
-
-interface DeckCard {
-  id: string;
-  name: string;
-  vet_cost: number;
-  unit_type: string;
-  attack_bonus: number;
-  defense_bonus: number;
-  mobility_bonus: number;
-}
-
-interface PlayerDeck {
-  offensive: DeckCard[];
-  defensive: DeckCard[];
-  initiative: DeckCard[];
-  reactions: DeckCard[];
 }
 
 interface PlayerCommander {
@@ -77,9 +64,34 @@ interface PlayerCommander {
   custo_vet: number;
 }
 
+// Cartas básicas - sempre disponíveis, não custam VET
+const BASIC_CARDS = [
+  { id: 'basic_attack_plus1', name: '+1 Ataque', category: 'offensive', bonus: '+1 ATK', description: 'Carta básica ofensiva' },
+  { id: 'basic_defense_plus1', name: '+1 Defesa', category: 'defensive', bonus: '+1 DEF', description: 'Carta básica defensiva' },
+  { id: 'basic_initiative_plus1', name: '+1 Iniciativa', category: 'initiative', bonus: '+1 INI', description: 'Carta básica de iniciativa' },
+  { id: 'basic_heal_plus1', name: '+1 Cura', category: 'initiative', bonus: '+1 CURA', description: 'Carta básica de cura/movimentação' },
+  { id: 'basic_countermaneuver', name: 'Contra-Manobra', category: 'reactions', bonus: 'Reação', description: 'Consome CMD do General durante combate' },
+];
+
+// Mapeamento de unit_type para categoria
+const UNIT_TYPE_TO_CATEGORY: Record<string, string> = {
+  'Infantaria': 'offensive',
+  'Cavalaria': 'offensive', 
+  'Arqueiro': 'defensive',
+  'Cerco': 'offensive',
+  'General': 'initiative',
+  // Fallback genéricos
+  'ofensiva': 'offensive',
+  'defensiva': 'defensive',
+  'iniciativa': 'initiative',
+  'reação': 'reactions',
+  'movimentação': 'initiative',
+};
+
 export function DeckbuildingPanel({ room, players, matchState, playerContext }: DeckbuildingPanelProps) {
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Data from DB
   const [commanderTemplates, setCommanderTemplates] = useState<CommanderTemplate[]>([]);
@@ -87,16 +99,16 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
   const [chosenTerrainName, setChosenTerrainName] = useState<string>('');
   const [chosenSeasonName, setChosenSeasonName] = useState<string>('');
   
+  // VET status from server
+  const [vetStatus, setVetStatus] = useState({ budget: 100, spent: 0, remaining: 100 });
+  
   // Local state for attributes (optimistic UI)
   const [localAttributes, setLocalAttributes] = useState<ArmyAttributes>({ attack: 0, defense: 0, mobility: 0 });
   const [attributesDirty, setAttributesDirty] = useState(false);
 
   // Parse match state
   const vetAgreed = (matchState as unknown as { vet_agreed?: number }).vet_agreed ?? 100;
-  const myVetRemaining = playerContext.playerNumber === 1 
-    ? (matchState as unknown as { player1_vet_remaining?: number }).player1_vet_remaining ?? vetAgreed
-    : (matchState as unknown as { player2_vet_remaining?: number }).player2_vet_remaining ?? vetAgreed;
-
+  
   const myAttributes = useMemo(() => {
     const attrs = playerContext.playerNumber === 1 
       ? (matchState as unknown as { player1_army_attributes?: ArmyAttributes }).player1_army_attributes
@@ -115,12 +127,24 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
     ? (matchState as unknown as { player1_general_id?: string }).player1_general_id
     : (matchState as unknown as { player2_general_id?: string }).player2_general_id;
 
-  const myDeck = useMemo(() => {
+  // Deck agora são só IDs
+  const myDeckIds = useMemo(() => {
     const deck = playerContext.playerNumber === 1 
-      ? (matchState as unknown as { player1_deck?: PlayerDeck }).player1_deck
-      : (matchState as unknown as { player2_deck?: PlayerDeck }).player2_deck;
+      ? (matchState as unknown as { player1_deck?: { offensive: string[]; defensive: string[]; initiative: string[]; reactions: string[] } }).player1_deck
+      : (matchState as unknown as { player2_deck?: { offensive: string[]; defensive: string[]; initiative: string[]; reactions: string[] } }).player2_deck;
     return deck ?? { offensive: [], defensive: [], initiative: [], reactions: [] };
   }, [matchState, playerContext.playerNumber]);
+
+  // Resolver IDs para cartas completas
+  const myDeckCards = useMemo(() => {
+    const resolve = (ids: string[]) => ids.map(id => tacticalCards.find(c => c.id === id)).filter(Boolean) as TacticalCard[];
+    return {
+      offensive: resolve(myDeckIds.offensive || []),
+      defensive: resolve(myDeckIds.defensive || []),
+      initiative: resolve(myDeckIds.initiative || []),
+      reactions: resolve(myDeckIds.reactions || []),
+    };
+  }, [myDeckIds, tacticalCards]);
 
   const myDeckConfirmed = playerContext.playerNumber === 1 
     ? (matchState as unknown as { player1_deck_confirmed?: boolean }).player1_deck_confirmed
@@ -130,13 +154,11 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
     ? (matchState as unknown as { player2_deck_confirmed?: boolean }).player2_deck_confirmed
     : (matchState as unknown as { player1_deck_confirmed?: boolean }).player1_deck_confirmed;
 
-  // Calculate costs
+  // Calculate costs locally for display (server is source of truth)
   const attributesCost = (localAttributes.attack + localAttributes.defense + localAttributes.mobility) * 5;
   const commandersCost = myCommanders.reduce((sum, c) => sum + c.custo_vet, 0);
-  const cardsCost = [...myDeck.offensive, ...myDeck.defensive, ...myDeck.initiative, ...myDeck.reactions]
-    .reduce((sum, c) => sum + c.vet_cost, 0);
-  const totalCost = attributesCost + commandersCost + cardsCost;
-  const vetAvailable = myVetRemaining - totalCost;
+  const cardsCost = [...myDeckCards.offensive, ...myDeckCards.defensive, ...myDeckCards.initiative, ...myDeckCards.reactions]
+    .reduce((sum, c) => sum + (c.vet_cost_override ?? c.vet_cost ?? 0), 0);
   const armyPV = Math.floor(vetAgreed * 0.10);
 
   // Card limits based on attributes
@@ -154,26 +176,38 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
     }
   }, [myAttributes, attributesDirty]);
 
+  // Fetch VET status from server
+  const fetchVetStatus = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_vet_status', {
+        p_room_id: room.id,
+        p_session_id: playerContext.sessionId
+      });
+      if (!error && data) {
+        setVetStatus(data as { budget: number; spent: number; remaining: number });
+      }
+    } catch (err) {
+      console.error('Erro ao buscar VET status:', err);
+    }
+  }, [room.id, playerContext.sessionId]);
+
   // Fetch data on mount
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch commander templates
         const { data: cmdData } = await supabase
           .from('mass_combat_commander_templates')
           .select('*')
           .order('numero');
         if (cmdData) setCommanderTemplates(cmdData);
 
-        // Fetch tactical cards
         const { data: cardData } = await supabase
           .from('mass_combat_tactical_cards')
           .select('*')
           .order('name');
         if (cardData) setTacticalCards(cardData);
 
-        // Fetch terrain and season names
         const chosenTerrainId = (matchState as unknown as { chosen_terrain_id?: string }).chosen_terrain_id;
         const chosenSeasonId = (matchState as unknown as { chosen_season_id?: string }).chosen_season_id;
 
@@ -194,6 +228,8 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
             .single();
           if (seasonData) setChosenSeasonName(seasonData.name);
         }
+
+        await fetchVetStatus();
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
       } finally {
@@ -202,14 +238,19 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
     };
 
     fetchData();
-  }, [matchState]);
+  }, [matchState, fetchVetStatus]);
+
+  // Refetch VET status when match state changes
+  useEffect(() => {
+    fetchVetStatus();
+  }, [matchState, fetchVetStatus]);
 
   // Save attributes
   const handleSaveAttributes = async () => {
     try {
       const { error } = await supabase.rpc('set_army_attributes', {
         p_room_id: room.id,
-        p_player_number: playerContext.playerNumber,
+        p_session_id: playerContext.sessionId,
         p_attack: localAttributes.attack,
         p_defense: localAttributes.defense,
         p_mobility: localAttributes.mobility
@@ -217,6 +258,7 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
 
       if (error) throw error;
       setAttributesDirty(false);
+      await fetchVetStatus();
       toast.success('Atributos salvos!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao salvar atributos');
@@ -228,11 +270,12 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
     try {
       const { error } = await supabase.rpc('add_commander', {
         p_room_id: room.id,
-        p_player_number: playerContext.playerNumber,
+        p_session_id: playerContext.sessionId,
         p_commander_id: commanderId
       });
 
       if (error) throw error;
+      await fetchVetStatus();
       toast.success('Comandante adicionado!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao adicionar comandante');
@@ -244,11 +287,12 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
     try {
       const { error } = await supabase.rpc('remove_commander', {
         p_room_id: room.id,
-        p_player_number: playerContext.playerNumber,
+        p_session_id: playerContext.sessionId,
         p_commander_id: commanderId
       });
 
       if (error) throw error;
+      await fetchVetStatus();
       toast.success('Comandante removido!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao remover comandante');
@@ -260,7 +304,7 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
     try {
       const { error } = await supabase.rpc('set_general', {
         p_room_id: room.id,
-        p_player_number: playerContext.playerNumber,
+        p_session_id: playerContext.sessionId,
         p_commander_id: commanderId
       });
 
@@ -276,12 +320,13 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
     try {
       const { error } = await supabase.rpc('add_card_to_deck', {
         p_room_id: room.id,
-        p_player_number: playerContext.playerNumber,
+        p_session_id: playerContext.sessionId,
         p_card_id: cardId,
         p_category: category
       });
 
       if (error) throw error;
+      await fetchVetStatus();
       toast.success('Carta adicionada!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao adicionar carta');
@@ -293,12 +338,13 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
     try {
       const { error } = await supabase.rpc('remove_card_from_deck', {
         p_room_id: room.id,
-        p_player_number: playerContext.playerNumber,
+        p_session_id: playerContext.sessionId,
         p_card_id: cardId,
         p_category: category
       });
 
       if (error) throw error;
+      await fetchVetStatus();
       toast.success('Carta removida!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao remover carta');
@@ -309,9 +355,9 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
   const handleConfirm = async () => {
     setConfirming(true);
     try {
-      const { data, error } = await supabase.rpc('confirm_deckbuilding', {
+      const { error } = await supabase.rpc('confirm_deckbuilding', {
         p_room_id: room.id,
-        p_player_number: playerContext.playerNumber
+        p_session_id: playerContext.sessionId
       });
 
       if (error) throw error;
@@ -325,23 +371,41 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
 
   const opponent = players.find(p => p.id !== playerContext.playerId);
 
-  // Filter cards by category
+  // Filter cards by category - improved logic
   const getCardsForCategory = useCallback((category: 'offensive' | 'defensive' | 'initiative' | 'reactions') => {
-    // All cards can potentially be used, but the category determines limits
-    // TODO: Add proper filtering based on card types when schema is updated
-    return tacticalCards;
-  }, [tacticalCards]);
+    return tacticalCards.filter(card => {
+      // Filtrar por busca
+      if (searchQuery && !card.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+      
+      // Mapear unit_type para categoria
+      const cardCategory = UNIT_TYPE_TO_CATEGORY[card.unit_type] || 'offensive';
+      
+      // Para reações, permitir cartas marcadas como reação ou que tenham effect_tag de reação
+      if (category === 'reactions') {
+        return cardCategory === 'reactions' || card.effect_tag?.toLowerCase().includes('reação');
+      }
+      
+      return cardCategory === category;
+    });
+  }, [tacticalCards, searchQuery]);
 
   // Check if card is already in deck
   const isCardInDeck = useCallback((cardId: string) => {
-    return [...myDeck.offensive, ...myDeck.defensive, ...myDeck.initiative, ...myDeck.reactions]
-      .some(c => c.id === cardId);
-  }, [myDeck]);
+    return [...myDeckIds.offensive, ...myDeckIds.defensive, ...myDeckIds.initiative, ...myDeckIds.reactions]
+      .includes(cardId);
+  }, [myDeckIds]);
 
   // Check if commander is already added
   const isCommanderAdded = useCallback((commanderId: string) => {
     return myCommanders.some(c => c.id === commanderId);
   }, [myCommanders]);
+
+  // Get basic cards for category
+  const getBasicCardsForCategory = (category: string) => {
+    return BASIC_CARDS.filter(c => c.category === category);
+  };
 
   if (loading) {
     return (
@@ -387,33 +451,62 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
             chosenSeasonName={chosenSeasonName}
           />
 
-          {/* Cost Summary */}
+          {/* VET Summary - Server Source of Truth */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Custos</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                Orçamento VET
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
+                <span>Budget (após cenário):</span>
+                <span className="font-bold">{vetStatus.budget} VET</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between text-muted-foreground">
                 <span>Atributos:</span>
                 <span>{attributesCost} VET</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-muted-foreground">
                 <span>Comandantes ({myCommanders.length}/6):</span>
                 <span>{commandersCost} VET</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-muted-foreground">
                 <span>Cartas:</span>
                 <span>{cardsCost} VET</span>
               </div>
               <Separator />
               <div className="flex justify-between font-bold">
                 <span>Total Gasto:</span>
-                <span>{totalCost} VET</span>
+                <span>{vetStatus.spent} VET</span>
               </div>
-              <div className="flex justify-between text-primary font-bold">
-                <span>VET Disponível:</span>
-                <span className={vetAvailable < 0 ? 'text-destructive' : ''}>{vetAvailable} VET</span>
+              <div className="flex justify-between text-primary font-bold text-lg">
+                <span>Restante:</span>
+                <span className={vetStatus.remaining < 0 ? 'text-destructive' : ''}>{vetStatus.remaining} VET</span>
               </div>
+              <Separator />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>PV do Exército:</span>
+                <span>{armyPV}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Basic Cards Info */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Cartas Básicas (Sempre Disponíveis)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-xs text-muted-foreground">
+              {BASIC_CARDS.map(card => (
+                <div key={card.id} className="flex justify-between">
+                  <span>{card.name}</span>
+                  <Badge variant="outline" className="text-xs">{card.bonus}</Badge>
+                </div>
+              ))}
+              <p className="text-xs italic mt-2">Não custam VET e não contam em limites.</p>
             </CardContent>
           </Card>
         </div>
@@ -648,7 +741,7 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
                               size="sm" 
                               className="w-full"
                               onClick={() => handleAddCommander(template.id)}
-                              disabled={myCommanders.length >= 6 || vetAvailable < template.custo_vet || myDeckConfirmed}
+                              disabled={myCommanders.length >= 6 || vetStatus.remaining < template.custo_vet || myDeckConfirmed}
                             >
                               <Plus className="w-3 h-3 mr-1" />Adicionar
                             </Button>
@@ -669,37 +762,69 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
                     Cartas Táticas
                   </CardTitle>
                   <CardDescription>
-                    Limites: Off {myDeck.offensive.length}/{cardLimits.offensive} | 
-                    Def {myDeck.defensive.length}/{cardLimits.defensive} | 
-                    Ini {myDeck.initiative.length}/{cardLimits.initiative} | 
-                    React {myDeck.reactions.length}/{cardLimits.reactions}
+                    Limites: Off {myDeckCards.offensive.length}/{cardLimits.offensive} | 
+                    Def {myDeckCards.defensive.length}/{cardLimits.defensive} | 
+                    Ini {myDeckCards.initiative.length}/{cardLimits.initiative} | 
+                    React {myDeckCards.reactions.length}/{cardLimits.reactions}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {/* Search */}
+                  <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Buscar carta..." 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+
                   <Tabs defaultValue="offensive">
                     <TabsList className="grid w-full grid-cols-4">
                       <TabsTrigger value="offensive" className="text-xs">
-                        Ofensivas ({myDeck.offensive.length}/{cardLimits.offensive})
+                        Ofensivas ({myDeckCards.offensive.length}/{cardLimits.offensive})
                       </TabsTrigger>
                       <TabsTrigger value="defensive" className="text-xs">
-                        Defensivas ({myDeck.defensive.length}/{cardLimits.defensive})
+                        Defensivas ({myDeckCards.defensive.length}/{cardLimits.defensive})
                       </TabsTrigger>
                       <TabsTrigger value="initiative" className="text-xs">
-                        Iniciativa ({myDeck.initiative.length}/{cardLimits.initiative})
+                        Iniciativa ({myDeckCards.initiative.length}/{cardLimits.initiative})
                       </TabsTrigger>
                       <TabsTrigger value="reactions" className="text-xs">
-                        Reações ({myDeck.reactions.length}/{cardLimits.reactions})
+                        Reações ({myDeckCards.reactions.length}/{cardLimits.reactions})
                       </TabsTrigger>
                     </TabsList>
 
                     {(['offensive', 'defensive', 'initiative', 'reactions'] as const).map((category) => (
                       <TabsContent key={category} value={category} className="mt-4">
+                        {/* Basic Cards for this category */}
+                        {getBasicCardsForCategory(category).length > 0 && (
+                          <div className="mb-4">
+                            <h4 className="font-medium mb-2 text-sm flex items-center gap-1">
+                              <Star className="w-3 h-3 text-yellow-500" />
+                              Sempre Disponíveis:
+                            </h4>
+                            <div className="grid grid-cols-1 gap-2">
+                              {getBasicCardsForCategory(category).map((card) => (
+                                <div key={card.id} className="p-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 flex justify-between items-center">
+                                  <div>
+                                    <span className="font-medium text-sm">{card.name}</span>
+                                    <span className="text-xs text-muted-foreground ml-2">{card.description}</span>
+                                  </div>
+                                  <Badge variant="outline" className="text-xs">Grátis</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* My Cards in Category */}
-                        {myDeck[category].length > 0 && (
+                        {myDeckCards[category].length > 0 && (
                           <div className="mb-4">
                             <h4 className="font-medium mb-2 text-sm">No Deck:</h4>
                             <div className="grid grid-cols-1 gap-2">
-                              {myDeck[category].map((card) => (
+                              {myDeckCards[category].map((card) => (
                                 <div key={card.id} className="p-2 rounded-lg border border-primary/50 bg-primary/5 flex justify-between items-center">
                                   <div>
                                     <span className="font-medium text-sm">{card.name}</span>
@@ -710,7 +835,7 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <Badge variant="secondary">{card.vet_cost} VET</Badge>
+                                    <Badge variant="secondary">{card.vet_cost_override ?? card.vet_cost} VET</Badge>
                                     <Button 
                                       size="sm" 
                                       variant="destructive"
@@ -726,30 +851,31 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
                           </div>
                         )}
 
-                        {/* Available Cards */}
+                        {/* Available Cards - Filtered */}
                         <ScrollArea className="h-48">
                           <div className="grid grid-cols-1 gap-2 pr-4">
-                            {tacticalCards
+                            {getCardsForCategory(category)
                               .filter(c => !isCardInDeck(c.id))
                               .map((card) => (
                                 <div key={card.id} className="p-2 rounded-lg border border-border flex justify-between items-center">
-                                  <div>
+                                  <div className="flex-1 min-w-0">
                                     <span className="font-medium text-sm">{card.name}</span>
-                                    <div className="text-xs text-muted-foreground">
+                                    <div className="text-xs text-muted-foreground truncate">
                                       {card.unit_type} | CMD {card.command_required}
                                       {card.attack_bonus > 0 && ` | +${card.attack_bonus} ATK`}
                                       {card.defense_bonus > 0 && ` | +${card.defense_bonus} DEF`}
                                       {card.mobility_bonus > 0 && ` | +${card.mobility_bonus} MOB`}
+                                      {card.culture && ` | ${card.culture}`}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline">{card.vet_cost} VET</Badge>
+                                  <div className="flex items-center gap-2 ml-2">
+                                    <Badge variant="outline">{card.vet_cost_override ?? card.vet_cost} VET</Badge>
                                     <Button 
                                       size="sm"
                                       onClick={() => handleAddCard(card.id, category)}
                                       disabled={
-                                        myDeck[category].length >= cardLimits[category] || 
-                                        vetAvailable < card.vet_cost ||
+                                        myDeckCards[category].length >= cardLimits[category] || 
+                                        vetStatus.remaining < (card.vet_cost_override ?? card.vet_cost) ||
                                         myDeckConfirmed
                                       }
                                     >
@@ -758,6 +884,11 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
                                   </div>
                                 </div>
                               ))}
+                            {getCardsForCategory(category).filter(c => !isCardInDeck(c.id)).length === 0 && (
+                              <p className="text-sm text-muted-foreground text-center py-4">
+                                Nenhuma carta disponível nesta categoria
+                              </p>
+                            )}
                           </div>
                         </ScrollArea>
                       </TabsContent>
@@ -782,7 +913,7 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
                 confirming || 
                 myCommanders.length < 1 || 
                 !myGeneralId ||
-                vetAvailable < 0 ||
+                vetStatus.remaining < 0 ||
                 attributesDirty
               }
             >
