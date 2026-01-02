@@ -30,8 +30,7 @@ export function DebugPanel({ room, players, matchState, sessionId, lastAction }:
     setIsExporting(true);
     try {
       const { data, error } = await supabase.rpc('get_match_state', {
-        p_room_id: room.id,
-        p_session_id: sessionId
+        p_room_id: room.id
       });
 
       if (error) throw error;
