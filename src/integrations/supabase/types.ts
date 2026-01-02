@@ -936,14 +936,17 @@ export type Database = {
       match_state: {
         Row: {
           chosen_season_id: string | null
+          chosen_secondary_terrain_id: string | null
           chosen_terrain_id: string | null
           combat_board_state: Json | null
           combat_phase: string | null
           combat_round: number
           created_at: string
           current_action_stack: Json | null
+          first_attacker_player_number: number | null
           game_seed: string | null
           id: string
+          initiative_roll_result: Json | null
           logistics_budget: number
           logistics_resolved: boolean
           logistics_round: number
@@ -1016,14 +1019,17 @@ export type Database = {
         }
         Insert: {
           chosen_season_id?: string | null
+          chosen_secondary_terrain_id?: string | null
           chosen_terrain_id?: string | null
           combat_board_state?: Json | null
           combat_phase?: string | null
           combat_round?: number
           created_at?: string
           current_action_stack?: Json | null
+          first_attacker_player_number?: number | null
           game_seed?: string | null
           id?: string
+          initiative_roll_result?: Json | null
           logistics_budget?: number
           logistics_resolved?: boolean
           logistics_round?: number
@@ -1096,14 +1102,17 @@ export type Database = {
         }
         Update: {
           chosen_season_id?: string | null
+          chosen_secondary_terrain_id?: string | null
           chosen_terrain_id?: string | null
           combat_board_state?: Json | null
           combat_phase?: string | null
           combat_round?: number
           created_at?: string
           current_action_stack?: Json | null
+          first_attacker_player_number?: number | null
           game_seed?: string | null
           id?: string
+          initiative_roll_result?: Json | null
           logistics_budget?: number
           logistics_resolved?: boolean
           logistics_round?: number
@@ -1175,6 +1184,13 @@ export type Database = {
           vet_cost_logistics_p2?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "match_state_chosen_secondary_terrain_id_fkey"
+            columns: ["chosen_secondary_terrain_id"]
+            isOneToOne: false
+            referencedRelation: "mass_combat_secondary_terrains"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "match_state_room_id_fkey"
             columns: ["room_id"]
@@ -1921,6 +1937,22 @@ export type Database = {
         Args: { p_player_number: number; p_room_id: string }
         Returns: number
       }
+      choose_first_attacker: {
+        Args: {
+          p_attacker_player_number: number
+          p_room_id: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      choose_secondary_terrain: {
+        Args: {
+          p_room_id: string
+          p_secondary_terrain_id: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
       confirm_culture: {
         Args: {
           p_culture_id: string
@@ -1950,6 +1982,14 @@ export type Database = {
         Returns: Json
       }
       confirm_main: {
+        Args: { p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
+      confirm_maneuver: {
+        Args: { p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
+      confirm_reaction: {
         Args: { p_room_id: string; p_session_id: string }
         Returns: Json
       }
@@ -2040,6 +2080,10 @@ export type Database = {
             Returns: Json
           }
       resolve_combat_round: { Args: { p_room_id: string }; Returns: Json }
+      resolve_initiative_roll: {
+        Args: { p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
       resolve_logistics_round: {
         Args: { p_room_id: string; p_round_number: number }
         Returns: Json
@@ -2049,6 +2093,19 @@ export type Database = {
         Returns: Json
       }
       select_main_card: {
+        Args: { p_card_index: number; p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
+      select_maneuver_card: {
+        Args: {
+          p_card_index: number
+          p_commander_instance_id: string
+          p_room_id: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      select_reaction_card: {
         Args: { p_card_index: number; p_room_id: string; p_session_id: string }
         Returns: Json
       }
@@ -2153,6 +2210,10 @@ export type Database = {
         | "combat_setup"
         | "combat"
         | "resolution"
+        | "initiative_maneuver"
+        | "initiative_reaction"
+        | "initiative_roll"
+        | "initiative_post"
       holding_type: "ordem" | "guilda" | "templo" | "fonte_magica"
       player_status: "joined" | "ready" | "disconnected"
       room_status:
@@ -2319,6 +2380,10 @@ export const Constants = {
         "combat_setup",
         "combat",
         "resolution",
+        "initiative_maneuver",
+        "initiative_reaction",
+        "initiative_roll",
+        "initiative_post",
       ],
       holding_type: ["ordem", "guilda", "templo", "fonte_magica"],
       player_status: ["joined", "ready", "disconnected"],
