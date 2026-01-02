@@ -24,6 +24,7 @@ function BattleContent() {
     validTargets,
     selectUnit,
     moveUnit,
+    attackUnit,
     endPhase,
     rollInitiative,
     getUnit,
@@ -52,7 +53,7 @@ function BattleContent() {
     if (hex?.unitId) {
       // Se já tenho unidade selecionada e o clique é em inimigo (alvo válido)
       if (selectedUnitId && validTargets.includes(hex.unitId)) {
-        console.log('Atacar:', selectedUnitId, '->', hex.unitId);
+        await attackUnit(selectedUnitId, hex.unitId);
         return;
       }
       

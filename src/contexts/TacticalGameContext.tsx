@@ -12,6 +12,7 @@ import {
 import { Posture } from '@/types/cards/unit-card';
 import { useTacticalGameState } from '@/hooks/useTacticalGameState';
 import { getNeighbors, hexDistance, isValidHex, hexKey } from '@/lib/hexUtils';
+import { resolveMeleeCombat, resolveRangedCombat, applyCombatResult } from '@/lib/combatEngine';
 
 interface TacticalGameContextType {
   // Estado
@@ -289,10 +290,101 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
   }, [gameState, myPlayerId, isMyTurn, matchId, playerId, saveGameState, logAction]);
   
   const attackUnit = useCallback(async (attackerId: string, targetId: string): Promise<boolean> => {
-    // Implementar no próximo prompt (combate)
-    console.log('Attack:', attackerId, '->', targetId);
-    return false;
-  }, []);
+    if (!gameState || !myPlayerId || !isMyTurn) return false;
+    
+    const attacker = gameState.units[attackerId];
+    const defender = gameState.units[targetId];
+    
+    if (!attacker || !defender) return false;
+    if (attacker.owner !== myPlayerId) return false;
+    if (defender.owner === myPlayerId) return false; // Não pode atacar aliado
+    if (attacker.hasActedThisTurn) return false;
+    
+    // Verificar se o alvo é válido
+    const targets = gameState.phase === 'melee' 
+      ? calculateMeleeTargets(attacker, gameState)
+      : gameState.phase === 'shooting' && attacker.currentRanged > 0
+        ? calculateShootingTargets(attacker, gameState)
+        : [];
+    
+    if (!targets.includes(targetId)) return false;
+    
+    let result;
+    let logMessages: string[] = [];
+    let updatedAttacker = { ...attacker };
+    let updatedDefender = { ...defender };
+    
+    if (gameState.phase === 'melee') {
+      // Combate corpo a corpo
+      const combatResult = resolveMeleeCombat(attacker, defender, gameState);
+      logMessages = combatResult.log;
+      
+      // Aplicar resultado
+      const applied = applyCombatResult(attacker, defender, combatResult);
+      updatedAttacker = applied.updatedAttacker;
+      updatedDefender = applied.updatedDefender;
+    } else if (gameState.phase === 'shooting') {
+      // Combate à distância
+      const rangedResult = resolveRangedCombat(attacker, defender, gameState);
+      logMessages = rangedResult.log;
+      
+      // Aplicar dano ao alvo
+      updatedDefender.currentPressure += rangedResult.targetPressure;
+      
+      // Verificar rout
+      if (updatedDefender.currentPressure >= updatedDefender.maxPressure) {
+        updatedDefender.isRouting = true;
+        logMessages.push(`${defender.name} ENTRA EM ROTA! (Pressão excedeu moral)`);
+      }
+      
+      // Aplicar fogo amigo se houver
+      if (rangedResult.friendlyFireUnitId && rangedResult.friendlyFirePressure > 0) {
+        const friendlyUnit = gameState.units[rangedResult.friendlyFireUnitId];
+        if (friendlyUnit) {
+          const newFriendlyUnits = { ...gameState.units };
+          newFriendlyUnits[rangedResult.friendlyFireUnitId] = {
+            ...friendlyUnit,
+            currentPressure: friendlyUnit.currentPressure + rangedResult.friendlyFirePressure,
+          };
+        }
+      }
+    }
+    
+    // Marcar atacante como tendo agido
+    updatedAttacker.hasActedThisTurn = true;
+    
+    // Atualizar estado
+    const newUnits = { ...gameState.units };
+    newUnits[attackerId] = updatedAttacker;
+    newUnits[targetId] = updatedDefender;
+    
+    // Criar logs de batalha
+    const newLogs = logMessages.map(message => ({
+      id: crypto.randomUUID(),
+      turn: gameState.turn,
+      phase: gameState.phase,
+      timestamp: Date.now(),
+      type: 'combat' as const,
+      message,
+    }));
+    
+    const newState: TacticalGameState = {
+      ...gameState,
+      units: newUnits,
+      battleLog: [...gameState.battleLog, ...newLogs],
+    };
+    
+    const action: GameAction = { type: 'ATTACK_UNIT', attackerId, targetId };
+    await logAction(matchId, playerId, action);
+    const success = await saveGameState(matchId, newState);
+    
+    if (success) {
+      setGameState(newState);
+      setSelectedUnitId(null);
+    }
+    
+    return success;
+  }, [gameState, myPlayerId, isMyTurn, matchId, playerId, saveGameState, logAction]);
   
   const setPosture = useCallback(async (unitId: string, posture: Posture): Promise<boolean> => {
     if (!gameState || !myPlayerId || !isMyTurn) return false;
