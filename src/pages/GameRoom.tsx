@@ -162,12 +162,15 @@ export default function GameRoom() {
           )}
 
           {/* Debug Panel */}
-          <DebugPanel 
-            room={room} 
-            players={players} 
-            matchState={matchState}
-            lastAction={lastAction}
-          />
+          {playerContext && (
+            <DebugPanel 
+              room={room} 
+              players={players} 
+              matchState={matchState}
+              sessionId={playerContext.sessionId}
+              lastAction={lastAction}
+            />
+          )}
         </div>
       </div>
     );
