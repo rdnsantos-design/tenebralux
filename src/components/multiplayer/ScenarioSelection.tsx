@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, CheckCircle2, Clock, Plus, Minus, Trophy, MapPin, Sun } from 'lucide-react';
+import { Loader2, CheckCircle2, Clock, Plus, Minus, Trophy, MapPin, Sun, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Room, RoomPlayer, MatchState, PlayerContext } from '@/types/multiplayer';
@@ -29,9 +29,10 @@ interface ScenarioSelectionProps {
   players: RoomPlayer[];
   matchState: MatchState;
   playerContext: PlayerContext;
+  onLeaveRoom: () => void;
 }
 
-export function ScenarioSelection({ room, players, matchState, playerContext }: ScenarioSelectionProps) {
+export function ScenarioSelection({ room, players, matchState, playerContext, onLeaveRoom }: ScenarioSelectionProps) {
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [scenarioOptions, setScenarioOptions] = useState<ScenarioOptions | null>(null);
@@ -309,7 +310,16 @@ export function ScenarioSelection({ room, players, matchState, playerContext }: 
 
   return (
     <Card className="w-full max-w-2xl">
-      <CardHeader className="text-center">
+      <CardHeader className="text-center relative">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onLeaveRoom}
+          className="absolute top-2 right-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          <LogOut className="w-4 h-4 mr-1" />
+          Sair
+        </Button>
         <CardTitle>Seleção de Cenário</CardTitle>
         <CardDescription>
           Rodada {currentRound} - Aposte logística para influenciar o cenário

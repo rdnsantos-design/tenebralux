@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { 
   Loader2, Sword, Shield, Zap, Plus, Minus, Crown, 
-  CheckCircle2, Clock, Users, Scroll as ScrollIcon, Search, Star
+  CheckCircle2, Clock, Users, Scroll as ScrollIcon, Search, Star, LogOut
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ interface DeckbuildingPanelProps {
   players: RoomPlayer[];
   matchState: MatchState;
   playerContext: PlayerContext;
+  onLeaveRoom: () => void;
 }
 
 interface CommanderTemplate {
@@ -88,7 +89,7 @@ const UNIT_TYPE_TO_CATEGORY: Record<string, string> = {
   'movimentação': 'initiative',
 };
 
-export function DeckbuildingPanel({ room, players, matchState, playerContext }: DeckbuildingPanelProps) {
+export function DeckbuildingPanel({ room, players, matchState, playerContext, onLeaveRoom }: DeckbuildingPanelProps) {
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -426,6 +427,15 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
       <Card>
         <CardContent className="py-3">
           <div className="flex justify-between items-center">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onLeaveRoom}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              Sair
+            </Button>
             <div className="flex items-center gap-2">
               <span className="font-medium">Você:</span>
               {myDeckConfirmed ? (

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle2, Clock } from 'lucide-react';
+import { Loader2, CheckCircle2, Clock, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Room, RoomPlayer, MatchState, PlayerContext } from '@/types/multiplayer';
@@ -20,9 +20,10 @@ interface CultureSelectionProps {
   players: RoomPlayer[];
   matchState: MatchState;
   playerContext: PlayerContext;
+  onLeaveRoom: () => void;
 }
 
-export function CultureSelection({ room, players, matchState, playerContext }: CultureSelectionProps) {
+export function CultureSelection({ room, players, matchState, playerContext, onLeaveRoom }: CultureSelectionProps) {
   const [selectedCulture, setSelectedCulture] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -83,7 +84,16 @@ export function CultureSelection({ room, players, matchState, playerContext }: C
 
   return (
     <Card className="w-full max-w-2xl">
-      <CardHeader className="text-center">
+      <CardHeader className="text-center relative">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onLeaveRoom}
+          className="absolute top-2 right-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          <LogOut className="w-4 h-4 mr-1" />
+          Sair
+        </Button>
         <CardTitle>Seleção de Cultura</CardTitle>
         <CardDescription>
           Escolha a cultura do seu exército
