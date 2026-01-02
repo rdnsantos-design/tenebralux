@@ -950,6 +950,7 @@ export type Database = {
           player1_army_attributes: Json | null
           player1_basic_cards_granted: boolean
           player1_basic_cards_state: Json | null
+          player1_basic_cards_used: Json | null
           player1_cmd_state: Json | null
           player1_commanders: Json | null
           player1_culture: string | null
@@ -957,6 +958,7 @@ export type Database = {
           player1_deck: Json | null
           player1_deck_confirmed: boolean
           player1_deployment_confirmed: boolean | null
+          player1_deployment_formation: string | null
           player1_discard: Json | null
           player1_general_id: string | null
           player1_hand: Json | null
@@ -973,6 +975,7 @@ export type Database = {
           player2_army_attributes: Json | null
           player2_basic_cards_granted: boolean
           player2_basic_cards_state: Json | null
+          player2_basic_cards_used: Json | null
           player2_cmd_state: Json | null
           player2_commanders: Json | null
           player2_culture: string | null
@@ -980,6 +983,7 @@ export type Database = {
           player2_deck: Json | null
           player2_deck_confirmed: boolean
           player2_deployment_confirmed: boolean | null
+          player2_deployment_formation: string | null
           player2_discard: Json | null
           player2_general_id: string | null
           player2_hand: Json | null
@@ -1024,6 +1028,7 @@ export type Database = {
           player1_army_attributes?: Json | null
           player1_basic_cards_granted?: boolean
           player1_basic_cards_state?: Json | null
+          player1_basic_cards_used?: Json | null
           player1_cmd_state?: Json | null
           player1_commanders?: Json | null
           player1_culture?: string | null
@@ -1031,6 +1036,7 @@ export type Database = {
           player1_deck?: Json | null
           player1_deck_confirmed?: boolean
           player1_deployment_confirmed?: boolean | null
+          player1_deployment_formation?: string | null
           player1_discard?: Json | null
           player1_general_id?: string | null
           player1_hand?: Json | null
@@ -1047,6 +1053,7 @@ export type Database = {
           player2_army_attributes?: Json | null
           player2_basic_cards_granted?: boolean
           player2_basic_cards_state?: Json | null
+          player2_basic_cards_used?: Json | null
           player2_cmd_state?: Json | null
           player2_commanders?: Json | null
           player2_culture?: string | null
@@ -1054,6 +1061,7 @@ export type Database = {
           player2_deck?: Json | null
           player2_deck_confirmed?: boolean
           player2_deployment_confirmed?: boolean | null
+          player2_deployment_formation?: string | null
           player2_discard?: Json | null
           player2_general_id?: string | null
           player2_hand?: Json | null
@@ -1098,6 +1106,7 @@ export type Database = {
           player1_army_attributes?: Json | null
           player1_basic_cards_granted?: boolean
           player1_basic_cards_state?: Json | null
+          player1_basic_cards_used?: Json | null
           player1_cmd_state?: Json | null
           player1_commanders?: Json | null
           player1_culture?: string | null
@@ -1105,6 +1114,7 @@ export type Database = {
           player1_deck?: Json | null
           player1_deck_confirmed?: boolean
           player1_deployment_confirmed?: boolean | null
+          player1_deployment_formation?: string | null
           player1_discard?: Json | null
           player1_general_id?: string | null
           player1_hand?: Json | null
@@ -1121,6 +1131,7 @@ export type Database = {
           player2_army_attributes?: Json | null
           player2_basic_cards_granted?: boolean
           player2_basic_cards_state?: Json | null
+          player2_basic_cards_used?: Json | null
           player2_cmd_state?: Json | null
           player2_commanders?: Json | null
           player2_culture?: string | null
@@ -1128,6 +1139,7 @@ export type Database = {
           player2_deck?: Json | null
           player2_deck_confirmed?: boolean
           player2_deployment_confirmed?: boolean | null
+          player2_deployment_formation?: string | null
           player2_discard?: Json | null
           player2_general_id?: string | null
           player2_hand?: Json | null
@@ -1917,10 +1929,16 @@ export type Database = {
             Returns: Json
           }
         | { Args: { p_room_id: string; p_session_id: string }; Returns: Json }
-      confirm_deployment: {
-        Args: { p_room_id: string; p_session_id: string }
-        Returns: Json
-      }
+      confirm_deployment:
+        | { Args: { p_room_id: string; p_session_id: string }; Returns: Json }
+        | {
+            Args: {
+              p_formation?: string
+              p_room_id: string
+              p_session_id: string
+            }
+            Returns: Json
+          }
       confirm_initiative: {
         Args: { p_room_id: string; p_session_id: string }
         Returns: Json
@@ -2015,6 +2033,7 @@ export type Database = {
             }
             Returns: Json
           }
+      resolve_combat_round: { Args: { p_room_id: string }; Returns: Json }
       resolve_logistics_round: {
         Args: { p_room_id: string; p_round_number: number }
         Returns: Json
@@ -2070,7 +2089,9 @@ export type Database = {
         Returns: boolean
       }
       shuffle_jsonb_array: { Args: { arr: Json }; Returns: Json }
-      start_combat: { Args: { p_room_id: string }; Returns: Json }
+      start_combat:
+        | { Args: { p_room_id: string }; Returns: Json }
+        | { Args: { p_room_id: string; p_session_id: string }; Returns: Json }
       start_scenario_selection: { Args: { p_room_id: string }; Returns: Json }
       submit_logistics_bid: {
         Args: {
@@ -2081,15 +2102,24 @@ export type Database = {
         }
         Returns: Json
       }
-      use_basic_card: {
-        Args: {
-          p_basic_card_key: string
-          p_room_id: string
-          p_session_id: string
-          p_target?: Json
-        }
-        Returns: Json
-      }
+      use_basic_card:
+        | {
+            Args: {
+              p_basic_card_key: string
+              p_room_id: string
+              p_session_id: string
+              p_target?: Json
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_card_type: string
+              p_room_id: string
+              p_session_id: string
+            }
+            Returns: Json
+          }
     }
     Enums: {
       commander_specialization:
@@ -2113,6 +2143,7 @@ export type Database = {
         | "scenario_selection"
         | "scenario_tiebreak"
         | "deckbuilding"
+        | "deployment"
         | "combat_setup"
         | "combat"
         | "resolution"
@@ -2278,6 +2309,7 @@ export const Constants = {
         "scenario_selection",
         "scenario_tiebreak",
         "deckbuilding",
+        "deployment",
         "combat_setup",
         "combat",
         "resolution",

@@ -9,6 +9,7 @@ import { GameStepper } from '@/components/multiplayer/GameStepper';
 import { CultureSelection } from '@/components/multiplayer/CultureSelection';
 import { ScenarioSelection } from '@/components/multiplayer/ScenarioSelection';
 import { DeckbuildingPanel } from '@/components/multiplayer/DeckbuildingPanel';
+import { DeploymentScreen } from '@/components/multiplayer/DeploymentScreen';
 import { CombatScreen } from '@/components/multiplayer/CombatScreen';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Swords } from 'lucide-react';
@@ -150,6 +151,16 @@ export default function GameRoom() {
 
           {currentPhase === 'deckbuilding' && (
             <DeckbuildingPanel
+              room={room}
+              players={players}
+              matchState={matchState}
+              playerContext={playerContext}
+              onLeaveRoom={handleLeaveRoom}
+            />
+          )}
+
+          {(currentPhase as string) === 'deployment' && (
+            <DeploymentScreen
               room={room}
               players={players}
               matchState={matchState}
