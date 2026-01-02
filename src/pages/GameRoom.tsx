@@ -9,6 +9,7 @@ import { GameStepper } from '@/components/multiplayer/GameStepper';
 import { CultureSelection } from '@/components/multiplayer/CultureSelection';
 import { ScenarioSelection } from '@/components/multiplayer/ScenarioSelection';
 import { DeckbuildingPanel } from '@/components/multiplayer/DeckbuildingPanel';
+import { CombatScreen } from '@/components/multiplayer/CombatScreen';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Swords } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -157,11 +158,14 @@ export default function GameRoom() {
             />
           )}
 
-          {currentPhase === 'combat_setup' && (
-            <div className="p-8 text-center text-muted-foreground">
-              <h2 className="text-xl font-bold mb-2">Mesa de Combate</h2>
-              <p>Em desenvolvimento - Fase de Combate ainda não implementada.</p>
-            </div>
+          {(currentPhase === 'combat' || currentPhase === 'combat_setup' || currentPhase === 'resolution') && (
+            <CombatScreen
+              room={room}
+              players={players}
+              matchState={matchState}
+              playerContext={playerContext}
+              onLeaveRoom={handleLeaveRoom}
+            />
           )}
 
           {/* Debug Panel */}

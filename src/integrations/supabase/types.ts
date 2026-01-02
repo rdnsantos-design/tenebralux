@@ -1921,6 +1921,14 @@ export type Database = {
         Args: { p_room_id: string; p_session_id: string }
         Returns: Json
       }
+      confirm_initiative: {
+        Args: { p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
+      confirm_main: {
+        Args: { p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
       create_room: {
         Args: { p_host_nickname: string; p_session_id: string }
         Returns: {
@@ -2011,6 +2019,14 @@ export type Database = {
         Args: { p_room_id: string; p_round_number: number }
         Returns: Json
       }
+      select_initiative_card: {
+        Args: { p_card_index?: number; p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
+      select_main_card: {
+        Args: { p_card_index: number; p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
       set_army_attributes:
         | {
             Args: {
@@ -2053,6 +2069,7 @@ export type Database = {
         Args: { p_player_id: string; p_ready: boolean }
         Returns: boolean
       }
+      shuffle_jsonb_array: { Args: { arr: Json }; Returns: Json }
       start_combat: { Args: { p_room_id: string }; Returns: Json }
       start_scenario_selection: { Args: { p_room_id: string }; Returns: Json }
       submit_logistics_bid: {
