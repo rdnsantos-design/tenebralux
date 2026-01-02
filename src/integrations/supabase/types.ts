@@ -957,7 +957,9 @@ export type Database = {
           player1_round2_bid: Json | null
           player1_tiebreak_bid: number | null
           player1_tiebreak_confirmed: boolean
+          player1_vet_budget: number
           player1_vet_remaining: number | null
+          player1_vet_spent: number
           player2_army_attributes: Json | null
           player2_basic_cards_granted: boolean
           player2_commanders: Json | null
@@ -972,7 +974,9 @@ export type Database = {
           player2_round2_bid: Json | null
           player2_tiebreak_bid: number | null
           player2_tiebreak_confirmed: boolean
+          player2_vet_budget: number
           player2_vet_remaining: number | null
+          player2_vet_spent: number
           room_id: string
           scenario_options: Json | null
           scenario_winner: number | null
@@ -985,6 +989,8 @@ export type Database = {
           updated_at: string
           version: number
           vet_agreed: number
+          vet_cost_logistics_p1: number
+          vet_cost_logistics_p2: number
         }
         Insert: {
           chosen_season_id?: string | null
@@ -1009,7 +1015,9 @@ export type Database = {
           player1_round2_bid?: Json | null
           player1_tiebreak_bid?: number | null
           player1_tiebreak_confirmed?: boolean
+          player1_vet_budget?: number
           player1_vet_remaining?: number | null
+          player1_vet_spent?: number
           player2_army_attributes?: Json | null
           player2_basic_cards_granted?: boolean
           player2_commanders?: Json | null
@@ -1024,7 +1032,9 @@ export type Database = {
           player2_round2_bid?: Json | null
           player2_tiebreak_bid?: number | null
           player2_tiebreak_confirmed?: boolean
+          player2_vet_budget?: number
           player2_vet_remaining?: number | null
+          player2_vet_spent?: number
           room_id: string
           scenario_options?: Json | null
           scenario_winner?: number | null
@@ -1037,6 +1047,8 @@ export type Database = {
           updated_at?: string
           version?: number
           vet_agreed?: number
+          vet_cost_logistics_p1?: number
+          vet_cost_logistics_p2?: number
         }
         Update: {
           chosen_season_id?: string | null
@@ -1061,7 +1073,9 @@ export type Database = {
           player1_round2_bid?: Json | null
           player1_tiebreak_bid?: number | null
           player1_tiebreak_confirmed?: boolean
+          player1_vet_budget?: number
           player1_vet_remaining?: number | null
+          player1_vet_spent?: number
           player2_army_attributes?: Json | null
           player2_basic_cards_granted?: boolean
           player2_commanders?: Json | null
@@ -1076,7 +1090,9 @@ export type Database = {
           player2_round2_bid?: Json | null
           player2_tiebreak_bid?: number | null
           player2_tiebreak_confirmed?: boolean
+          player2_vet_budget?: number
           player2_vet_remaining?: number | null
+          player2_vet_spent?: number
           room_id?: string
           scenario_options?: Json | null
           scenario_winner?: number | null
@@ -1089,6 +1105,8 @@ export type Database = {
           updated_at?: string
           version?: number
           vet_agreed?: number
+          vet_cost_logistics_p1?: number
+          vet_cost_logistics_p2?: number
         }
         Relationships: [
           {
@@ -1872,6 +1890,10 @@ export type Database = {
           player_number: number
           room_id: string
         }[]
+      }
+      recalc_player_vet: {
+        Args: { p_player_number: number; p_room_id: string }
+        Returns: undefined
       }
       remove_card_from_deck:
         | {
