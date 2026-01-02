@@ -1953,6 +1953,10 @@ export type Database = {
         }
         Returns: Json
       }
+      confirm_attack_maneuvers: {
+        Args: { p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
       confirm_culture: {
         Args: {
           p_culture_id: string
@@ -1967,6 +1971,10 @@ export type Database = {
             Returns: Json
           }
         | { Args: { p_room_id: string; p_session_id: string }; Returns: Json }
+      confirm_defense_maneuvers: {
+        Args: { p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
       confirm_deployment:
         | { Args: { p_room_id: string; p_session_id: string }; Returns: Json }
         | {
@@ -2022,6 +2030,15 @@ export type Database = {
           room_id: string
         }[]
       }
+      play_attack_maneuver: {
+        Args: {
+          p_card_index: number
+          p_commander_instance_id: string
+          p_room_id: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
       play_card: {
         Args: {
           p_card_id: string
@@ -2029,6 +2046,19 @@ export type Database = {
           p_session_id: string
           p_target?: Json
         }
+        Returns: Json
+      }
+      play_defense_maneuver: {
+        Args: {
+          p_card_index: number
+          p_commander_instance_id: string
+          p_room_id: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      play_reaction_turn: {
+        Args: { p_card_index?: number; p_room_id: string; p_session_id: string }
         Returns: Json
       }
       react_countermaneuver: {
@@ -2079,6 +2109,10 @@ export type Database = {
             }
             Returns: Json
           }
+      resolve_combat_roll: {
+        Args: { p_room_id: string; p_session_id: string }
+        Returns: Json
+      }
       resolve_combat_round: { Args: { p_room_id: string }; Returns: Json }
       resolve_initiative_roll: {
         Args: { p_room_id: string; p_session_id: string }
