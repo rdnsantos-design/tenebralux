@@ -13,12 +13,12 @@ import type {
   GamePhase
 } from '@/types/multiplayer';
 
-// Gerar ID de sessão único para este browser
+// Gerar ID de sessão único para este browser (persistido em localStorage para sobreviver reloads)
 const getSessionId = () => {
-  let sessionId = sessionStorage.getItem('game_session_id');
+  let sessionId = localStorage.getItem('game_session_id');
   if (!sessionId) {
     sessionId = crypto.randomUUID();
-    sessionStorage.setItem('game_session_id', sessionId);
+    localStorage.setItem('game_session_id', sessionId);
   }
   return sessionId;
 };

@@ -175,9 +175,8 @@ export function ScenarioSelection({ room, players, matchState, playerContext, on
           setBids({ terrains: {}, seasons: {} });
           setRoundConfirmed(false);
         } else if ((resolveData as { resolved?: boolean })?.resolved) {
-          toast.success('Cenário definido!');
-          // Finalizar cenário
-          await supabase.rpc('finalize_scenario', { p_room_id: room.id });
+          // finalize_scenario agora está integrado em resolve_logistics_round
+          toast.success('Cenário definido! Avançando para Deckbuilding...');
         }
       } catch (err) {
         console.error('[ScenarioSelection] Erro inesperado:', err);
