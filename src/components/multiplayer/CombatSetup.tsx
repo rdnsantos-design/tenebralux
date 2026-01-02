@@ -119,7 +119,7 @@ export function CombatSetup({ room, players, matchState, playerContext, onLeaveR
       </Card>
       
       {/* Scenario Summary */}
-      <ScenarioSummary matchState={matchState} />
+      <ScenarioSummary matchState={matchState} playerContext={playerContext} />
       
       {/* Army Summary */}
       <Card>
