@@ -27,6 +27,7 @@ import JoinTacticalMatchPage from "./pages/JoinTacticalMatchPage";
 import TacticalLobbyPage from "./pages/TacticalLobbyPage";
 import MyTacticalMatchesPage from "./pages/MyTacticalMatchesPage";
 import TacticalBattleTestPage from "./pages/TacticalBattleTestPage";
+import TacticalBattlePage from "./pages/TacticalBattlePage";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
           <Route path="/tactical/lobby/:matchId" element={<TacticalLobbyPage />} />
           <Route path="/tactical/my-matches" element={<MyTacticalMatchesPage />} />
           <Route path="/tactical/battle-test" element={<TacticalBattleTestPage />} />
+          <Route path="/tactical/battle/:matchId" element={<TacticalBattlePage />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
