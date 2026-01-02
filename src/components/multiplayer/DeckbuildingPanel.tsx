@@ -56,14 +56,34 @@ interface ArmyAttributes {
 }
 
 interface PlayerCommander {
-  id: string;
+  instance_id?: string;
+  id?: string; // legacy
+  template_id?: string;
   numero: number;
   especializacao: string;
-  comando: number;
+  comando_base?: number;
+  comando?: number; // legacy
   estrategia: number;
-  guarda: number;
+  guarda_max?: number;
+  guarda_current?: number;
+  guarda?: number; // legacy
   custo_vet: number;
 }
+
+// Helper to get commander instance_id (supports legacy 'id')
+const getCommanderInstanceId = (cmd: PlayerCommander): string => {
+  return cmd.instance_id || cmd.id || '';
+};
+
+// Helper to get commander CMD value
+const getCommanderCMD = (cmd: PlayerCommander): number => {
+  return cmd.comando_base ?? cmd.comando ?? 1;
+};
+
+// Helper to get commander Guarda value
+const getCommanderGuarda = (cmd: PlayerCommander): number => {
+  return cmd.guarda_current ?? cmd.guarda_max ?? cmd.guarda ?? 2;
+};
 
 // Cartas básicas - sempre disponíveis, não custam VET
 const BASIC_CARDS = [
@@ -128,24 +148,54 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext, on
     ? (matchState as unknown as { player1_general_id?: string }).player1_general_id
     : (matchState as unknown as { player2_general_id?: string }).player2_general_id;
 
-  // Deck agora são só IDs
-  const myDeckIds = useMemo(() => {
+  // Deck entries - now stores objects { card_id, name, vet_cost, ... } or legacy string IDs
+  interface DeckCardEntry {
+    card_id?: string;
+    id?: string;
+    name?: string;
+    vet_cost?: number;
+    unit_type?: string;
+  }
+  
+  const myDeck = useMemo(() => {
     const deck = playerContext.playerNumber === 1 
-      ? (matchState as unknown as { player1_deck?: { offensive: string[]; defensive: string[]; initiative: string[]; reactions: string[] } }).player1_deck
-      : (matchState as unknown as { player2_deck?: { offensive: string[]; defensive: string[]; initiative: string[]; reactions: string[] } }).player2_deck;
+      ? (matchState as unknown as { player1_deck?: { offensive: DeckCardEntry[]; defensive: DeckCardEntry[]; initiative: DeckCardEntry[]; reactions: DeckCardEntry[] } }).player1_deck
+      : (matchState as unknown as { player2_deck?: { offensive: DeckCardEntry[]; defensive: DeckCardEntry[]; initiative: DeckCardEntry[]; reactions: DeckCardEntry[] } }).player2_deck;
     return deck ?? { offensive: [], defensive: [], initiative: [], reactions: [] };
   }, [matchState, playerContext.playerNumber]);
 
-  // Resolver IDs para cartas completas
+  // Resolve deck entries to full cards (handles both object entries and legacy string IDs)
   const myDeckCards = useMemo(() => {
-    const resolve = (ids: string[]) => ids.map(id => tacticalCards.find(c => c.id === id)).filter(Boolean) as TacticalCard[];
+    const resolve = (entries: DeckCardEntry[]) => entries.map(entry => {
+      // If entry is object with card data, use it
+      if (typeof entry === 'object' && entry.card_id) {
+        const fullCard = tacticalCards.find(c => c.id === entry.card_id);
+        return fullCard || { ...entry, id: entry.card_id } as TacticalCard;
+      }
+      // Legacy: entry might be a string ID
+      const id = typeof entry === 'string' ? entry : (entry.id || entry.card_id);
+      return tacticalCards.find(c => c.id === id);
+    }).filter(Boolean) as TacticalCard[];
     return {
-      offensive: resolve(myDeckIds.offensive || []),
-      defensive: resolve(myDeckIds.defensive || []),
-      initiative: resolve(myDeckIds.initiative || []),
-      reactions: resolve(myDeckIds.reactions || []),
+      offensive: resolve(myDeck.offensive || []),
+      defensive: resolve(myDeck.defensive || []),
+      initiative: resolve(myDeck.initiative || []),
+      reactions: resolve(myDeck.reactions || []),
     };
-  }, [myDeckIds, tacticalCards]);
+  }, [myDeck, tacticalCards]);
+
+  // Get card IDs for duplicate checking
+  const myDeckIds = useMemo(() => {
+    const getIds = (entries: DeckCardEntry[]) => entries.map(e => 
+      typeof e === 'string' ? e : (e.card_id || e.id || '')
+    );
+    return {
+      offensive: getIds(myDeck.offensive || []),
+      defensive: getIds(myDeck.defensive || []),
+      initiative: getIds(myDeck.initiative || []),
+      reactions: getIds(myDeck.reactions || []),
+    };
+  }, [myDeck]);
 
   const myDeckConfirmed = playerContext.playerNumber === 1 
     ? (matchState as unknown as { player1_deck_confirmed?: boolean }).player1_deck_confirmed
@@ -403,9 +453,9 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext, on
       .includes(cardId);
   }, [myDeckIds]);
 
-  // Check if commander is already added
-  const isCommanderAdded = useCallback((commanderId: string) => {
-    return myCommanders.some(c => c.id === commanderId);
+  // Check if commander template is already added
+  const isCommanderAdded = useCallback((templateId: string) => {
+    return myCommanders.some(c => (c.template_id || c.id) === templateId);
   }, [myCommanders]);
 
   // Get basic cards for category
@@ -689,29 +739,32 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext, on
                     <div className="mb-4">
                       <h4 className="font-medium mb-2 text-sm">Seus Comandantes:</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {myCommanders.map((cmd) => (
+                        {myCommanders.map((cmd) => {
+                          const instanceId = getCommanderInstanceId(cmd);
+                          const isGeneral = myGeneralId === instanceId;
+                          return (
                           <div 
-                            key={cmd.id} 
-                            className={`p-3 rounded-lg border ${myGeneralId === cmd.id ? 'border-primary bg-primary/10' : 'border-border'}`}
+                            key={instanceId} 
+                            className={`p-3 rounded-lg border ${isGeneral ? 'border-primary bg-primary/10' : 'border-border'}`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline">#{cmd.numero}</Badge>
                                 <span className="text-xs">{cmd.especializacao}</span>
                               </div>
-                              {myGeneralId === cmd.id && (
+                              {isGeneral && (
                                 <Badge className="gap-1"><Crown className="w-3 h-3" />General</Badge>
                               )}
                             </div>
                             <div className="text-xs text-muted-foreground mb-2">
-                              CMD: {cmd.comando} | EST: {cmd.estrategia} | GUA: {cmd.guarda} | {cmd.custo_vet} VET
+                              CMD: {getCommanderCMD(cmd)} | EST: {cmd.estrategia} | GUA: {getCommanderGuarda(cmd)} | {cmd.custo_vet} VET
                             </div>
                             <div className="flex gap-1">
-                              {myGeneralId !== cmd.id && (
+                              {!isGeneral && (
                                 <Button 
                                   size="sm" 
                                   variant="outline"
-                                  onClick={() => handleSetGeneral(cmd.id)}
+                                  onClick={() => handleSetGeneral(instanceId)}
                                   disabled={myDeckConfirmed}
                                 >
                                   <Crown className="w-3 h-3 mr-1" />General
@@ -720,14 +773,14 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext, on
                               <Button 
                                 size="sm" 
                                 variant="destructive"
-                                onClick={() => handleRemoveCommander(cmd.id)}
+                                onClick={() => handleRemoveCommander(instanceId)}
                                 disabled={myDeckConfirmed}
                               >
                                 <Minus className="w-3 h-3" />
                               </Button>
                             </div>
                           </div>
-                        ))}
+                        )})}
                       </div>
                     </div>
                   )}

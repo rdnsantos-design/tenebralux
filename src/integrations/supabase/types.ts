@@ -1871,10 +1871,9 @@ export type Database = {
       }
       finalize_scenario: { Args: { p_room_id: string }; Returns: Json }
       generate_room_code: { Args: never; Returns: string }
-      get_match_state: {
-        Args: { p_room_id: string; p_session_id: string }
-        Returns: Json
-      }
+      get_match_state:
+        | { Args: { p_room_id: string }; Returns: Json }
+        | { Args: { p_room_id: string; p_session_id: string }; Returns: Json }
       get_player_number_by_session: {
         Args: { p_room_id: string; p_session_id: string }
         Returns: number
