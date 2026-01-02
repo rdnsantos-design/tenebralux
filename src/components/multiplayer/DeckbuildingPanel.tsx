@@ -977,8 +977,8 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext, on
         </div>
       </div>
 
-      {/* Confirm Button */}
-      {!myDeckConfirmed && (
+      {/* Confirm Button or Waiting State */}
+      {!myDeckConfirmed ? (
         <Card>
           <CardContent className="py-4">
             <Button 
@@ -1008,6 +1008,34 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext, on
             {myCommanders.length < 1 && (
               <p className="text-xs text-center text-destructive mt-2">Adicione pelo menos 1 comandante</p>
             )}
+          </CardContent>
+        </Card>
+      ) : !opponentDeckConfirmed ? (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardContent className="py-6 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <span className="text-lg font-medium">Aguardando o oponente finalizar o deck...</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Você já confirmou seu deck. Quando {opponent?.nickname ?? 'o oponente'} confirmar, o combate iniciará automaticamente.
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+              <span className="text-sm font-medium text-green-600">Seu deck está pronto!</span>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-green-500/50 bg-green-500/5">
+          <CardContent className="py-6 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-6 h-6 animate-spin text-green-500" />
+              <span className="text-lg font-medium">Iniciando combate...</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Ambos os jogadores confirmaram. Preparando o campo de batalha...
+            </p>
           </CardContent>
         </Card>
       )}
