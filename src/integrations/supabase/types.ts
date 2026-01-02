@@ -1602,6 +1602,172 @@ export type Database = {
         }
         Relationships: []
       }
+      tactical_game_actions: {
+        Row: {
+          action_data: Json
+          action_type: string
+          created_at: string | null
+          id: string
+          match_id: string | null
+          player_id: string
+          resulting_state_hash: string | null
+          sequence_number: number
+        }
+        Insert: {
+          action_data: Json
+          action_type: string
+          created_at?: string | null
+          id?: string
+          match_id?: string | null
+          player_id: string
+          resulting_state_hash?: string | null
+          sequence_number?: number
+        }
+        Update: {
+          action_data?: Json
+          action_type?: string
+          created_at?: string | null
+          id?: string
+          match_id?: string | null
+          player_id?: string
+          resulting_state_hash?: string | null
+          sequence_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tactical_game_actions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "tactical_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tactical_game_states: {
+        Row: {
+          id: string
+          last_action_at: string | null
+          last_action_by: string | null
+          last_action_type: string | null
+          match_id: string | null
+          state: Json
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          id?: string
+          last_action_at?: string | null
+          last_action_by?: string | null
+          last_action_type?: string | null
+          match_id?: string | null
+          state: Json
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          id?: string
+          last_action_at?: string | null
+          last_action_by?: string | null
+          last_action_type?: string | null
+          match_id?: string | null
+          state?: Json
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tactical_game_states_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "tactical_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tactical_matches: {
+        Row: {
+          allow_spectators: boolean | null
+          created_at: string | null
+          id: string
+          join_code: string
+          max_power_points: number | null
+          player1_army_id: string | null
+          player1_id: string
+          player1_name: string
+          player1_ready: boolean | null
+          player2_army_id: string | null
+          player2_id: string | null
+          player2_name: string | null
+          player2_ready: boolean | null
+          primary_terrain_id: string | null
+          season_id: string | null
+          secondary_terrain_ids: string[] | null
+          status: string | null
+          turn_time_limit: number | null
+          updated_at: string | null
+          winner_id: string | null
+        }
+        Insert: {
+          allow_spectators?: boolean | null
+          created_at?: string | null
+          id?: string
+          join_code: string
+          max_power_points?: number | null
+          player1_army_id?: string | null
+          player1_id: string
+          player1_name: string
+          player1_ready?: boolean | null
+          player2_army_id?: string | null
+          player2_id?: string | null
+          player2_name?: string | null
+          player2_ready?: boolean | null
+          primary_terrain_id?: string | null
+          season_id?: string | null
+          secondary_terrain_ids?: string[] | null
+          status?: string | null
+          turn_time_limit?: number | null
+          updated_at?: string | null
+          winner_id?: string | null
+        }
+        Update: {
+          allow_spectators?: boolean | null
+          created_at?: string | null
+          id?: string
+          join_code?: string
+          max_power_points?: number | null
+          player1_army_id?: string | null
+          player1_id?: string
+          player1_name?: string
+          player1_ready?: boolean | null
+          player2_army_id?: string | null
+          player2_id?: string | null
+          player2_name?: string | null
+          player2_ready?: boolean | null
+          primary_terrain_id?: string | null
+          season_id?: string | null
+          secondary_terrain_ids?: string[] | null
+          status?: string | null
+          turn_time_limit?: number | null
+          updated_at?: string | null
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tactical_matches_primary_terrain_id_fkey"
+            columns: ["primary_terrain_id"]
+            isOneToOne: false
+            referencedRelation: "mass_combat_primary_terrains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tactical_matches_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "mass_combat_seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       terrain_types: {
         Row: {
           created_at: string
@@ -2014,6 +2180,7 @@ export type Database = {
       }
       finalize_scenario: { Args: { p_room_id: string }; Returns: Json }
       generate_room_code: { Args: never; Returns: string }
+      generate_tactical_join_code: { Args: never; Returns: string }
       get_match_state:
         | { Args: { p_room_id: string }; Returns: Json }
         | { Args: { p_room_id: string; p_session_id: string }; Returns: Json }
