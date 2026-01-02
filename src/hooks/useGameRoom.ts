@@ -13,12 +13,13 @@ import type {
   GamePhase
 } from '@/types/multiplayer';
 
-// Gerar ID de sessão único para este browser (persistido em localStorage para sobreviver reloads)
+// Gerar ID de sessão único para esta ABA (sessionStorage) — permite testar Host vs Guest em duas abas
 const getSessionId = () => {
-  let sessionId = localStorage.getItem('game_session_id');
+  const key = 'game_session_id';
+  let sessionId = sessionStorage.getItem(key);
   if (!sessionId) {
     sessionId = crypto.randomUUID();
-    localStorage.setItem('game_session_id', sessionId);
+    sessionStorage.setItem(key, sessionId);
   }
   return sessionId;
 };
