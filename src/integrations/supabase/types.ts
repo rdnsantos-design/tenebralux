@@ -935,15 +935,22 @@ export type Database = {
       }
       match_state: {
         Row: {
+          chosen_season_id: string | null
+          chosen_terrain_id: string | null
           created_at: string
           game_seed: string | null
           id: string
+          logistics_budget: number
+          logistics_resolved: boolean
+          logistics_round: number
           player1_culture: string | null
           player1_culture_confirmed: boolean
           player1_deck: Json | null
           player1_deck_confirmed: boolean
           player1_logistics_bid: number | null
           player1_logistics_confirmed: boolean
+          player1_round1_bid: Json | null
+          player1_round2_bid: Json | null
           player1_tiebreak_bid: number | null
           player1_tiebreak_confirmed: boolean
           player1_vet_remaining: number | null
@@ -953,29 +960,41 @@ export type Database = {
           player2_deck_confirmed: boolean
           player2_logistics_bid: number | null
           player2_logistics_confirmed: boolean
+          player2_round1_bid: Json | null
+          player2_round2_bid: Json | null
           player2_tiebreak_bid: number | null
           player2_tiebreak_confirmed: boolean
           player2_vet_remaining: number | null
           room_id: string
           scenario_options: Json | null
           scenario_winner: number | null
+          season_tiebreak_eligible: Json | null
           selected_season_id: string | null
           selected_terrain_id: string | null
+          terrain_tiebreak_eligible: Json | null
           tiebreak_players: number[] | null
           tiebreak_required: boolean
           updated_at: string
           version: number
+          vet_agreed: number
         }
         Insert: {
+          chosen_season_id?: string | null
+          chosen_terrain_id?: string | null
           created_at?: string
           game_seed?: string | null
           id?: string
+          logistics_budget?: number
+          logistics_resolved?: boolean
+          logistics_round?: number
           player1_culture?: string | null
           player1_culture_confirmed?: boolean
           player1_deck?: Json | null
           player1_deck_confirmed?: boolean
           player1_logistics_bid?: number | null
           player1_logistics_confirmed?: boolean
+          player1_round1_bid?: Json | null
+          player1_round2_bid?: Json | null
           player1_tiebreak_bid?: number | null
           player1_tiebreak_confirmed?: boolean
           player1_vet_remaining?: number | null
@@ -985,29 +1004,41 @@ export type Database = {
           player2_deck_confirmed?: boolean
           player2_logistics_bid?: number | null
           player2_logistics_confirmed?: boolean
+          player2_round1_bid?: Json | null
+          player2_round2_bid?: Json | null
           player2_tiebreak_bid?: number | null
           player2_tiebreak_confirmed?: boolean
           player2_vet_remaining?: number | null
           room_id: string
           scenario_options?: Json | null
           scenario_winner?: number | null
+          season_tiebreak_eligible?: Json | null
           selected_season_id?: string | null
           selected_terrain_id?: string | null
+          terrain_tiebreak_eligible?: Json | null
           tiebreak_players?: number[] | null
           tiebreak_required?: boolean
           updated_at?: string
           version?: number
+          vet_agreed?: number
         }
         Update: {
+          chosen_season_id?: string | null
+          chosen_terrain_id?: string | null
           created_at?: string
           game_seed?: string | null
           id?: string
+          logistics_budget?: number
+          logistics_resolved?: boolean
+          logistics_round?: number
           player1_culture?: string | null
           player1_culture_confirmed?: boolean
           player1_deck?: Json | null
           player1_deck_confirmed?: boolean
           player1_logistics_bid?: number | null
           player1_logistics_confirmed?: boolean
+          player1_round1_bid?: Json | null
+          player1_round2_bid?: Json | null
           player1_tiebreak_bid?: number | null
           player1_tiebreak_confirmed?: boolean
           player1_vet_remaining?: number | null
@@ -1017,18 +1048,23 @@ export type Database = {
           player2_deck_confirmed?: boolean
           player2_logistics_bid?: number | null
           player2_logistics_confirmed?: boolean
+          player2_round1_bid?: Json | null
+          player2_round2_bid?: Json | null
           player2_tiebreak_bid?: number | null
           player2_tiebreak_confirmed?: boolean
           player2_vet_remaining?: number | null
           room_id?: string
           scenario_options?: Json | null
           scenario_winner?: number | null
+          season_tiebreak_eligible?: Json | null
           selected_season_id?: string | null
           selected_terrain_id?: string | null
+          terrain_tiebreak_eligible?: Json | null
           tiebreak_players?: number[] | null
           tiebreak_required?: boolean
           updated_at?: string
           version?: number
+          vet_agreed?: number
         }
         Relationships: [
           {
@@ -1725,6 +1761,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calc_option_totals: {
+        Args: { p_bid1: Json; p_bid2: Json; p_options: Json }
+        Returns: Json
+      }
+      confirm_culture: {
+        Args: {
+          p_culture_id: string
+          p_player_number: number
+          p_room_id: string
+        }
+        Returns: Json
+      }
       create_room: {
         Args: { p_host_nickname: string; p_session_id: string }
         Returns: {
@@ -1733,6 +1781,7 @@ export type Database = {
           room_id: string
         }[]
       }
+      finalize_scenario: { Args: { p_room_id: string }; Returns: Json }
       generate_room_code: { Args: never; Returns: string }
       join_room: {
         Args: { p_nickname: string; p_room_code: string; p_session_id: string }
@@ -1742,9 +1791,23 @@ export type Database = {
           room_id: string
         }[]
       }
+      resolve_logistics_round: {
+        Args: { p_room_id: string; p_round_number: number }
+        Returns: Json
+      }
       set_player_ready: {
         Args: { p_player_id: string; p_ready: boolean }
         Returns: boolean
+      }
+      start_scenario_selection: { Args: { p_room_id: string }; Returns: Json }
+      submit_logistics_bid: {
+        Args: {
+          p_bid: Json
+          p_player_number: number
+          p_room_id: string
+          p_round_number: number
+        }
+        Returns: Json
       }
     }
     Enums: {
