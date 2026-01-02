@@ -11,9 +11,11 @@ import { ScenarioSelection } from '@/components/multiplayer/ScenarioSelection';
 import { DeckbuildingPanel } from '@/components/multiplayer/DeckbuildingPanel';
 import { DeploymentScreen } from '@/components/multiplayer/DeploymentScreen';
 import { CombatScreen } from '@/components/multiplayer/CombatScreen';
+import { TestChecklist } from '@/components/multiplayer/TestChecklist';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Swords } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePhaseGuard } from '@/hooks/usePhaseGuard';
 
 export default function GameRoom() {
   const { roomCode } = useParams<{ roomCode?: string }>();
@@ -101,6 +103,9 @@ export default function GameRoom() {
     );
   }
 
+  // Hook de auto-correção de fase
+  usePhaseGuard(room, matchState, playerContext?.sessionId || '');
+
   // Em sala ativa
   if (room && playerContext && matchState) {
     const currentPhase = room.current_phase;
@@ -178,6 +183,13 @@ export default function GameRoom() {
               onLeaveRoom={handleLeaveRoom}
             />
           )}
+
+          {/* Test Checklist - DEV only */}
+          <TestChecklist 
+            room={room} 
+            matchState={matchState} 
+            playerContext={playerContext} 
+          />
 
           {/* Debug Panel */}
           {playerContext && (
