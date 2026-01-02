@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Room, RoomPlayer, MatchState, PlayerContext } from '@/types/multiplayer';
 import { CombatDebugPanel } from './CombatDebugPanel';
+import { BasicCardsPanel } from './BasicCardsPanel';
 
 interface CombatScreenProps {
   room: Room;
@@ -393,6 +394,16 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
           </CardContent>
         </Card>
       )}
+      
+      {/* Basic Cards Panel */}
+      <BasicCardsPanel
+        roomId={room.id}
+        sessionId={playerContext.sessionId}
+        playerNumber={pNum as 1 | 2}
+        basicCardsUsed={(matchState as any)[`player${pNum}_basic_cards_used`] || {}}
+        currentBonuses={myBoard.basic_bonuses || {}}
+        combatPhase={combatPhase}
+        disabled={myBoard.confirmed}
       
       {/* Mão */}
       <Card>
