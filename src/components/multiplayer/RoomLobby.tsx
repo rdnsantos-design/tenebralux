@@ -194,14 +194,20 @@ export function RoomLobby({
         </div>
         
         {players.length < 2 && (
-          <p className="text-center text-sm text-muted-foreground">
-            Aguardando oponente entrar na sala...
+          <p className="text-center text-sm text-amber-600 font-medium">
+            ⏳ Aguardando oponente entrar na sala para poder iniciar...
           </p>
         )}
         
         {players.length === 2 && !players.every(p => p.status === 'ready') && (
           <p className="text-center text-sm text-muted-foreground">
             Ambos jogadores devem ficar prontos para iniciar
+          </p>
+        )}
+        
+        {players.length === 2 && players.every(p => p.status === 'ready') && (
+          <p className="text-center text-sm text-green-600 font-medium">
+            ✓ Iniciando partida...
           </p>
         )}
       </CardContent>
