@@ -161,13 +161,18 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
     .reduce((sum, c) => sum + (c.vet_cost_override ?? c.vet_cost ?? 0), 0);
   const armyPV = Math.floor(vetAgreed * 0.10);
 
-  // Card limits based on attributes
+  // Card limits based on SERVER attributes (not local!) - RPC validates against server
   const cardLimits = {
-    offensive: localAttributes.attack,
-    defensive: localAttributes.defense,
-    initiative: localAttributes.mobility,
-    reactions: localAttributes.mobility * 2
+    offensive: myAttributes.attack,
+    defensive: myAttributes.defense,
+    initiative: myAttributes.mobility,
+    reactions: myAttributes.mobility * 2
   };
+  
+  // Check if attributes need to be saved before cards can be added
+  const needsSaveBeforeCards = attributesDirty || 
+    (localAttributes.attack + localAttributes.defense + localAttributes.mobility > 0 && 
+     myAttributes.attack + myAttributes.defense + myAttributes.mobility === 0);
 
   // Sync local attributes with match state
   useEffect(() => {
@@ -769,6 +774,14 @@ export function DeckbuildingPanel({ room, players, matchState, playerContext }: 
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {/* Warning: Needs to save attributes first */}
+                  {needsSaveBeforeCards && (
+                    <div className="mb-4 p-3 rounded-lg border border-yellow-500 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 text-sm">
+                      <strong>Atenção:</strong> Você precisa salvar os atributos na aba "Atributos" antes de adicionar cartas.
+                      Os limites atuais são baseados nos atributos salvos (ATK:{myAttributes.attack}, DEF:{myAttributes.defense}, MOB:{myAttributes.mobility}).
+                    </div>
+                  )}
+                  
                   {/* Search */}
                   <div className="relative mb-4">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
