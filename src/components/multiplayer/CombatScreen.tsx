@@ -11,6 +11,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Room, RoomPlayer, MatchState, PlayerContext } from '@/types/multiplayer';
+import { CombatDebugPanel } from './CombatDebugPanel';
 
 interface CombatScreenProps {
   room: Room;
@@ -449,6 +450,9 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
           )}
         </CardContent>
       </Card>
+      
+      {/* Debug Panel */}
+      <CombatDebugPanel room={room} matchState={matchState} />
       
       {/* Dialog de Resolução */}
       <Dialog open={showResolutionDialog} onOpenChange={setShowResolutionDialog}>
