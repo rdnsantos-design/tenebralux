@@ -6,11 +6,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { TacticalGameProvider, useTacticalGame } from '@/contexts/TacticalGameContext';
 import { HexGrid } from '@/components/tactical/HexGrid';
 import { UnitDetailPanel } from '@/components/tactical/UnitDetailPanel';
+import { TurnTracker } from '@/components/tactical/TurnTracker';
+import { PhaseModal } from '@/components/tactical/PhaseModal';
 import { useTacticalMatch, TacticalMatch } from '@/hooks/useTacticalMatch';
 import { usePlayerId } from '@/hooks/usePlayerId';
 import { hexKey } from '@/lib/hexUtils';
 import { GamePhase } from '@/types/tactical-game';
-import { ArrowLeft, Loader2, SkipForward, Dices, Users, Clock } from 'lucide-react';
+import { ArrowLeft, Loader2, Users, Clock } from 'lucide-react';
 
 function BattleContent() {
   const navigate = useNavigate();
@@ -70,32 +72,10 @@ function BattleContent() {
     }
   };
   
-  const handleRollInitiative = async () => {
-    if (gameState.phase === 'initiative') {
-      await rollInitiative();
-    }
-  };
-  
-  const handleEndPhase = async () => {
-    await endPhase();
-  };
-  
   const handlePostureChange = async (posture: 'Ofensiva' | 'Defensiva' | 'Carga' | 'Reorganização') => {
     if (selectedUnitId && canUsePosture(selectedUnitId, posture)) {
       await setPosture(selectedUnitId, posture);
     }
-  };
-  
-  const phaseNames: Record<GamePhase, string> = {
-    setup: '⚙️ Preparação',
-    initiative: '🎲 Iniciativa',
-    movement: '🚶 Movimento',
-    shooting: '🏹 Tiro',
-    charge: '🐴 Carga',
-    melee: '⚔️ Combate',
-    rout: '💨 Debandada',
-    reorganization: '🔄 Reorganização',
-    end_turn: '⏭️ Fim do Turno',
   };
   
   // Count units per player
@@ -107,26 +87,17 @@ function BattleContent() {
   
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* Header */}
-      <header className="flex-shrink-0 border-b bg-card/50 backdrop-blur-sm px-4 py-2">
+      {/* Phase Modal */}
+      <PhaseModal />
+      
+      {/* Header with TurnTracker */}
+      <header className="flex-shrink-0 border-b bg-card/50 backdrop-blur-sm px-4 py-2 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate('/tactical')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Sair
             </Button>
-            
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-sm">
-                Turno {gameState.turn}
-              </Badge>
-              <Badge 
-                variant={isMyTurn ? 'default' : 'secondary'}
-                className="text-sm"
-              >
-                {phaseNames[gameState.phase]}
-              </Badge>
-            </div>
           </div>
           
           <div className="flex items-center gap-4">
@@ -156,27 +127,13 @@ function BattleContent() {
                 </Badge>
               </div>
             </div>
-            
-            {/* Action buttons */}
-            <div className="flex items-center gap-2">
-              {gameState.phase === 'initiative' && (
-                <Button size="sm" onClick={handleRollInitiative}>
-                  <Dices className="h-4 w-4 mr-2" />
-                  Rolar Iniciativa
-                </Button>
-              )}
-              
-              {isMyTurn && gameState.phase !== 'initiative' && (
-                <Button size="sm" variant="outline" onClick={handleEndPhase}>
-                  <SkipForward className="h-4 w-4 mr-2" />
-                  Próxima Fase
-                </Button>
-              )}
-            </div>
           </div>
         </div>
         
-        {/* Turn indicator */}
+        {/* Turn Tracker Component */}
+        <TurnTracker />
+        
+        {/* Turn indicator when waiting */}
         {!isMyTurn && gameState.phase !== 'initiative' && (
           <div className="flex items-center justify-center gap-2 py-1 text-sm text-muted-foreground">
             <Clock className="h-4 w-4 animate-pulse" />
