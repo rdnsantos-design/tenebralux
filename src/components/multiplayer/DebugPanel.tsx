@@ -95,15 +95,74 @@ export function DebugPanel({ room, players, matchState, sessionId, lastAction }:
           {/* Match State */}
           <div className="border-t border-dashed pt-2 mt-2">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">match_state.version:</span>
+              <span className="text-muted-foreground">version:</span>
               <Badge className="text-xs">{matchState?.version ?? 'N/A'}</Badge>
             </div>
             {matchState && (
               <>
+                {/* VET Core */}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">vet_agreed:</span>
+                  <span className="font-bold">{(matchState as any).vet_agreed ?? '-'}</span>
+                </div>
+                
+                {/* VET Budget & Remaining */}
+                <div className="flex justify-between text-green-600">
+                  <span className="text-muted-foreground">p1_vet_budget:</span>
+                  <span>{(matchState as any).player1_vet_budget ?? '-'}</span>
+                </div>
+                <div className="flex justify-between text-green-600">
+                  <span className="text-muted-foreground">p2_vet_budget:</span>
+                  <span>{(matchState as any).player2_vet_budget ?? '-'}</span>
+                </div>
+                <div className="flex justify-between text-blue-600">
+                  <span className="text-muted-foreground">p1_vet_remaining:</span>
+                  <span>{(matchState as any).player1_vet_remaining ?? '-'}</span>
+                </div>
+                <div className="flex justify-between text-blue-600">
+                  <span className="text-muted-foreground">p2_vet_remaining:</span>
+                  <span>{(matchState as any).player2_vet_remaining ?? '-'}</span>
+                </div>
+                
+                {/* Logistics Cost */}
+                <div className="flex justify-between text-orange-600">
+                  <span className="text-muted-foreground">vet_cost_logistics_p1:</span>
+                  <span>{(matchState as any).vet_cost_logistics_p1 ?? '-'}</span>
+                </div>
+                <div className="flex justify-between text-orange-600">
+                  <span className="text-muted-foreground">vet_cost_logistics_p2:</span>
+                  <span>{(matchState as any).vet_cost_logistics_p2 ?? '-'}</span>
+                </div>
+                
+                {/* Logistics Round */}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">logistics_round:</span>
-                  <span>{(matchState as unknown as { logistics_round?: number }).logistics_round ?? 0}</span>
+                  <span>{(matchState as any).logistics_round ?? 0}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">logistics_resolved:</span>
+                  <span>{(matchState as any).logistics_resolved ? '✓' : '✗'}</span>
+                </div>
+                
+                {/* Bids */}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">p1_round1_bid:</span>
+                  <span className="truncate max-w-[100px]">{(matchState as any).player1_round1_bid ? 'set' : '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">p2_round1_bid:</span>
+                  <span className="truncate max-w-[100px]">{(matchState as any).player2_round1_bid ? 'set' : '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">p1_round2_bid:</span>
+                  <span className="truncate max-w-[100px]">{(matchState as any).player1_round2_bid ? 'set' : '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">p2_round2_bid:</span>
+                  <span className="truncate max-w-[100px]">{(matchState as any).player2_round2_bid ? 'set' : '-'}</span>
+                </div>
+                
+                {/* Cultures */}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">p1_culture:</span>
                   <span>{matchState.player1_culture ?? '-'} {matchState.player1_culture_confirmed ? '✓' : ''}</span>
@@ -112,21 +171,15 @@ export function DebugPanel({ room, players, matchState, sessionId, lastAction }:
                   <span className="text-muted-foreground">p2_culture:</span>
                   <span>{matchState.player2_culture ?? '-'} {matchState.player2_culture_confirmed ? '✓' : ''}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">p1_vet_remaining:</span>
-                  <span>{(matchState as unknown as { player1_vet_remaining?: number }).player1_vet_remaining ?? '-'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">p2_vet_remaining:</span>
-                  <span>{(matchState as unknown as { player2_vet_remaining?: number }).player2_vet_remaining ?? '-'}</span>
-                </div>
+                
+                {/* Deck Confirmed */}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">p1_deck_confirmed:</span>
-                  <span>{(matchState as unknown as { player1_deck_confirmed?: boolean }).player1_deck_confirmed ? '✓' : '✗'}</span>
+                  <span>{(matchState as any).player1_deck_confirmed ? '✓' : '✗'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">p2_deck_confirmed:</span>
-                  <span>{(matchState as unknown as { player2_deck_confirmed?: boolean }).player2_deck_confirmed ? '✓' : '✗'}</span>
+                  <span>{(matchState as any).player2_deck_confirmed ? '✓' : '✗'}</span>
                 </div>
               </>
             )}
