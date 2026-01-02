@@ -16,6 +16,7 @@ import Travel from "./pages/Travel";
 import TacticalGame from "./pages/TacticalGame";
 import StrategicGame from "./pages/StrategicGame";
 import FieldCommanders from "./pages/FieldCommanders";
+import GameRoom from "./pages/GameRoom";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,8 @@ const App = () => (
           <Route path="/tactical-game" element={<TacticalGame />} />
           <Route path="/strategic-game" element={<StrategicGame />} />
           <Route path="/field-commanders" element={<FieldCommanders />} />
+          <Route path="/game" element={<GameRoom />} />
+          <Route path="/game/:roomCode" element={<GameRoom />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -892,6 +892,154 @@ export type Database = {
           },
         ]
       }
+      match_actions: {
+        Row: {
+          action_data: Json | null
+          action_type: string
+          created_at: string
+          id: string
+          phase: Database["public"]["Enums"]["game_phase"]
+          player_number: number
+          room_id: string
+          state_version: number
+        }
+        Insert: {
+          action_data?: Json | null
+          action_type: string
+          created_at?: string
+          id?: string
+          phase: Database["public"]["Enums"]["game_phase"]
+          player_number: number
+          room_id: string
+          state_version: number
+        }
+        Update: {
+          action_data?: Json | null
+          action_type?: string
+          created_at?: string
+          id?: string
+          phase?: Database["public"]["Enums"]["game_phase"]
+          player_number?: number
+          room_id?: string
+          state_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_actions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_state: {
+        Row: {
+          created_at: string
+          game_seed: string | null
+          id: string
+          player1_culture: string | null
+          player1_culture_confirmed: boolean
+          player1_deck: Json | null
+          player1_deck_confirmed: boolean
+          player1_logistics_bid: number | null
+          player1_logistics_confirmed: boolean
+          player1_tiebreak_bid: number | null
+          player1_tiebreak_confirmed: boolean
+          player1_vet_remaining: number | null
+          player2_culture: string | null
+          player2_culture_confirmed: boolean
+          player2_deck: Json | null
+          player2_deck_confirmed: boolean
+          player2_logistics_bid: number | null
+          player2_logistics_confirmed: boolean
+          player2_tiebreak_bid: number | null
+          player2_tiebreak_confirmed: boolean
+          player2_vet_remaining: number | null
+          room_id: string
+          scenario_options: Json | null
+          scenario_winner: number | null
+          selected_season_id: string | null
+          selected_terrain_id: string | null
+          tiebreak_players: number[] | null
+          tiebreak_required: boolean
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          game_seed?: string | null
+          id?: string
+          player1_culture?: string | null
+          player1_culture_confirmed?: boolean
+          player1_deck?: Json | null
+          player1_deck_confirmed?: boolean
+          player1_logistics_bid?: number | null
+          player1_logistics_confirmed?: boolean
+          player1_tiebreak_bid?: number | null
+          player1_tiebreak_confirmed?: boolean
+          player1_vet_remaining?: number | null
+          player2_culture?: string | null
+          player2_culture_confirmed?: boolean
+          player2_deck?: Json | null
+          player2_deck_confirmed?: boolean
+          player2_logistics_bid?: number | null
+          player2_logistics_confirmed?: boolean
+          player2_tiebreak_bid?: number | null
+          player2_tiebreak_confirmed?: boolean
+          player2_vet_remaining?: number | null
+          room_id: string
+          scenario_options?: Json | null
+          scenario_winner?: number | null
+          selected_season_id?: string | null
+          selected_terrain_id?: string | null
+          tiebreak_players?: number[] | null
+          tiebreak_required?: boolean
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          game_seed?: string | null
+          id?: string
+          player1_culture?: string | null
+          player1_culture_confirmed?: boolean
+          player1_deck?: Json | null
+          player1_deck_confirmed?: boolean
+          player1_logistics_bid?: number | null
+          player1_logistics_confirmed?: boolean
+          player1_tiebreak_bid?: number | null
+          player1_tiebreak_confirmed?: boolean
+          player1_vet_remaining?: number | null
+          player2_culture?: string | null
+          player2_culture_confirmed?: boolean
+          player2_deck?: Json | null
+          player2_deck_confirmed?: boolean
+          player2_logistics_bid?: number | null
+          player2_logistics_confirmed?: boolean
+          player2_tiebreak_bid?: number | null
+          player2_tiebreak_confirmed?: boolean
+          player2_vet_remaining?: number | null
+          room_id?: string
+          scenario_options?: Json | null
+          scenario_winner?: number | null
+          selected_season_id?: string | null
+          selected_terrain_id?: string | null
+          tiebreak_players?: number[] | null
+          tiebreak_required?: boolean
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_state_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: true
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       province_distances: {
         Row: {
           created_at: string
@@ -1059,6 +1207,80 @@ export type Database = {
           regency_points?: number
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      room_players: {
+        Row: {
+          created_at: string
+          id: string
+          is_host: boolean
+          nickname: string
+          player_number: number
+          room_id: string
+          session_id: string
+          status: Database["public"]["Enums"]["player_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_host?: boolean
+          nickname: string
+          player_number: number
+          room_id: string
+          session_id: string
+          status?: Database["public"]["Enums"]["player_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_host?: boolean
+          nickname?: string
+          player_number?: number
+          room_id?: string
+          session_id?: string
+          status?: Database["public"]["Enums"]["player_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          code: string
+          created_at: string
+          current_phase: Database["public"]["Enums"]["game_phase"]
+          host_nickname: string
+          id: string
+          status: Database["public"]["Enums"]["room_status"]
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_phase?: Database["public"]["Enums"]["game_phase"]
+          host_nickname: string
+          id?: string
+          status?: Database["public"]["Enums"]["room_status"]
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_phase?: Database["public"]["Enums"]["game_phase"]
+          host_nickname?: string
+          id?: string
+          status?: Database["public"]["Enums"]["room_status"]
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1503,7 +1725,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_room: {
+        Args: { p_host_nickname: string; p_session_id: string }
+        Returns: {
+          player_id: string
+          room_code: string
+          room_id: string
+        }[]
+      }
+      generate_room_code: { Args: never; Returns: string }
+      join_room: {
+        Args: { p_nickname: string; p_room_code: string; p_session_id: string }
+        Returns: {
+          player_id: string
+          player_number: number
+          room_id: string
+        }[]
+      }
+      set_player_ready: {
+        Args: { p_player_id: string; p_ready: boolean }
+        Returns: boolean
+      }
     }
     Enums: {
       commander_specialization:
@@ -1521,7 +1763,23 @@ export type Database = {
         | "Veterano"
         | "Elite"
         | "Lendário"
+      game_phase:
+        | "lobby"
+        | "culture_selection"
+        | "scenario_selection"
+        | "scenario_tiebreak"
+        | "deckbuilding"
+        | "combat_setup"
+        | "combat"
+        | "resolution"
       holding_type: "ordem" | "guilda" | "templo" | "fonte_magica"
+      player_status: "joined" | "ready" | "disconnected"
+      room_status:
+        | "waiting"
+        | "ready"
+        | "in_progress"
+        | "finished"
+        | "cancelled"
       tactical_card_subtype: "Buff" | "Debuff" | "Neutra" | "Instantânea"
       tactical_card_type: "Ataque" | "Defesa" | "Movimento" | "Moral"
       tactical_culture: "Anuire" | "Khinasi" | "Vos" | "Rjurik" | "Brecht"
@@ -1670,7 +1928,19 @@ export const Constants = {
         "Elite",
         "Lendário",
       ],
+      game_phase: [
+        "lobby",
+        "culture_selection",
+        "scenario_selection",
+        "scenario_tiebreak",
+        "deckbuilding",
+        "combat_setup",
+        "combat",
+        "resolution",
+      ],
       holding_type: ["ordem", "guilda", "templo", "fonte_magica"],
+      player_status: ["joined", "ready", "disconnected"],
+      room_status: ["waiting", "ready", "in_progress", "finished", "cancelled"],
       tactical_card_subtype: ["Buff", "Debuff", "Neutra", "Instantânea"],
       tactical_card_type: ["Ataque", "Defesa", "Movimento", "Moral"],
       tactical_culture: ["Anuire", "Khinasi", "Vos", "Rjurik", "Brecht"],
