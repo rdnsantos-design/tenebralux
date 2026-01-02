@@ -8,6 +8,8 @@ import {
   calculateViewBox,
   HEX_SIZE 
 } from '@/lib/hexUtils';
+import { UnitToken } from './UnitToken';
+import { CommanderToken } from './CommanderToken';
 
 interface HexGridProps {
   hexes: Record<string, HexData>;
@@ -206,6 +208,27 @@ export function HexGrid({
       >
         {/* Renderizar todos os hexágonos */}
         {allHexCoords.map(coord => renderHex(coord))}
+        
+        {/* Renderizar unidades */}
+        {Object.values(units).map(unit => (
+          <UnitToken
+            key={unit.id}
+            unit={unit}
+            isSelected={selectedHexKey === hexKey(unit.position)}
+            isValidTarget={validTargets.includes(unit.id)}
+            onClick={() => onHexClick?.(unit.position)}
+          />
+        ))}
+        
+        {/* Renderizar comandantes não embarcados */}
+        {Object.values(commanders).filter(c => !c.isEmbedded).map(commander => (
+          <CommanderToken
+            key={commander.id}
+            commander={commander}
+            isSelected={selectedHexKey === hexKey(commander.position)}
+            onClick={() => onHexClick?.(commander.position)}
+          />
+        ))}
       </svg>
     </div>
   );
