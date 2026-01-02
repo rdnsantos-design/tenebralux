@@ -50,9 +50,16 @@ export function RoomLobby({
   };
 
   const handleReadyToggle = async () => {
+    if (isUpdating) return;
     setIsUpdating(true);
     try {
-      await onSetReady(!isReady);
+      const result = await onSetReady(!isReady);
+      if (!result) {
+        toast.error('Erro ao atualizar status');
+      }
+    } catch (err) {
+      console.error('Erro ao atualizar status:', err);
+      toast.error('Erro ao atualizar status');
     } finally {
       setIsUpdating(false);
     }
@@ -174,7 +181,7 @@ export function RoomLobby({
           
           <Button
             onClick={handleReadyToggle}
-            disabled={isUpdating || players.length < 2}
+            disabled={isUpdating}
             className={`flex-1 ${isReady ? 'bg-green-600 hover:bg-green-700' : ''}`}
           >
             {isUpdating ? (
