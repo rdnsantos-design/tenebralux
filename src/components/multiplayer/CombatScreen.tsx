@@ -401,9 +401,10 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
         sessionId={playerContext.sessionId}
         playerNumber={pNum as 1 | 2}
         basicCardsUsed={(matchState as any)[`player${pNum}_basic_cards_used`] || {}}
-        currentBonuses={myBoard.basic_bonuses || {}}
+        currentBonuses={(myBoard as any).basic_bonuses || {}}
         combatPhase={combatPhase}
         disabled={myBoard.confirmed}
+      />
       
       {/* Mão */}
       <Card>
