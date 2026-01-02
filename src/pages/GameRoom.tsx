@@ -95,6 +95,9 @@ export default function GameRoom() {
     navigate('/game', { replace: true });
   };
 
+  // Hook de auto-correção de fase - deve estar antes de qualquer return condicional
+  usePhaseGuard(room, matchState, playerContext?.sessionId || '');
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -102,9 +105,6 @@ export default function GameRoom() {
       </div>
     );
   }
-
-  // Hook de auto-correção de fase
-  usePhaseGuard(room, matchState, playerContext?.sessionId || '');
 
   // Em sala ativa
   if (room && playerContext && matchState) {
