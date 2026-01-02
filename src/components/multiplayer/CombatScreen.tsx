@@ -60,12 +60,19 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
   // Extrair dados do matchState
   const combatRound = (matchState as any).combat_round ?? 1;
   const combatPhase = (matchState as any).combat_phase ?? 'initiative';
-  const board: BoardState = (matchState as any).combat_board_state ?? {
+  const defaultBoard: BoardState = {
     step: 'initiative',
     p1: { initiative_card: null, main_card: null, confirmed: false },
     p2: { initiative_card: null, main_card: null, confirmed: false },
     last_resolution: null
   };
+  const rawBoard = (matchState as any).combat_board_state;
+  const board: BoardState = rawBoard ? {
+    ...defaultBoard,
+    ...rawBoard,
+    p1: { ...defaultBoard.p1, ...(rawBoard.p1 || {}) },
+    p2: { ...defaultBoard.p2, ...(rawBoard.p2 || {}) },
+  } : defaultBoard;
   
   const myHand: HandCard[] = pNum === 1 
     ? (matchState as any).player1_hand ?? []
