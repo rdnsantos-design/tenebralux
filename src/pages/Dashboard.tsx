@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Map, Route, Crown, Hexagon, Layers } from "lucide-react";
+import { Users, Map, Route, Crown, Hexagon, Layers, Gamepad2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
@@ -14,6 +14,18 @@ const Dashboard = () => {
           <p className="text-xl text-muted-foreground">
             Gerencie seus cards e exércitos para suas campanhas
           </p>
+        </div>
+
+        {/* Botão Jogar Online */}
+        <div className="flex justify-center mb-8">
+          <Button 
+            size="lg" 
+            className="text-lg px-8 py-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            onClick={() => navigate('/game')}
+          >
+            <Gamepad2 className="w-6 h-6 mr-3" />
+            🎮 Jogar Online (Multiplayer)
+          </Button>
         </div>
 
         {/* Portais de Jogo */}
