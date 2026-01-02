@@ -36,6 +36,7 @@ interface BasicCard {
   icon: React.ReactNode;
   effect: string;
   color: string;
+  allowedPhases: string[]; // Fases em que pode ser usada
 }
 
 const BASIC_CARDS: BasicCard[] = [
@@ -44,35 +45,40 @@ const BASIC_CARDS: BasicCard[] = [
     name: 'Cura', 
     icon: <Heart className="w-4 h-4" />, 
     effect: '-5 dano recebido',
-    color: 'text-green-500'
+    color: 'text-green-500',
+    allowedPhases: ['combat_resolution'] // Cura só após resolução
   },
   { 
     id: 'attack', 
     name: 'Ataque', 
     icon: <Sword className="w-4 h-4" />, 
     effect: '+1 ATK na rodada',
-    color: 'text-red-500'
+    color: 'text-red-500',
+    allowedPhases: ['attack_maneuver', 'attack_reaction'] // Fase de ataque
   },
   { 
     id: 'defense', 
     name: 'Defesa', 
     icon: <Shield className="w-4 h-4" />, 
     effect: '+1 DEF na rodada',
-    color: 'text-blue-500'
+    color: 'text-blue-500',
+    allowedPhases: ['defense_maneuver', 'defense_reaction'] // Fase de defesa
   },
   { 
     id: 'initiative', 
     name: 'Iniciativa', 
     icon: <Zap className="w-4 h-4" />, 
     effect: '+1 MOB na rodada',
-    color: 'text-yellow-500'
+    color: 'text-yellow-500',
+    allowedPhases: ['initiative_maneuver', 'initiative_reaction'] // Fase de iniciativa
   },
   { 
     id: 'countermaneuver', 
     name: 'Contra-Manobra', 
     icon: <RotateCcw className="w-4 h-4" />, 
-    effect: 'Reduz MOB do oponente',
-    color: 'text-purple-500'
+    effect: 'Cancela manobra do oponente',
+    color: 'text-purple-500',
+    allowedPhases: ['initiative_reaction', 'attack_reaction', 'defense_reaction'] // Subfases de reação
   },
 ];
 
@@ -87,7 +93,15 @@ export function BasicCardsPanel({
 }: BasicCardsPanelProps) {
   const [loading, setLoading] = useState<string | null>(null);
   
-  const canUseCards = combatPhase === 'initiative' || combatPhase === 'main';
+  // Função para verificar se uma carta específica pode ser usada na fase atual
+  const canUseCard = (card: BasicCard) => {
+    return card.allowedPhases.includes(combatPhase);
+  };
+  
+  // Verifica se há alguma carta disponível para uso
+  const hasAnyUsableCard = BASIC_CARDS.some(card => 
+    canUseCard(card) && !basicCardsUsed?.[card.id]
+  );
   
   const handleUseCard = async (cardType: string) => {
     setLoading(cardType);
@@ -126,6 +140,7 @@ export function BasicCardsPanel({
             const isUsed = basicCardsUsed?.[card.id];
             const isActiveThisRound = currentBonuses?.[card.id];
             const isLoading = loading === card.id;
+            const canUse = canUseCard(card);
             
             return (
               <Button
@@ -133,18 +148,29 @@ export function BasicCardsPanel({
                 variant={isActiveThisRound ? 'default' : isUsed ? 'ghost' : 'outline'}
                 size="sm"
                 className={`h-auto py-2 px-2 flex flex-col items-center gap-1 ${
-                  isUsed ? 'opacity-50' : ''
+                  isUsed ? 'opacity-50' : !canUse ? 'opacity-30' : ''
                 }`}
-                disabled={disabled || isUsed || !canUseCards || isLoading}
+                disabled={disabled || isUsed || !canUse || isLoading}
                 onClick={() => handleUseCard(card.id)}
-                title={card.effect}
+                title={`${card.effect} (${card.allowedPhases.map(p => {
+                  const labels: Record<string, string> = {
+                    'initiative_maneuver': 'Iniciativa',
+                    'initiative_reaction': 'Reação Ini.',
+                    'attack_maneuver': 'Ataque',
+                    'attack_reaction': 'Reação Atq.',
+                    'defense_maneuver': 'Defesa',
+                    'defense_reaction': 'Reação Def.',
+                    'combat_resolution': 'Resolução'
+                  };
+                  return labels[p] || p;
+                }).join(', ')})`}
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : isUsed ? (
                   <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
                 ) : (
-                  <span className={card.color}>{card.icon}</span>
+                  <span className={canUse ? card.color : 'text-muted-foreground'}>{card.icon}</span>
                 )}
                 <span className="text-[10px] font-medium truncate w-full text-center">
                   {card.name}
@@ -153,9 +179,9 @@ export function BasicCardsPanel({
             );
           })}
         </div>
-        {!canUseCards && (
+        {!hasAnyUsableCard && (
           <p className="text-xs text-muted-foreground text-center mt-2">
-            Cartas básicas só podem ser usadas durante iniciativa ou fase principal
+            Nenhuma carta básica disponível nesta fase
           </p>
         )}
       </CardContent>

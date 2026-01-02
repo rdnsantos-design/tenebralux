@@ -358,6 +358,23 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
     }
   };
 
+  // Avançar para próxima fase após resolução
+  const handleAdvanceCombat = async () => {
+    setLoading('advance');
+    try {
+      const { error } = await supabase.rpc('advance_combat_phase', {
+        p_room_id: room.id,
+        p_session_id: playerContext.sessionId
+      });
+      if (error) throw error;
+      toast.success('Avançando para próxima fase');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao avançar fase');
+    } finally {
+      setLoading(null);
+    }
+  };
+
   // Renderizar comandante
   const renderCommander = (cmd: DeployedCommander, isOwn: boolean, canSelect: boolean) => {
     const cmdState = myCmdState?.commanders?.[cmd.instance_id];
@@ -875,36 +892,64 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-2 bg-red-500/10 rounded">
                 <div className="font-medium">Ataque (P{board.last_resolution.attacker})</div>
-                <div>d20: {board.last_resolution.d20}</div>
-                <div>Base: {board.last_resolution.attack_base}</div>
-                <div>Estratégia: +{board.last_resolution.attack_strategy}</div>
-                <div>Terreno: +{board.last_resolution.attack_terrain_mod}</div>
-                <div>Manobras: +{board.last_resolution.attack_maneuver_mod}</div>
-                <div>Reações: +{board.last_resolution.attack_reaction_mod}</div>
-                <div className="font-bold text-primary">Total: {board.last_resolution.attack_total}</div>
+                <div>d20: <strong>{board.last_resolution.d20 ?? '?'}</strong></div>
+                <div>Base: +{board.last_resolution.attack_base ?? 0}</div>
+                <div>Estratégia: +{board.last_resolution.attack_strategy ?? 0}</div>
+                <div>Terreno: +{board.last_resolution.attack_terrain_mod ?? 0}</div>
+                <div>Manobras: +{board.last_resolution.attack_maneuver_mod ?? 0}</div>
+                <div>Reações: +{board.last_resolution.attack_reaction_mod ?? 0}</div>
+                <div className="font-bold text-primary border-t pt-1 mt-1">
+                  Total: {board.last_resolution.attack_total ?? 
+                    ((board.last_resolution.d20 ?? 0) + 
+                     (board.last_resolution.attack_base ?? 0) +
+                     (board.last_resolution.attack_strategy ?? 0) +
+                     (board.last_resolution.attack_terrain_mod ?? 0) +
+                     (board.last_resolution.attack_maneuver_mod ?? 0) +
+                     (board.last_resolution.attack_reaction_mod ?? 0))}
+                </div>
               </div>
               <div className="p-2 bg-blue-500/10 rounded">
                 <div className="font-medium">Defesa (P{board.last_resolution.defender})</div>
-                <div>Base: {board.last_resolution.defense_base}</div>
+                <div>Base: +{board.last_resolution.defense_base ?? 0}</div>
                 <div>Fixo: +5</div>
-                <div>Estratégia: +{board.last_resolution.defense_strategy}</div>
-                <div>Terreno: +{board.last_resolution.defense_terrain_mod}</div>
-                <div>Manobras: +{board.last_resolution.defense_maneuver_mod}</div>
-                <div>Reações: +{board.last_resolution.defense_reaction_mod}</div>
-                <div className="font-bold text-primary">DC: {board.last_resolution.defense_dc}</div>
+                <div>Estratégia: +{board.last_resolution.defense_strategy ?? 0}</div>
+                <div>Terreno: +{board.last_resolution.defense_terrain_mod ?? 0}</div>
+                <div>Manobras: +{board.last_resolution.defense_maneuver_mod ?? 0}</div>
+                <div>Reações: +{board.last_resolution.defense_reaction_mod ?? 0}</div>
+                <div className="font-bold text-primary border-t pt-1 mt-1">
+                  DC: {board.last_resolution.defense_dc ?? 
+                    ((board.last_resolution.defense_base ?? 0) + 5 +
+                     (board.last_resolution.defense_strategy ?? 0) +
+                     (board.last_resolution.defense_terrain_mod ?? 0) +
+                     (board.last_resolution.defense_maneuver_mod ?? 0) +
+                     (board.last_resolution.defense_reaction_mod ?? 0))}
+                </div>
               </div>
             </div>
             <div className="text-center p-3 bg-muted rounded">
               <div className="text-2xl font-bold">
-                {board.last_resolution.damage > 0 ? (
-                  <span className="text-red-500">-{board.last_resolution.damage} HP</span>
+                {(board.last_resolution.damage ?? 0) > 0 ? (
+                  <span className="text-red-500">Ataque bem-sucedido! -{board.last_resolution.damage} HP</span>
                 ) : (
                   <span className="text-green-500">Defesa bem-sucedida!</span>
                 )}
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                HP do defensor: {board.last_resolution.defender_hp_before} → {board.last_resolution.defender_hp_after}
+                HP do defensor: {board.last_resolution.defender_hp_before ?? '?'} → {board.last_resolution.defender_hp_after ?? '?'}
               </div>
+            </div>
+            {/* Botão para avançar após resolução */}
+            <div className="flex justify-center pt-2">
+              <Button 
+                onClick={handleAdvanceCombat} 
+                disabled={loading === 'advance'}
+                className="w-full"
+              >
+                {loading === 'advance' ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
+                Próxima Fase →
+              </Button>
             </div>
           </CardContent>
         </Card>
