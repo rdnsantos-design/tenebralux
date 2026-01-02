@@ -12,6 +12,7 @@ interface DebugPanelProps {
   room: Room;
   players: RoomPlayer[];
   matchState: MatchState | null;
+  sessionId: string;
   lastAction?: {
     action_type: string;
     player_number: number;
@@ -20,17 +21,7 @@ interface DebugPanelProps {
   } | null;
 }
 
-// Helper to get session ID
-function getSessionId(): string {
-  let sessionId = sessionStorage.getItem('multiplayer_session_id');
-  if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    sessionStorage.setItem('multiplayer_session_id', sessionId);
-  }
-  return sessionId;
-}
-
-export function DebugPanel({ room, players, matchState, lastAction }: DebugPanelProps) {
+export function DebugPanel({ room, players, matchState, sessionId, lastAction }: DebugPanelProps) {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportData, setExportData] = useState<string>('');
   const [isExporting, setIsExporting] = useState(false);
@@ -38,7 +29,6 @@ export function DebugPanel({ room, players, matchState, lastAction }: DebugPanel
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const sessionId = getSessionId();
       const { data, error } = await supabase.rpc('get_match_state', {
         p_room_id: room.id,
         p_session_id: sessionId
