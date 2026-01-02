@@ -380,7 +380,10 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
             )}
             
             <div className="flex gap-2">
-              <Button onClick={() => handleSelectManeuver} variant="outline" size="sm" disabled={loading !== null}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={loading !== null}
                 onClick={() => { setSelectedCardIndex(null); setSelectedCommanderId(null); handleConfirmManeuver(); }}>
                 Sem Manobra
               </Button>
@@ -532,7 +535,7 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
         disabled={false}
       />
 
-      <CombatDebugPanel room={room} matchState={matchState} playerContext={playerContext} />
+      <CombatDebugPanel room={room} matchState={matchState} />
     </div>
   );
 }
