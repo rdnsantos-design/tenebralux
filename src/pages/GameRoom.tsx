@@ -133,6 +133,7 @@ export default function GameRoom() {
               players={players}
               matchState={matchState}
               playerContext={playerContext}
+              onLeaveRoom={handleLeaveRoom}
             />
           )}
 
@@ -142,6 +143,7 @@ export default function GameRoom() {
               players={players}
               matchState={matchState}
               playerContext={playerContext}
+              onLeaveRoom={handleLeaveRoom}
             />
           )}
 
@@ -151,6 +153,7 @@ export default function GameRoom() {
               players={players}
               matchState={matchState}
               playerContext={playerContext}
+              onLeaveRoom={handleLeaveRoom}
             />
           )}
 
