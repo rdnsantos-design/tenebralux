@@ -1,13 +1,12 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
-  Loader2, Shield, Sword, Crown, Zap, Heart, 
-  Play, SkipForward, History, AlertTriangle, LogOut
+  Loader2, Shield, Sword, Zap, Heart, 
+  CheckCircle2, Clock, Trophy, SkipForward, LogOut
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -30,218 +29,216 @@ interface HandCard {
   attack_bonus?: number;
   defense_bonus?: number;
   mobility_bonus?: number;
+  command_required?: number;
 }
 
-interface BasicCardState {
-  attack: boolean;
-  defense: boolean;
-  initiative: boolean;
-  heal: boolean;
-  countermaneuver: boolean;
+interface BoardState {
+  step: 'initiative' | 'main';
+  p1: { initiative_card: HandCard | null; main_card: HandCard | null; confirmed: boolean };
+  p2: { initiative_card: HandCard | null; main_card: HandCard | null; confirmed: boolean };
+  last_resolution: Resolution | null;
 }
 
-interface CmdState {
-  commanders: Record<string, { cmd_total: number; cmd_spent: number; cmd_free: number }>;
-  general: { cmd_total: number; cmd_spent: number; cmd_free: number };
+interface Resolution {
+  round: number;
+  p1: { atk_final: number; def_final: number; mob_final: number; damage_taken: number };
+  p2: { atk_final: number; def_final: number; mob_final: number; damage_taken: number };
+  initiative_winner: number;
+  combat_finished: boolean;
+  winner: number | null;
 }
-
-interface ActionLogEntry {
-  id: string;
-  player_number: number;
-  action_type: string;
-  action_data: Record<string, any>;
-  phase: string;
-  state_version: number;
-  created_at: string;
-}
-
-const PHASE_LABELS: Record<string, string> = {
-  'pre_combat': 'Pré-Combate',
-  'deployment': 'Posicionamento',
-  'initiative': 'Iniciativa',
-  'actions': 'Ações',
-  'resolve': 'Resolução',
-  'end_round': 'Fim da Rodada',
-};
-
-const BASIC_CARDS = [
-  { key: 'attack', label: '+1 ATK', icon: Sword, color: 'text-red-500' },
-  { key: 'defense', label: '+1 DEF', icon: Shield, color: 'text-blue-500' },
-  { key: 'initiative', label: '+1 INI', icon: Zap, color: 'text-yellow-500' },
-  { key: 'heal', label: '+1 CURA', icon: Heart, color: 'text-green-500' },
-  { key: 'countermaneuver', label: 'Contra', icon: AlertTriangle, color: 'text-purple-500' },
-];
 
 export function CombatScreen({ room, players, matchState, playerContext, onLeaveRoom }: CombatScreenProps) {
   const [loading, setLoading] = useState<string | null>(null);
-  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([]);
-  const [selectedCard, setSelectedCard] = useState<HandCard | null>(null);
-  const [showCardDialog, setShowCardDialog] = useState(false);
+  const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
+  const [showResolutionDialog, setShowResolutionDialog] = useState(false);
   
+  const pNum = playerContext.playerNumber;
+  const pKey = `p${pNum}` as 'p1' | 'p2';
+  const opponentKey = pNum === 1 ? 'p2' : 'p1';
+  
+  // Extrair dados do matchState
   const combatRound = (matchState as any).combat_round ?? 1;
   const combatPhase = (matchState as any).combat_phase ?? 'initiative';
+  const board: BoardState = (matchState as any).combat_board_state ?? {
+    step: 'initiative',
+    p1: { initiative_card: null, main_card: null, confirmed: false },
+    p2: { initiative_card: null, main_card: null, confirmed: false },
+    last_resolution: null
+  };
   
-  const myHand: HandCard[] = playerContext.playerNumber === 1 
+  const myHand: HandCard[] = pNum === 1 
     ? (matchState as any).player1_hand ?? []
     : (matchState as any).player2_hand ?? [];
   
-  const myDiscard: HandCard[] = playerContext.playerNumber === 1 
-    ? (matchState as any).player1_discard ?? []
-    : (matchState as any).player2_discard ?? [];
+  const myHp = pNum === 1 ? (matchState as any).player1_hp ?? 100 : (matchState as any).player2_hp ?? 100;
+  const opponentHp = pNum === 1 ? (matchState as any).player2_hp ?? 100 : (matchState as any).player1_hp ?? 100;
   
-  const myBasicState: BasicCardState = playerContext.playerNumber === 1
-    ? (matchState as any).player1_basic_cards_state ?? {}
-    : (matchState as any).player2_basic_cards_state ?? {};
+  const myBoard = board[pKey];
+  const opponentBoard = board[opponentKey];
+  const currentStep = board.step;
   
-  const myCmdState: CmdState = playerContext.playerNumber === 1
-    ? (matchState as any).player1_cmd_state ?? { commanders: {}, general: { cmd_total: 0, cmd_spent: 0, cmd_free: 0 } }
-    : (matchState as any).player2_cmd_state ?? { commanders: {}, general: { cmd_total: 0, cmd_spent: 0, cmd_free: 0 } };
+  const opponent = players.find(p => p.player_number !== pNum);
   
-  const myHp = playerContext.playerNumber === 1
-    ? (matchState as any).player1_hp ?? 100
-    : (matchState as any).player2_hp ?? 100;
-  
-  const opponentHp = playerContext.playerNumber === 1
-    ? (matchState as any).player2_hp ?? 100
-    : (matchState as any).player1_hp ?? 100;
-  
-  const opponent = players.find(p => p.player_number !== playerContext.playerNumber);
-  
-  // Fetch action log
+  // Mostrar dialog de resolução quando houver nova resolução
   useEffect(() => {
-    const fetchLog = async () => {
-      const { data } = await supabase
-        .from('match_actions')
-        .select('*')
-        .eq('room_id', room.id)
-        .order('created_at', { ascending: false })
-        .limit(15);
-      
-      if (data) {
-        setActionLog(data as ActionLogEntry[]);
-      }
-    };
-    
-    fetchLog();
-    
-    // Subscribe to new actions
-    const channel = supabase
-      .channel(`combat-log-${room.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'match_actions', filter: `room_id=eq.${room.id}` },
-        (payload) => {
-          if (payload.new) {
-            setActionLog(prev => [payload.new as ActionLogEntry, ...prev].slice(0, 15));
-          }
-        }
-      )
-      .subscribe();
-    
-    return () => { supabase.removeChannel(channel); };
-  }, [room.id]);
+    if (board.last_resolution && board.last_resolution.round === combatRound - 1) {
+      setShowResolutionDialog(true);
+    }
+  }, [board.last_resolution, combatRound]);
   
-  const handlePlayCard = async (card: HandCard) => {
-    const cardId = card.card_id || card.id;
-    if (!cardId) return;
-    
-    setLoading(`play-${cardId}`);
+  // Selecionar carta de iniciativa
+  const handleSelectInitiativeCard = async (cardIndex: number | null) => {
+    setLoading('select-init');
     try {
-      const { error } = await supabase.rpc('play_card', {
+      const { error } = await supabase.rpc('select_initiative_card', {
         p_room_id: room.id,
         p_session_id: playerContext.sessionId,
-        p_card_id: cardId,
-        p_target: {}
+        p_card_index: cardIndex
       });
-      
       if (error) throw error;
-      toast.success(`${card.name} jogada!`);
-      setShowCardDialog(false);
+      setSelectedCardIndex(null);
+      toast.success(cardIndex !== null ? 'Carta de iniciativa selecionada' : 'Sem carta de iniciativa');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao jogar carta');
+      toast.error(err instanceof Error ? err.message : 'Erro ao selecionar');
     } finally {
       setLoading(null);
     }
   };
   
-  const handleUseBasicCard = async (cardKey: string) => {
-    setLoading(`basic-${cardKey}`);
+  // Confirmar iniciativa
+  const handleConfirmInitiative = async () => {
+    setLoading('confirm-init');
     try {
-      const { error } = await supabase.rpc('use_basic_card', {
-        p_room_id: room.id,
-        p_session_id: playerContext.sessionId,
-        p_basic_card_key: cardKey,
-        p_target: {}
-      });
-      
-      if (error) throw error;
-      toast.success('Carta básica usada!');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao usar carta');
-    } finally {
-      setLoading(null);
-    }
-  };
-  
-  const handleAdvancePhase = async () => {
-    setLoading('advance');
-    try {
-      const { error } = await supabase.rpc('advance_combat_phase', {
+      const { error } = await supabase.rpc('confirm_initiative', {
         p_room_id: room.id,
         p_session_id: playerContext.sessionId
       });
-      
       if (error) throw error;
-      toast.success('Fase avançada!');
+      toast.success('Iniciativa confirmada');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao avançar fase');
+      toast.error(err instanceof Error ? err.message : 'Erro ao confirmar');
     } finally {
       setLoading(null);
     }
   };
   
+  // Selecionar carta principal
+  const handleSelectMainCard = async (cardIndex: number) => {
+    setLoading('select-main');
+    try {
+      const { error } = await supabase.rpc('select_main_card', {
+        p_room_id: room.id,
+        p_session_id: playerContext.sessionId,
+        p_card_index: cardIndex
+      });
+      if (error) throw error;
+      setSelectedCardIndex(null);
+      toast.success('Carta principal selecionada');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao selecionar');
+    } finally {
+      setLoading(null);
+    }
+  };
+  
+  // Confirmar carta principal
+  const handleConfirmMain = async () => {
+    setLoading('confirm-main');
+    try {
+      const { error } = await supabase.rpc('confirm_main', {
+        p_room_id: room.id,
+        p_session_id: playerContext.sessionId
+      });
+      if (error) throw error;
+      toast.success('Carta confirmada');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao confirmar');
+    } finally {
+      setLoading(null);
+    }
+  };
+  
+  // Renderizar carta
+  const renderCard = (card: HandCard | null, label: string) => {
+    if (!card) {
+      return (
+        <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-3 text-center text-muted-foreground text-sm">
+          {label}
+        </div>
+      );
+    }
+    return (
+      <div className="border-2 border-primary/50 bg-primary/5 rounded-lg p-3">
+        <div className="font-medium text-sm truncate">{card.name}</div>
+        <div className="flex gap-2 mt-1 text-xs">
+          {card.attack_bonus ? <span className="text-red-500">+{card.attack_bonus}A</span> : null}
+          {card.defense_bonus ? <span className="text-blue-500">+{card.defense_bonus}D</span> : null}
+          {card.mobility_bonus ? <span className="text-yellow-500">+{card.mobility_bonus}M</span> : null}
+        </div>
+      </div>
+    );
+  };
+  
+  // Combate finalizado
+  if (combatPhase === 'finished') {
+    const winner = board.last_resolution?.winner;
+    const isWinner = winner === pNum;
+    
+    return (
+      <div className="w-full max-w-lg mx-auto">
+        <Card className="text-center">
+          <CardHeader>
+            <Trophy className={`w-16 h-16 mx-auto ${isWinner ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+            <CardTitle className="text-2xl">
+              {winner === 0 ? 'Empate!' : isWinner ? 'Vitória!' : 'Derrota'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-center gap-8">
+              <div>
+                <div className="text-sm text-muted-foreground">Você</div>
+                <div className="text-2xl font-bold">{myHp} HP</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">{opponent?.nickname || 'Oponente'}</div>
+                <div className="text-2xl font-bold">{opponentHp} HP</div>
+              </div>
+            </div>
+            <Button onClick={onLeaveRoom} variant="outline">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair da Sala
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
   return (
-    <div className="w-full max-w-5xl space-y-3">
-      {/* Combat Header */}
+    <div className="w-full max-w-4xl space-y-4">
+      {/* Header */}
       <Card className="bg-gradient-to-r from-primary/10 to-secondary/10">
         <CardContent className="py-3">
           <div className="flex justify-between items-center">
             <Button variant="ghost" size="sm" onClick={onLeaveRoom} className="text-destructive">
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut className="w-4 h-4 mr-1" />
               Sair
             </Button>
-            
-            <div className="text-center">
-              <div className="flex items-center gap-3 justify-center">
-                <Badge variant="outline" className="text-lg font-bold px-3 py-1">
-                  Rodada {combatRound}
-                </Badge>
-                <Badge className="text-lg px-3 py-1">
-                  {PHASE_LABELS[combatPhase] || combatPhase}
-                </Badge>
-              </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="text-lg font-bold px-3 py-1">
+                Rodada {combatRound}
+              </Badge>
+              <Badge className={`text-lg px-3 py-1 ${currentStep === 'initiative' ? 'bg-yellow-600' : 'bg-primary'}`}>
+                {currentStep === 'initiative' ? 'Iniciativa' : 'Principal'}
+              </Badge>
             </div>
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleAdvancePhase}
-              disabled={loading === 'advance'}
-            >
-              {loading === 'advance' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <SkipForward className="w-4 h-4 mr-1" />
-                  Avançar
-                </>
-              )}
-            </Button>
+            <div className="w-16" />
           </div>
         </CardContent>
       </Card>
       
-      {/* HP Bars */}
+      {/* HP e Status */}
       <div className="grid grid-cols-2 gap-4">
         <Card className="border-primary/50">
           <CardContent className="py-3">
@@ -250,7 +247,6 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
               <div className="flex items-center gap-2">
                 <Heart className="w-5 h-5 text-red-500" />
                 <span className="text-2xl font-bold">{myHp}</span>
-                <span className="text-muted-foreground">/100</span>
               </div>
             </div>
             <div className="mt-2 h-3 bg-muted rounded-full overflow-hidden">
@@ -259,9 +255,16 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
                 style={{ width: `${myHp}%` }}
               />
             </div>
-            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-              <Crown className="w-4 h-4" />
-              <span>CMD Livre do General: <strong>{myCmdState.general?.cmd_free ?? 0}</strong></span>
+            <div className="mt-2 flex items-center gap-2 text-sm">
+              {myBoard.confirmed ? (
+                <Badge variant="secondary" className="gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Confirmado
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="gap-1">
+                  <Clock className="w-3 h-3" /> Aguardando
+                </Badge>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -273,7 +276,6 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
               <div className="flex items-center gap-2">
                 <Heart className="w-5 h-5 text-red-500" />
                 <span className="text-2xl font-bold">{opponentHp}</span>
-                <span className="text-muted-foreground">/100</span>
               </div>
             </div>
             <div className="mt-2 h-3 bg-muted rounded-full overflow-hidden">
@@ -282,54 +284,112 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
                 style={{ width: `${opponentHp}%` }}
               />
             </div>
+            <div className="mt-2 flex items-center gap-2 text-sm">
+              {opponentBoard.confirmed ? (
+                <Badge variant="secondary" className="gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Confirmado
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="gap-1">
+                  <Clock className="w-3 h-3" /> Aguardando
+                </Badge>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
       
-      {/* Basic Cards */}
+      {/* Área de Cartas Selecionadas */}
       <Card>
         <CardHeader className="py-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Zap className="w-4 h-4" />
-            Cartas Básicas (1x cada, sem custo)
-          </CardTitle>
+          <CardTitle className="text-sm">Cartas Selecionadas</CardTitle>
         </CardHeader>
         <CardContent className="py-2">
-          <div className="flex gap-2 flex-wrap">
-            {BASIC_CARDS.map(({ key, label, icon: Icon, color }) => {
-              const isUsed = myBasicState[key as keyof BasicCardState];
-              const isLoading = loading === `basic-${key}`;
-              
-              return (
-                <Button
-                  key={key}
-                  variant={isUsed ? "ghost" : "outline"}
-                  size="sm"
-                  disabled={isUsed || isLoading}
-                  onClick={() => handleUseBasicCard(key)}
-                  className={isUsed ? 'opacity-50 line-through' : ''}
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                  ) : (
-                    <Icon className={`w-4 h-4 mr-1 ${color}`} />
-                  )}
-                  {label}
-                  {isUsed && ' ✓'}
-                </Button>
-              );
-            })}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground">Iniciativa</div>
+              {renderCard(myBoard.initiative_card, 'Nenhuma carta')}
+            </div>
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground">Principal</div>
+              {renderCard(myBoard.main_card, 'Selecione uma carta')}
+            </div>
           </div>
         </CardContent>
       </Card>
       
-      {/* Hand */}
+      {/* Ações por Fase */}
+      {currentStep === 'initiative' && !myBoard.confirmed && (
+        <Card className="border-yellow-500/50">
+          <CardHeader className="py-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Zap className="w-4 h-4 text-yellow-500" />
+              Fase de Iniciativa
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="py-2 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Selecione 0 ou 1 carta para bônus de iniciativa (mobilidade). Depois confirme.
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleSelectInitiativeCard(null)}
+                disabled={loading === 'select-init'}
+              >
+                Sem carta de iniciativa
+              </Button>
+              <Button 
+                onClick={handleConfirmInitiative}
+                disabled={loading === 'confirm-init'}
+              >
+                {loading === 'confirm-init' ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
+                Confirmar Iniciativa
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {currentStep === 'main' && !myBoard.confirmed && (
+        <Card className="border-primary/50">
+          <CardHeader className="py-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Sword className="w-4 h-4 text-primary" />
+              Fase Principal
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="py-2 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Selecione uma carta da sua mão como carta principal e confirme.
+            </p>
+            {myBoard.main_card && (
+              <Button 
+                onClick={handleConfirmMain}
+                disabled={loading === 'confirm-main'}
+              >
+                {loading === 'confirm-main' ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
+                Confirmar Carta
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+      
+      {myBoard.confirmed && (
+        <Card className="border-muted">
+          <CardContent className="py-4 text-center text-muted-foreground">
+            <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            Aguardando {opponent?.nickname || 'oponente'} confirmar...
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Mão */}
       <Card>
         <CardHeader className="py-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Play className="w-4 h-4" />
-            Sua Mão ({myHand.length} cartas)
-          </CardTitle>
+          <CardTitle className="text-sm">Sua Mão ({myHand.length} cartas)</CardTitle>
         </CardHeader>
         <CardContent className="py-2">
           {myHand.length === 0 ? (
@@ -341,29 +401,39 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
               <div className="flex gap-2 pb-2">
                 {myHand.map((card, index) => {
                   const cardId = card.card_id || card.id || `card-${index}`;
-                  const isLoading = loading === `play-${cardId}`;
+                  const isSelected = selectedCardIndex === index;
+                  const canSelect = !myBoard.confirmed && (
+                    (currentStep === 'initiative') || 
+                    (currentStep === 'main' && !myBoard.main_card)
+                  );
                   
                   return (
                     <Button
                       key={cardId}
-                      variant="outline"
-                      className="h-auto py-2 px-3 flex-shrink-0 min-w-[120px]"
-                      disabled={isLoading}
+                      variant={isSelected ? "default" : "outline"}
+                      className="h-auto py-2 px-3 flex-shrink-0 min-w-[130px] flex-col items-start"
+                      disabled={!canSelect || loading !== null}
                       onClick={() => {
-                        setSelectedCard(card);
-                        setShowCardDialog(true);
+                        if (currentStep === 'initiative') {
+                          handleSelectInitiativeCard(index);
+                        } else if (currentStep === 'main') {
+                          handleSelectMainCard(index);
+                        }
                       }}
                     >
-                      <div className="text-left">
-                        <div className="font-medium text-xs truncate max-w-[100px]">
-                          {card.name}
-                        </div>
-                        <div className="flex gap-1 mt-1 text-[10px] text-muted-foreground">
-                          {card.attack_bonus ? <span className="text-red-500">+{card.attack_bonus}A</span> : null}
-                          {card.defense_bonus ? <span className="text-blue-500">+{card.defense_bonus}D</span> : null}
-                          {card.mobility_bonus ? <span className="text-yellow-500">+{card.mobility_bonus}M</span> : null}
-                        </div>
+                      <div className="font-medium text-xs truncate max-w-[110px]">
+                        {card.name}
                       </div>
+                      <div className="flex gap-1 mt-1 text-[10px]">
+                        {card.attack_bonus ? <span className="text-red-400">+{card.attack_bonus}A</span> : null}
+                        {card.defense_bonus ? <span className="text-blue-400">+{card.defense_bonus}D</span> : null}
+                        {card.mobility_bonus ? <span className="text-yellow-400">+{card.mobility_bonus}M</span> : null}
+                      </div>
+                      {card.command_required ? (
+                        <div className="text-[10px] text-muted-foreground mt-1">
+                          CMD: {card.command_required}
+                        </div>
+                      ) : null}
                     </Button>
                   );
                 })}
@@ -373,95 +443,62 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
         </CardContent>
       </Card>
       
-      {/* Action Log */}
-      <Card className="border-dashed">
-        <CardHeader className="py-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <History className="w-4 h-4" />
-            Log de Ações (últimas 10)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="py-2">
-          <ScrollArea className="h-32">
-            <div className="space-y-1 text-xs font-mono">
-              {actionLog.length === 0 ? (
-                <p className="text-muted-foreground text-center py-2">Nenhuma ação registrada</p>
-              ) : (
-                actionLog.map((action) => (
-                  <div 
-                    key={action.id}
-                    className="flex items-center gap-2 py-1 border-b border-dashed last:border-0"
-                  >
-                    <Badge variant="outline" className="text-[10px] px-1">
-                      P{action.player_number}
-                    </Badge>
-                    <span className="text-muted-foreground">
-                      {action.action_type}
-                    </span>
-                    {action.action_data?.card_name && (
-                      <span className="text-primary">{action.action_data.card_name}</span>
-                    )}
-                    {action.action_data?.basic_card && (
-                      <span className="text-primary">{action.action_data.basic_card}</span>
-                    )}
-                    <span className="ml-auto text-muted-foreground">
-                      v{action.state_version}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-      
-      {/* Card Play Dialog */}
-      <Dialog open={showCardDialog} onOpenChange={setShowCardDialog}>
+      {/* Dialog de Resolução */}
+      <Dialog open={showResolutionDialog} onOpenChange={setShowResolutionDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{selectedCard?.name}</DialogTitle>
+            <DialogTitle>Resultado da Rodada {board.last_resolution?.round}</DialogTitle>
             <DialogDescription>
-              Tipo: {selectedCard?.unit_type || 'Geral'}
+              {board.last_resolution?.initiative_winner === 0 
+                ? 'Empate na iniciativa' 
+                : `Jogador ${board.last_resolution?.initiative_winner} ganhou a iniciativa`}
             </DialogDescription>
           </DialogHeader>
           
-          {selectedCard && (
+          {board.last_resolution && (
             <div className="space-y-4">
-              <div className="flex gap-4 text-sm">
-                {selectedCard.attack_bonus ? (
-                  <Badge variant="outline" className="text-red-500">
-                    +{selectedCard.attack_bonus} Ataque
-                  </Badge>
-                ) : null}
-                {selectedCard.defense_bonus ? (
-                  <Badge variant="outline" className="text-blue-500">
-                    +{selectedCard.defense_bonus} Defesa
-                  </Badge>
-                ) : null}
-                {selectedCard.mobility_bonus ? (
-                  <Badge variant="outline" className="text-yellow-500">
-                    +{selectedCard.mobility_bonus} Mobilidade
-                  </Badge>
-                ) : null}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-primary/10">
+                  <div className="font-medium mb-2">Você</div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Ataque Final:</span>
+                      <span className="font-mono">{pNum === 1 ? board.last_resolution.p1.atk_final : board.last_resolution.p2.atk_final}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Defesa Final:</span>
+                      <span className="font-mono">{pNum === 1 ? board.last_resolution.p1.def_final : board.last_resolution.p2.def_final}</span>
+                    </div>
+                    <div className="flex justify-between text-red-500">
+                      <span>Dano Recebido:</span>
+                      <span className="font-mono">-{pNum === 1 ? board.last_resolution.p1.damage_taken : board.last_resolution.p2.damage_taken}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-3 rounded-lg bg-destructive/10">
+                  <div className="font-medium mb-2">{opponent?.nickname || 'Oponente'}</div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Ataque Final:</span>
+                      <span className="font-mono">{pNum === 1 ? board.last_resolution.p2.atk_final : board.last_resolution.p1.atk_final}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Defesa Final:</span>
+                      <span className="font-mono">{pNum === 1 ? board.last_resolution.p2.def_final : board.last_resolution.p1.def_final}</span>
+                    </div>
+                    <div className="flex justify-between text-red-500">
+                      <span>Dano Recebido:</span>
+                      <span className="font-mono">-{pNum === 1 ? board.last_resolution.p2.damage_taken : board.last_resolution.p1.damage_taken}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               
-              <div className="flex gap-2">
-                <Button 
-                  className="flex-1"
-                  onClick={() => handlePlayCard(selectedCard)}
-                  disabled={loading === `play-${selectedCard.card_id || selectedCard.id}`}
-                >
-                  {loading === `play-${selectedCard.card_id || selectedCard.id}` ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Play className="w-4 h-4 mr-2" />
-                  )}
-                  Jogar Carta
-                </Button>
-                <Button variant="outline" onClick={() => setShowCardDialog(false)}>
-                  Cancelar
-                </Button>
-              </div>
+              <Button className="w-full" onClick={() => setShowResolutionDialog(false)}>
+                <SkipForward className="w-4 h-4 mr-2" />
+                Próxima Rodada
+              </Button>
             </div>
           )}
         </DialogContent>

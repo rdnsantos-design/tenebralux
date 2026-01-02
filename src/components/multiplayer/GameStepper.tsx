@@ -12,11 +12,11 @@ const STEPS: Step[] = [
   { id: 'lobby', label: 'Lobby' },
   { id: 'culture_selection', label: 'Cultura' },
   { id: 'scenario_selection', label: 'Cenário' },
-  { id: 'deckbuilding', label: 'Deckbuilding', disabled: true },
-  { id: 'combat', label: 'Mesa', disabled: true },
+  { id: 'deckbuilding', label: 'Deckbuilding' },
+  { id: 'combat', label: 'Combate' },
 ];
 
-const PHASE_ORDER: GamePhase[] = ['lobby', 'culture_selection', 'scenario_selection', 'deckbuilding', 'combat'];
+const PHASE_ORDER: GamePhase[] = ['lobby', 'culture_selection', 'scenario_selection', 'deckbuilding', 'combat', 'resolution'];
 
 interface GameStepperProps {
   currentPhase: GamePhase;
