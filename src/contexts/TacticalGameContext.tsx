@@ -420,6 +420,70 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     return success;
   }, [gameState, myPlayerId, isMyTurn, canUsePosture, matchId, playerId, saveGameState, logAction]);
   
+  // Verificar se uma fase deve ser pulada
+  const shouldSkipPhase = useCallback((phase: GamePhase, state: TacticalGameState): boolean => {
+    switch (phase) {
+      case 'shooting': {
+        // Pular se nenhuma unidade tem tiro
+        const hasShooters = Object.values(state.units).some(u => 
+          u.currentRanged > 0 && !u.hasActedThisTurn && !u.isRouting
+        );
+        return !hasShooters;
+      }
+      case 'charge': {
+        // Pular se nenhuma cavalaria em postura Carga
+        const hasChargers = Object.values(state.units).some(u => 
+          u.posture === 'Carga' && !u.hasActedThisTurn && !u.isRouting
+        );
+        return !hasChargers;
+      }
+      case 'rout': {
+        // Pular se nenhuma unidade em rota
+        const hasRouting = Object.values(state.units).some(u => u.isRouting);
+        return !hasRouting;
+      }
+      case 'reorganization': {
+        // Pular se nenhuma unidade em reorganização
+        const hasReorg = Object.values(state.units).some(u => 
+          u.posture === 'Reorganização' && !u.isRouting
+        );
+        return !hasReorg;
+      }
+      default:
+        return false;
+    }
+  }, []);
+
+  // Aplicar efeitos de reorganização
+  const applyReorganization = useCallback((state: TacticalGameState): TacticalGameState => {
+    const newUnits = { ...state.units };
+    const logs: typeof state.battleLog = [];
+    
+    for (const [id, unit] of Object.entries(newUnits)) {
+      if (unit.posture === 'Reorganização' && !unit.isRouting && unit.currentPressure > 0) {
+        const pressureRecovered = Math.min(2, unit.currentPressure);
+        newUnits[id] = {
+          ...unit,
+          currentPressure: unit.currentPressure - pressureRecovered,
+        };
+        logs.push({
+          id: crypto.randomUUID(),
+          turn: state.turn,
+          phase: 'reorganization',
+          timestamp: Date.now(),
+          type: 'ability',
+          message: `${unit.name} recuperou ${pressureRecovered} Pressão`,
+        });
+      }
+    }
+    
+    return {
+      ...state,
+      units: newUnits,
+      battleLog: [...state.battleLog, ...logs],
+    };
+  }, []);
+  
   const endPhase = useCallback(async (): Promise<boolean> => {
     if (!gameState || !isMyTurn) return false;
     
@@ -428,10 +492,12 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     ];
     
     const currentIndex = phases.indexOf(gameState.phase);
-    let nextPhase = phases[(currentIndex + 1) % phases.length];
+    let nextPhaseIndex = (currentIndex + 1) % phases.length;
+    let nextPhase = phases[nextPhaseIndex];
     
     let newTurn = gameState.turn;
-    const newUnits = { ...gameState.units };
+    let newUnits = { ...gameState.units };
+    let newState = { ...gameState };
     
     // Se chegou em end_turn, avança turno
     if (nextPhase === 'end_turn') {
@@ -444,7 +510,7 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
       }
     }
     
-    const newState: TacticalGameState = {
+    newState = {
       ...gameState,
       phase: nextPhase,
       turn: newTurn,
@@ -464,6 +530,42 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
       ],
     };
     
+    // Skip automático de fases sem ações
+    while (shouldSkipPhase(newState.phase, newState) && newState.phase !== 'initiative') {
+      const skippedPhase = newState.phase;
+      nextPhaseIndex = (phases.indexOf(newState.phase) + 1) % phases.length;
+      nextPhase = phases[nextPhaseIndex];
+      
+      if (nextPhase === 'end_turn') {
+        nextPhase = 'initiative';
+        newState.turn++;
+        for (const id of Object.keys(newState.units)) {
+          newState.units[id] = { ...newState.units[id], hasActedThisTurn: false };
+        }
+      }
+      
+      newState = {
+        ...newState,
+        phase: nextPhase,
+        battleLog: [
+          ...newState.battleLog,
+          {
+            id: crypto.randomUUID(),
+            turn: newState.turn,
+            phase: nextPhase,
+            timestamp: Date.now(),
+            type: 'system',
+            message: `[Auto] ${skippedPhase} pulada → ${nextPhase}`,
+          }
+        ],
+      };
+    }
+    
+    // Aplicar reorganização se na fase correta
+    if (newState.phase === 'reorganization') {
+      newState = applyReorganization(newState);
+    }
+    
     const action: GameAction = { type: 'END_PHASE' };
     await logAction(matchId, playerId, action);
     const success = await saveGameState(matchId, newState);
@@ -473,7 +575,7 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
       setSelectedUnitId(null);
     }
     return success;
-  }, [gameState, isMyTurn, matchId, playerId, saveGameState, logAction]);
+  }, [gameState, isMyTurn, matchId, playerId, saveGameState, logAction, shouldSkipPhase, applyReorganization]);
   
   const rollInitiative = useCallback(async (): Promise<boolean> => {
     if (!gameState || gameState.phase !== 'initiative') return false;
