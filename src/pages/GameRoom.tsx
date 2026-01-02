@@ -1,15 +1,26 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameRoom } from '@/hooks/useGameRoom';
 import { CreateRoomForm } from '@/components/multiplayer/CreateRoomForm';
 import { JoinRoomForm } from '@/components/multiplayer/JoinRoomForm';
 import { RoomLobby } from '@/components/multiplayer/RoomLobby';
+import { DebugPanel } from '@/components/multiplayer/DebugPanel';
+import { GameStepper } from '@/components/multiplayer/GameStepper';
+import { CultureSelection } from '@/components/multiplayer/CultureSelection';
+import { ScenarioSelection } from '@/components/multiplayer/ScenarioSelection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Swords } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function GameRoom() {
   const { roomCode } = useParams<{ roomCode?: string }>();
   const navigate = useNavigate();
+  const [lastAction, setLastAction] = useState<{
+    action_type: string;
+    player_number: number;
+    state_version: number;
+    created_at: string;
+  } | null>(null);
   
   const {
     room,
@@ -25,13 +36,40 @@ export default function GameRoom() {
     isReady
   } = useGameRoom({ roomCode });
 
-  // Quando o jogo iniciar, redirecionar para próxima fase
+  // Buscar última ação
   useEffect(() => {
-    if (room?.current_phase === 'culture_selection') {
-      // TODO: Fase 1 - redirecionar para seleção de cultura
-      console.log('Jogo iniciado! Fase:', room.current_phase);
-    }
-  }, [room?.current_phase]);
+    if (!room?.id) return;
+
+    const fetchLastAction = async () => {
+      const { data } = await supabase
+        .from('match_actions')
+        .select('action_type, player_number, state_version, created_at')
+        .eq('room_id', room.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (data) setLastAction(data);
+    };
+
+    fetchLastAction();
+
+    // Subscribe to new actions
+    const channel = supabase
+      .channel(`actions-${room.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'match_actions', filter: `room_id=eq.${room.id}` },
+        (payload) => {
+          if (payload.new) {
+            setLastAction(payload.new as typeof lastAction);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [room?.id]);
 
   const handleCreateRoom = async (nickname: string) => {
     const result = await createRoom(nickname);
@@ -52,43 +90,79 @@ export default function GameRoom() {
     navigate('/game', { replace: true });
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="mt-4 text-muted-foreground">Carregando...</p>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Se está em uma sala ativa
-  if (room && playerContext) {
+  // Em sala ativa
+  if (room && playerContext && matchState) {
+    const currentPhase = room.current_phase;
+
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Swords className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Mass Combat</h1>
+      <div className="min-h-screen flex flex-col items-center bg-background p-4">
+        <div className="mb-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Swords className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold">Mass Combat</h1>
           </div>
-          <p className="text-muted-foreground">Card Game Multiplayer</p>
         </div>
-        
-        <RoomLobby
-          room={room}
-          players={players}
-          playerContext={playerContext}
-          isReady={isReady}
-          onSetReady={setReady}
-          onLeaveRoom={handleLeaveRoom}
-        />
+
+        <GameStepper currentPhase={currentPhase} />
+
+        <div className="flex flex-col items-center gap-4 w-full max-w-2xl">
+          {/* Conteúdo por fase */}
+          {currentPhase === 'lobby' && (
+            <RoomLobby
+              room={room}
+              players={players}
+              playerContext={playerContext}
+              isReady={isReady}
+              onSetReady={setReady}
+              onLeaveRoom={handleLeaveRoom}
+            />
+          )}
+
+          {currentPhase === 'culture_selection' && (
+            <CultureSelection
+              room={room}
+              players={players}
+              matchState={matchState}
+              playerContext={playerContext}
+            />
+          )}
+
+          {currentPhase === 'scenario_selection' && (
+            <ScenarioSelection
+              room={room}
+              players={players}
+              matchState={matchState}
+              playerContext={playerContext}
+            />
+          )}
+
+          {currentPhase === 'deckbuilding' && (
+            <div className="p-8 text-center text-muted-foreground">
+              Deckbuilding - Em breve...
+            </div>
+          )}
+
+          {/* Debug Panel */}
+          <DebugPanel 
+            room={room} 
+            players={players} 
+            matchState={matchState}
+            lastAction={lastAction}
+          />
+        </div>
       </div>
     );
   }
 
-  // Tela inicial - Criar ou Entrar
+  // Tela inicial
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <div className="mb-8 text-center">
@@ -118,9 +192,7 @@ export default function GameRoom() {
         </TabsContent>
       </Tabs>
       
-      {error && (
-        <p className="mt-4 text-sm text-destructive">{error}</p>
-      )}
+      {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
     </div>
   );
 }
