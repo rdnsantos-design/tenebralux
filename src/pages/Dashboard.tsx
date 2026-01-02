@@ -16,15 +16,23 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Botão Jogar Online */}
-        <div className="flex justify-center mb-8">
+        {/* Botões Jogar Online */}
+        <div className="flex flex-wrap justify-center gap-4 mb-8">
           <Button 
             size="lg" 
             className="text-lg px-8 py-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
             onClick={() => navigate('/game')}
           >
             <Gamepad2 className="w-6 h-6 mr-3" />
-            🎮 Jogar Online (Multiplayer)
+            🎮 Card Game Online
+          </Button>
+          <Button 
+            size="lg" 
+            className="text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            onClick={() => navigate('/tactical')}
+          >
+            <Hexagon className="w-6 h-6 mr-3" />
+            ⚔️ Batalha Tática Online
           </Button>
         </div>
 
