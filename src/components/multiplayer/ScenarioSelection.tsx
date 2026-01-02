@@ -142,6 +142,50 @@ export function ScenarioSelection({ room, players, matchState, playerContext }: 
     setRoundConfirmed(hasConfirmedThisRound());
   }, [hasConfirmedThisRound]);
 
+  // Auto-resolver quando ambos confirmaram
+  useEffect(() => {
+    const resolveIfBothConfirmed = async () => {
+      // Só executa se ambos confirmaram e ainda não resolvido
+      if (!hasConfirmedThisRound() || !opponentConfirmedThisRound() || logisticsResolved) {
+        return;
+      }
+
+      // Evitar múltiplas chamadas
+      if (currentRound === 0) return;
+
+      console.log('[ScenarioSelection] Ambos confirmaram, tentando resolver rodada', currentRound);
+
+      try {
+        const { data: resolveData, error: resolveError } = await supabase.rpc('resolve_logistics_round', {
+          p_room_id: room.id,
+          p_round_number: currentRound
+        });
+
+        if (resolveError) {
+          // Pode ser que já foi resolvido
+          console.log('[ScenarioSelection] Erro ao resolver (pode já estar resolvido):', resolveError.message);
+          return;
+        }
+
+        console.log('[ScenarioSelection] Resultado da resolução:', resolveData);
+
+        if ((resolveData as { needs_round2?: boolean })?.needs_round2) {
+          toast.info('Empate no topo! Rodada 2 iniciada.');
+          setBids({ terrains: {}, seasons: {} });
+          setRoundConfirmed(false);
+        } else if ((resolveData as { resolved?: boolean })?.resolved) {
+          toast.success('Cenário definido!');
+          // Finalizar cenário
+          await supabase.rpc('finalize_scenario', { p_room_id: room.id });
+        }
+      } catch (err) {
+        console.error('[ScenarioSelection] Erro inesperado:', err);
+      }
+    };
+
+    resolveIfBothConfirmed();
+  }, [hasConfirmedThisRound, opponentConfirmedThisRound, logisticsResolved, currentRound, room.id]);
+
   // Ajustar bid
   const adjustBid = (type: 'terrains' | 'seasons', id: string, delta: number) => {
     if (roundConfirmed) return;
@@ -193,36 +237,8 @@ export function ScenarioSelection({ room, players, matchState, playerContext }: 
       
       toast.success(`Rodada ${currentRound} confirmada!`);
       setRoundConfirmed(true);
-
-      // Verificar se ambos confirmaram para resolver
-      // Pequeno delay para garantir que o estado foi atualizado
-      setTimeout(async () => {
-        try {
-          const { data: resolveData, error: resolveError } = await supabase.rpc('resolve_logistics_round', {
-            p_room_id: room.id,
-            p_round_number: currentRound
-          });
-
-          if (resolveError) {
-            // Ignorar erro se ainda esperando oponente
-            if (!resolveError.message.includes('precisam apostar')) {
-              console.error('Erro ao resolver:', resolveError);
-            }
-            return;
-          }
-
-          if ((resolveData as { needs_round2?: boolean })?.needs_round2) {
-            toast.info('Empate no topo! Rodada 2 iniciada.');
-            setBids({ terrains: {}, seasons: {} });
-          } else if ((resolveData as { resolved?: boolean })?.resolved) {
-            toast.success('Cenário definido!');
-            // Finalizar cenário
-            await supabase.rpc('finalize_scenario', { p_room_id: room.id });
-          }
-        } catch (err) {
-          // Silenciar erros esperados
-        }
-      }, 500);
+      
+      // A resolução será feita automaticamente pelo useEffect quando ambos confirmarem
     } catch (err) {
       console.error('Erro ao confirmar rodada:', err);
       toast.error(err instanceof Error ? err.message : 'Erro ao confirmar');
