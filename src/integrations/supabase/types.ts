@@ -943,10 +943,13 @@ export type Database = {
           logistics_budget: number
           logistics_resolved: boolean
           logistics_round: number
+          player1_army_attributes: Json | null
+          player1_commanders: Json | null
           player1_culture: string | null
           player1_culture_confirmed: boolean
           player1_deck: Json | null
           player1_deck_confirmed: boolean
+          player1_general_id: string | null
           player1_logistics_bid: number | null
           player1_logistics_confirmed: boolean
           player1_round1_bid: Json | null
@@ -954,10 +957,13 @@ export type Database = {
           player1_tiebreak_bid: number | null
           player1_tiebreak_confirmed: boolean
           player1_vet_remaining: number | null
+          player2_army_attributes: Json | null
+          player2_commanders: Json | null
           player2_culture: string | null
           player2_culture_confirmed: boolean
           player2_deck: Json | null
           player2_deck_confirmed: boolean
+          player2_general_id: string | null
           player2_logistics_bid: number | null
           player2_logistics_confirmed: boolean
           player2_round1_bid: Json | null
@@ -987,10 +993,13 @@ export type Database = {
           logistics_budget?: number
           logistics_resolved?: boolean
           logistics_round?: number
+          player1_army_attributes?: Json | null
+          player1_commanders?: Json | null
           player1_culture?: string | null
           player1_culture_confirmed?: boolean
           player1_deck?: Json | null
           player1_deck_confirmed?: boolean
+          player1_general_id?: string | null
           player1_logistics_bid?: number | null
           player1_logistics_confirmed?: boolean
           player1_round1_bid?: Json | null
@@ -998,10 +1007,13 @@ export type Database = {
           player1_tiebreak_bid?: number | null
           player1_tiebreak_confirmed?: boolean
           player1_vet_remaining?: number | null
+          player2_army_attributes?: Json | null
+          player2_commanders?: Json | null
           player2_culture?: string | null
           player2_culture_confirmed?: boolean
           player2_deck?: Json | null
           player2_deck_confirmed?: boolean
+          player2_general_id?: string | null
           player2_logistics_bid?: number | null
           player2_logistics_confirmed?: boolean
           player2_round1_bid?: Json | null
@@ -1031,10 +1043,13 @@ export type Database = {
           logistics_budget?: number
           logistics_resolved?: boolean
           logistics_round?: number
+          player1_army_attributes?: Json | null
+          player1_commanders?: Json | null
           player1_culture?: string | null
           player1_culture_confirmed?: boolean
           player1_deck?: Json | null
           player1_deck_confirmed?: boolean
+          player1_general_id?: string | null
           player1_logistics_bid?: number | null
           player1_logistics_confirmed?: boolean
           player1_round1_bid?: Json | null
@@ -1042,10 +1057,13 @@ export type Database = {
           player1_tiebreak_bid?: number | null
           player1_tiebreak_confirmed?: boolean
           player1_vet_remaining?: number | null
+          player2_army_attributes?: Json | null
+          player2_commanders?: Json | null
           player2_culture?: string | null
           player2_culture_confirmed?: boolean
           player2_deck?: Json | null
           player2_deck_confirmed?: boolean
+          player2_general_id?: string | null
           player2_logistics_bid?: number | null
           player2_logistics_confirmed?: boolean
           player2_round1_bid?: Json | null
@@ -1761,6 +1779,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_card_to_deck: {
+        Args: {
+          p_card_id: string
+          p_category: string
+          p_player_number: number
+          p_room_id: string
+        }
+        Returns: Json
+      }
+      add_commander: {
+        Args: {
+          p_commander_id: string
+          p_player_number: number
+          p_room_id: string
+        }
+        Returns: Json
+      }
       calc_option_totals: {
         Args: { p_bid1: Json; p_bid2: Json; p_options: Json }
         Returns: Json
@@ -1771,6 +1806,10 @@ export type Database = {
           p_player_number: number
           p_room_id: string
         }
+        Returns: Json
+      }
+      confirm_deckbuilding: {
+        Args: { p_player_number: number; p_room_id: string }
         Returns: Json
       }
       create_room: {
@@ -1791,8 +1830,43 @@ export type Database = {
           room_id: string
         }[]
       }
+      remove_card_from_deck: {
+        Args: {
+          p_card_id: string
+          p_category: string
+          p_player_number: number
+          p_room_id: string
+        }
+        Returns: Json
+      }
+      remove_commander: {
+        Args: {
+          p_commander_id: string
+          p_player_number: number
+          p_room_id: string
+        }
+        Returns: Json
+      }
       resolve_logistics_round: {
         Args: { p_room_id: string; p_round_number: number }
+        Returns: Json
+      }
+      set_army_attributes: {
+        Args: {
+          p_attack: number
+          p_defense: number
+          p_mobility: number
+          p_player_number: number
+          p_room_id: string
+        }
+        Returns: Json
+      }
+      set_general: {
+        Args: {
+          p_commander_id: string
+          p_player_number: number
+          p_room_id: string
+        }
         Returns: Json
       }
       set_player_ready: {

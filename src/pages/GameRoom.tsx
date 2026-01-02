@@ -8,6 +8,7 @@ import { DebugPanel } from '@/components/multiplayer/DebugPanel';
 import { GameStepper } from '@/components/multiplayer/GameStepper';
 import { CultureSelection } from '@/components/multiplayer/CultureSelection';
 import { ScenarioSelection } from '@/components/multiplayer/ScenarioSelection';
+import { DeckbuildingPanel } from '@/components/multiplayer/DeckbuildingPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Swords } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -113,7 +114,7 @@ export default function GameRoom() {
 
         <GameStepper currentPhase={currentPhase} />
 
-        <div className="flex flex-col items-center gap-4 w-full max-w-2xl">
+        <div className="flex flex-col items-center gap-4 w-full max-w-4xl">
           {/* Conteúdo por fase */}
           {currentPhase === 'lobby' && (
             <RoomLobby
@@ -145,8 +146,18 @@ export default function GameRoom() {
           )}
 
           {currentPhase === 'deckbuilding' && (
+            <DeckbuildingPanel
+              room={room}
+              players={players}
+              matchState={matchState}
+              playerContext={playerContext}
+            />
+          )}
+
+          {currentPhase === 'combat_setup' && (
             <div className="p-8 text-center text-muted-foreground">
-              Deckbuilding - Em breve...
+              <h2 className="text-xl font-bold mb-2">Mesa de Combate</h2>
+              <p>Em desenvolvimento - Fase de Combate ainda não implementada.</p>
             </div>
           )}
 
