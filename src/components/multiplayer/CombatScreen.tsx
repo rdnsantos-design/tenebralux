@@ -351,10 +351,19 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
               </Button>
               <Button 
                 onClick={handleConfirmInitiative}
-                disabled={loading === 'confirm-init'}
+                disabled={loading === 'confirm-init' || myBoard.confirmed}
               >
-                {loading === 'confirm-init' ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
-                Confirmar Iniciativa
+                {loading === 'confirm-init' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                    Confirmar Iniciativa
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
@@ -376,10 +385,19 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
             {myBoard.main_card && (
               <Button 
                 onClick={handleConfirmMain}
-                disabled={loading === 'confirm-main'}
+                disabled={loading === 'confirm-main' || myBoard.confirmed}
               >
-                {loading === 'confirm-main' ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
-                Confirmar Carta
+                {loading === 'confirm-main' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                    Confirmar Carta
+                  </>
+                )}
               </Button>
             )}
           </CardContent>

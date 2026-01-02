@@ -63,6 +63,8 @@ export function DeploymentScreen({ room, players, matchState, playerContext, onL
   const opponent = players.find(p => p.player_number !== pNum);
   
   const handleConfirm = async () => {
+    if (myConfirmed) return; // Idempotência: já confirmado
+    
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('confirm_deployment', {
@@ -181,14 +183,19 @@ export function DeploymentScreen({ room, players, matchState, playerContext, onL
               className="w-full" 
               size="lg" 
               onClick={handleConfirm}
-              disabled={loading}
+              disabled={loading || myConfirmed}
             >
               {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Enviando...
+                </>
               ) : (
-                <CheckCircle2 className="w-4 h-4 mr-2" />
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Confirmar Formação
+                </>
               )}
-              Confirmar Formação
             </Button>
           </CardContent>
         </Card>
