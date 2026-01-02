@@ -83,9 +83,15 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
   const myHp = pNum === 1 ? (matchState as any).player1_hp ?? 100 : (matchState as any).player2_hp ?? 100;
   const opponentHp = pNum === 1 ? (matchState as any).player2_hp ?? 100 : (matchState as any).player1_hp ?? 100;
   
+  // CMD state for general info
+  const myCmdState = pNum === 1 
+    ? (matchState as any).player1_cmd_state 
+    : (matchState as any).player2_cmd_state;
+  const generalInfo = myCmdState?.general ?? { cmd_total: 3, cmd_free: 3, strategy_total: 3 };
+  
   const myBoard = board[pKey];
   const opponentBoard = board[opponentKey];
-  const currentStep = board.step;
+  const currentStep = combatPhase === 'main' ? 'main' : board.step; // Use combat_phase as source of truth
   
   const opponent = players.find(p => p.player_number !== pNum);
   
@@ -243,6 +249,25 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
               </Badge>
             </div>
             <div className="w-16" />
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* General Info */}
+      <Card className="border-accent/50 bg-accent/5">
+        <CardContent className="py-2">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="gap-1">
+                <Sword className="w-3 h-3" />
+                General Ativo
+              </Badge>
+              <span className="text-muted-foreground">
+                CMD: {generalInfo.cmd_free}/{generalInfo.cmd_total} | 
+                Estratégia: {generalInfo.strategy_total}
+              </span>
+            </div>
+            <Badge variant="secondary">Rodada {combatRound}</Badge>
           </div>
         </CardContent>
       </Card>
