@@ -14,6 +14,7 @@ import MassCombat from "./pages/MassCombat";
 import MassCombatCards from "./pages/MassCombatCards";
 import Travel from "./pages/Travel";
 import TacticalGame from "./pages/TacticalGame";
+import TacticalHome from "./pages/TacticalHome";
 import StrategicGame from "./pages/StrategicGame";
 import FieldCommanders from "./pages/FieldCommanders";
 import GameRoom from "./pages/GameRoom";
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/mass-combat-cards" element={<MassCombatCards />} />
           <Route path="/travel" element={<Travel />} />
           <Route path="/tactical-game" element={<TacticalGame />} />
+          <Route path="/tactical-home" element={<TacticalHome />} />
           <Route path="/strategic-game" element={<StrategicGame />} />
           <Route path="/field-commanders" element={<FieldCommanders />} />
           <Route path="/game" element={<GameRoom />} />
