@@ -960,6 +960,7 @@ export type Database = {
           player1_deployment_confirmed: boolean | null
           player1_deployment_formation: string | null
           player1_discard: Json | null
+          player1_draw_pile: Json
           player1_general_id: string | null
           player1_hand: Json | null
           player1_hp: number | null
@@ -985,6 +986,7 @@ export type Database = {
           player2_deployment_confirmed: boolean | null
           player2_deployment_formation: string | null
           player2_discard: Json | null
+          player2_draw_pile: Json
           player2_general_id: string | null
           player2_hand: Json | null
           player2_hp: number | null
@@ -1038,6 +1040,7 @@ export type Database = {
           player1_deployment_confirmed?: boolean | null
           player1_deployment_formation?: string | null
           player1_discard?: Json | null
+          player1_draw_pile?: Json
           player1_general_id?: string | null
           player1_hand?: Json | null
           player1_hp?: number | null
@@ -1063,6 +1066,7 @@ export type Database = {
           player2_deployment_confirmed?: boolean | null
           player2_deployment_formation?: string | null
           player2_discard?: Json | null
+          player2_draw_pile?: Json
           player2_general_id?: string | null
           player2_hand?: Json | null
           player2_hp?: number | null
@@ -1116,6 +1120,7 @@ export type Database = {
           player1_deployment_confirmed?: boolean | null
           player1_deployment_formation?: string | null
           player1_discard?: Json | null
+          player1_draw_pile?: Json
           player1_general_id?: string | null
           player1_hand?: Json | null
           player1_hp?: number | null
@@ -1141,6 +1146,7 @@ export type Database = {
           player2_deployment_confirmed?: boolean | null
           player2_deployment_formation?: string | null
           player2_discard?: Json | null
+          player2_draw_pile?: Json
           player2_general_id?: string | null
           player2_hand?: Json | null
           player2_hp?: number | null
