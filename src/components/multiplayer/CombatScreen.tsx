@@ -35,6 +35,7 @@ interface DeployedCommander {
 
 interface HandCard {
   id?: string;
+  card_id?: string;
   name: string;
   vet_cost?: number;
   mobility_bonus?: number;
@@ -42,6 +43,7 @@ interface HandCard {
   defense_bonus?: number;
   command_required?: number;
   effect_tag?: string;
+  card_type?: 'ofensiva' | 'defensiva' | 'movimentacao' | 'reacao';
 }
 
 type CombatPhase = 
@@ -49,19 +51,31 @@ type CombatPhase =
   | 'attack_maneuver' | 'attack_reaction' | 'defense_maneuver' | 'defense_reaction' 
   | 'combat_roll' | 'combat_resolution' | 'combat' | 'finished';
 
-const PHASE_LABELS: Record<string, { phase: string; subfase: string }> = {
-  'initiative_maneuver': { phase: 'Fase 1: Iniciativa', subfase: 'Manobras' },
-  'initiative_reaction': { phase: 'Fase 1: Iniciativa', subfase: 'Reações' },
-  'initiative_roll': { phase: 'Fase 1: Iniciativa', subfase: 'Rolagem' },
-  'initiative_post': { phase: 'Fase 1: Iniciativa', subfase: 'Escolhas do Vencedor' },
-  'attack_maneuver': { phase: 'Fase 2: Combate', subfase: 'Manobras de Ataque' },
-  'attack_reaction': { phase: 'Fase 2: Combate', subfase: 'Reações (Ataque)' },
-  'defense_maneuver': { phase: 'Fase 2: Combate', subfase: 'Manobras de Defesa' },
-  'defense_reaction': { phase: 'Fase 2: Combate', subfase: 'Reações (Defesa)' },
-  'combat_roll': { phase: 'Fase 2: Combate', subfase: 'Rolagem' },
-  'combat_resolution': { phase: 'Fase 2: Combate', subfase: 'Resolução' },
-  'combat': { phase: 'Fase 2: Combate', subfase: '' },
-  'finished': { phase: 'Fim', subfase: '' },
+// Estrutura de fases:
+// Fase 1: Iniciativa (movimentação + reações)
+// Fase 2: Ataque (ofensivas + reações)
+// Fase 3: Defesa (defensivas + reações)
+const PHASE_LABELS: Record<string, { phase: string; subfase: string; allowedCardTypes: string[] }> = {
+  'initiative_maneuver': { phase: 'Fase 1: Iniciativa', subfase: 'Manobras', allowedCardTypes: ['movimentacao'] },
+  'initiative_reaction': { phase: 'Fase 1: Iniciativa', subfase: 'Reações', allowedCardTypes: ['reacao'] },
+  'initiative_roll': { phase: 'Fase 1: Iniciativa', subfase: 'Rolagem', allowedCardTypes: [] },
+  'initiative_post': { phase: 'Fase 1: Iniciativa', subfase: 'Escolhas do Vencedor', allowedCardTypes: [] },
+  'attack_maneuver': { phase: 'Fase 2: Ataque', subfase: 'Manobras Ofensivas', allowedCardTypes: ['ofensiva'] },
+  'attack_reaction': { phase: 'Fase 2: Ataque', subfase: 'Reações', allowedCardTypes: ['reacao'] },
+  'defense_maneuver': { phase: 'Fase 3: Defesa', subfase: 'Manobras Defensivas', allowedCardTypes: ['defensiva'] },
+  'defense_reaction': { phase: 'Fase 3: Defesa', subfase: 'Reações', allowedCardTypes: ['reacao'] },
+  'combat_roll': { phase: 'Resolução', subfase: 'Rolagem de Combate', allowedCardTypes: [] },
+  'combat_resolution': { phase: 'Resolução', subfase: 'Aplicar Dano', allowedCardTypes: [] },
+  'combat': { phase: 'Combate', subfase: '', allowedCardTypes: [] },
+  'finished': { phase: 'Fim', subfase: '', allowedCardTypes: [] },
+};
+
+// Mapeamento de card_type para labels amigáveis
+const CARD_TYPE_LABELS: Record<string, { label: string; color: string }> = {
+  'ofensiva': { label: 'Ataque', color: 'text-red-500 border-red-500/50' },
+  'defensiva': { label: 'Defesa', color: 'text-blue-500 border-blue-500/50' },
+  'movimentacao': { label: 'Iniciativa', color: 'text-yellow-500 border-yellow-500/50' },
+  'reacao': { label: 'Reação', color: 'text-purple-500 border-purple-500/50' },
 };
 
 export function CombatScreen({ room, players, matchState, playerContext, onLeaveRoom }: CombatScreenProps) {
@@ -100,7 +114,7 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
   const amIDefender = currentDefender === pNum;
   
   const opponent = players.find(p => p.player_number !== pNum);
-  const phaseLabels = PHASE_LABELS[combatPhase] ?? { phase: combatPhase, subfase: '' };
+  const phaseLabels = PHASE_LABELS[combatPhase] ?? { phase: combatPhase, subfase: '', allowedCardTypes: [] };
   
   // Terrenos compatíveis
   const primaryTerrainId = (matchState as any).chosen_terrain_id;
@@ -896,29 +910,50 @@ export function CombatScreen({ room, players, matchState, playerContext, onLeave
         </Card>
       )}
 
-      {/* Mão de Cartas */}
+      {/* Mão de Cartas - agora mostra card_type e filtra visualmente */}
       <Card>
         <CardHeader className="py-2">
-          <CardTitle className="text-sm">Sua Mão ({myHand.length})</CardTitle>
+          <CardTitle className="text-sm flex items-center justify-between">
+            <span>Sua Mão ({myHand.length})</span>
+            {phaseLabels.allowedCardTypes.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                Permitido: {phaseLabels.allowedCardTypes.map(t => CARD_TYPE_LABELS[t]?.label).join(', ')}
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent className="py-2">
           <ScrollArea className="w-full">
             <div className="flex gap-2 pb-2">
-              {myHand.map((card, index) => (
-                <div 
-                  key={index}
-                  onClick={() => setSelectedCardIndex(index)}
-                  className={`flex-shrink-0 w-32 p-2 rounded border cursor-pointer transition-all ${selectedCardIndex === index ? 'ring-2 ring-primary border-primary' : 'border-border hover:border-primary/50'}`}
-                >
-                  <div className="text-xs font-medium truncate">{card.name}</div>
-                  <div className="flex gap-1 mt-1 text-[10px]">
-                    {card.attack_bonus ? <span className="text-red-500">+{card.attack_bonus}A</span> : null}
-                    {card.defense_bonus ? <span className="text-blue-500">+{card.defense_bonus}D</span> : null}
-                    {card.mobility_bonus ? <span className="text-yellow-500">+{card.mobility_bonus}M</span> : null}
+              {myHand.map((card, index) => {
+                const cardType = card.card_type || card.effect_tag || 'ofensiva';
+                const typeInfo = CARD_TYPE_LABELS[cardType] || CARD_TYPE_LABELS['ofensiva'];
+                const isAllowedInPhase = phaseLabels.allowedCardTypes.length === 0 || 
+                                         phaseLabels.allowedCardTypes.includes(cardType);
+                
+                return (
+                  <div 
+                    key={index}
+                    onClick={() => setSelectedCardIndex(index)}
+                    className={`flex-shrink-0 w-36 p-2 rounded border cursor-pointer transition-all 
+                      ${selectedCardIndex === index ? 'ring-2 ring-primary border-primary' : 'border-border hover:border-primary/50'}
+                      ${!isAllowedInPhase ? 'opacity-40' : ''}`}
+                  >
+                    <div className="text-xs font-medium truncate">{card.name}</div>
+                    <div className="flex gap-1 mt-1 text-[10px] flex-wrap">
+                      {card.attack_bonus ? <span className="text-red-500">+{card.attack_bonus}A</span> : null}
+                      {card.defense_bonus ? <span className="text-blue-500">+{card.defense_bonus}D</span> : null}
+                      {card.mobility_bonus ? <span className="text-yellow-500">+{card.mobility_bonus}M</span> : null}
+                    </div>
+                    <Badge variant="outline" className={`text-[10px] mt-1 ${typeInfo.color}`}>
+                      {typeInfo.label}
+                    </Badge>
+                    {card.command_required && (
+                      <span className="text-[10px] text-muted-foreground ml-1">CMD: {card.command_required}</span>
+                    )}
                   </div>
-                  {card.effect_tag && <Badge variant="outline" className="text-[10px] mt-1">{card.effect_tag}</Badge>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         </CardContent>
