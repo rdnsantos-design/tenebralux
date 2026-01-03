@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TacticalGameProvider, useTacticalGame } from '@/contexts/TacticalGameContext';
 import { HexGrid } from '@/components/tactical/HexGrid';
 import { UnitDetailPanel } from '@/components/tactical/UnitDetailPanel';
@@ -10,11 +11,16 @@ import { RoutingPanel } from '@/components/tactical/RoutingPanel';
 import { TurnTracker } from '@/components/tactical/TurnTracker';
 import { PhaseModal } from '@/components/tactical/PhaseModal';
 import { CombatPreview } from '@/components/tactical/CombatPreview';
+import { BattleHeader } from '@/components/tactical/BattleHeader';
+import { VictoryModal } from '@/components/tactical/VictoryModal';
+import { MiniMap } from '@/components/tactical/MiniMap';
+import { QuickActions } from '@/components/tactical/QuickActions';
+import { BattleTacticalCards } from '@/components/tactical/BattleTacticalCards';
 import { useTacticalMatch, TacticalMatch } from '@/hooks/useTacticalMatch';
 import { usePlayerId } from '@/hooks/usePlayerId';
 import { hexKey } from '@/lib/hexUtils';
 import { GamePhase, HexCoord, BattleUnit } from '@/types/tactical-game';
-import { ArrowLeft, Loader2, Users, Clock } from 'lucide-react';
+import { ArrowLeft, Loader2, Users, Clock, Target } from 'lucide-react';
 
 function BattleContent() {
   const navigate = useNavigate();
@@ -37,6 +43,8 @@ function BattleContent() {
   } = useTacticalGame();
   
   const [hoveredTarget, setHoveredTarget] = useState<BattleUnit | null>(null);
+  const [showGrid, setShowGrid] = useState(true);
+  const [showFacing, setShowFacing] = useState(true);
   
   if (isLoading || !gameState) {
     return (
@@ -114,47 +122,14 @@ function BattleContent() {
       {/* Phase Modal */}
       <PhaseModal />
       
-      {/* Header with TurnTracker */}
-      <header className="flex-shrink-0 border-b bg-card/50 backdrop-blur-sm px-4 py-2 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/tactical')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Player info */}
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className={myPlayerId === 'player1' ? 'font-bold' : ''}>
-                  {gameState.player1Name}
-                </span>
-                <Badge variant="outline" className="text-xs">
-                  <Users className="h-3 w-3 mr-1" />
-                  {player1Units}
-                </Badge>
-              </div>
-              
-              <span className="text-muted-foreground">vs</span>
-              
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-3 h-3 rounded-full bg-blue-500" />
-                <span className={myPlayerId === 'player2' ? 'font-bold' : ''}>
-                  {gameState.player2Name}
-                </span>
-                <Badge variant="outline" className="text-xs">
-                  <Users className="h-3 w-3 mr-1" />
-                  {player2Units}
-                </Badge>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Turn Tracker Component */}
+      {/* Victory Modal */}
+      <VictoryModal />
+      
+      {/* Header melhorado */}
+      <BattleHeader />
+      
+      {/* Turn Tracker */}
+      <div className="border-b bg-card/50 backdrop-blur-sm px-4 py-2">
         <TurnTracker />
         
         {/* Turn indicator when waiting */}
@@ -164,7 +139,7 @@ function BattleContent() {
             Aguardando {gameState.activePlayer === 'player1' ? gameState.player1Name : gameState.player2Name}...
           </div>
         )}
-      </header>
+      </div>
       
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
@@ -179,66 +154,90 @@ function BattleContent() {
             validTargets={validTargets}
             selectedAttacker={selectedUnit || undefined}
             hoveredTarget={hoveredTarget || undefined}
-            showFacingArcs={true}
+            showFacingArcs={showFacing}
             onHexClick={handleHexClick}
             onHexHover={handleHexHover}
           />
         </div>
         
         {/* Right sidebar */}
-        <div className="w-80 flex-shrink-0 border-l bg-card/50 flex flex-col">
-          {/* Unit detail panel */}
-          {selectedUnit && (
-            <div className="p-2 border-b">
-              <UnitDetailPanel
-                unit={selectedUnit}
-                commander={embeddedCommander}
-                isMyUnit={selectedUnit.owner === myPlayerId}
-                canChangePosture={isMyTurn && gameState.phase === 'movement' && !selectedUnit.hasActedThisTurn}
-                onPostureChange={handlePostureChange}
-                onClose={() => selectUnit(null)}
-              />
-            </div>
-          )}
-          
-          {/* Combat Preview quando mirando em alvo */}
-          {selectedUnit && hoveredTarget && validTargets.includes(hoveredTarget.id) && (
-            <div className="p-2 border-b">
-              <CombatPreview attacker={selectedUnit} defender={hoveredTarget} />
-            </div>
-          )}
-          
-          {/* Routing Panel - sempre visível se houver unidades em fuga */}
-          <div className="p-2 border-b">
-            <RoutingPanel />
-          </div>
-          
-          {/* Battle log */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="p-2 border-b">
-              <h3 className="text-sm font-medium">Registro de Batalha</h3>
-            </div>
-            <ScrollArea className="flex-1 p-2">
-              <div className="space-y-1">
-                {[...gameState.battleLog].reverse().slice(0, 50).map((entry) => (
-                  <div 
-                    key={entry.id} 
-                    className={`text-xs p-1 rounded ${
-                      entry.type === 'system' 
-                        ? 'bg-muted text-muted-foreground' 
-                        : entry.type === 'combat'
-                        ? 'bg-red-500/10 text-red-500'
-                        : entry.type === 'movement'
-                        ? 'bg-blue-500/10 text-blue-500'
-                        : 'bg-muted/50'
-                    }`}
-                  >
-                    <span className="opacity-50">[T{entry.turn}]</span> {entry.message}
-                  </div>
-                ))}
+        <div className="w-80 flex-shrink-0 border-l bg-card/50 flex flex-col overflow-hidden">
+          <ScrollArea className="flex-1">
+            <div className="p-2 space-y-2">
+              {/* Quick Actions e MiniMap */}
+              <div className="grid grid-cols-2 gap-2">
+                <QuickActions 
+                  showGrid={showGrid}
+                  onToggleGrid={() => setShowGrid(!showGrid)}
+                  showFacing={showFacing}
+                  onToggleFacing={() => setShowFacing(!showFacing)}
+                />
+                <MiniMap />
               </div>
-            </ScrollArea>
-          </div>
+              
+              {/* Combat Preview quando mirando em alvo */}
+              {selectedUnit && hoveredTarget && validTargets.includes(hoveredTarget.id) && (
+                <CombatPreview attacker={selectedUnit} defender={hoveredTarget} />
+              )}
+              
+              {/* Unidade selecionada */}
+              {selectedUnit ? (
+                <>
+                  <UnitDetailPanel
+                    unit={selectedUnit}
+                    commander={embeddedCommander}
+                    isMyUnit={selectedUnit.owner === myPlayerId}
+                    canChangePosture={isMyTurn && gameState.phase === 'movement' && !selectedUnit.hasActedThisTurn}
+                    onPostureChange={handlePostureChange}
+                    onClose={() => selectUnit(null)}
+                  />
+                  {selectedUnit.owner === myPlayerId && embeddedCommander && (
+                    <BattleTacticalCards
+                      unit={selectedUnit}
+                      commander={embeddedCommander}
+                    />
+                  )}
+                </>
+              ) : (
+                <Card className="bg-slate-800/50 border-slate-700">
+                  <CardContent className="p-4 text-center text-slate-500">
+                    <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Selecione uma unidade</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Routing Panel */}
+              <RoutingPanel />
+              
+              {/* Battle Log */}
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardHeader className="py-2 px-3">
+                  <CardTitle className="text-sm">Log de Batalha</CardTitle>
+                </CardHeader>
+                <CardContent className="p-2 max-h-48 overflow-auto">
+                  <div className="space-y-1">
+                    {[...gameState.battleLog].reverse().slice(0, 15).map((entry) => (
+                      <div 
+                        key={entry.id} 
+                        className={`text-xs p-1 rounded ${
+                          entry.type === 'system' 
+                            ? 'bg-muted text-muted-foreground' 
+                            : entry.type === 'combat'
+                            ? 'bg-red-500/10 text-red-500'
+                            : entry.type === 'movement'
+                            ? 'bg-blue-500/10 text-blue-500'
+                            : 'bg-muted/50'
+                        }`}
+                      >
+                        <span className="opacity-50">[T{entry.turn}]</span> {entry.message}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </ScrollArea>
         </div>
       </div>
     </div>
