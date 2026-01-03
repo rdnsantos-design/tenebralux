@@ -108,7 +108,8 @@ function RoutingUnitItem({ unit, commanders, canRally }: RoutingUnitItemProps) {
   const canPerformRally = canRally && (availableCommanders.length > 0 || canRallyWithAlly);
   
   const handleRally = async (commanderId?: string) => {
-    await rallyUnit(commanderId || '', unit.id);
+    // Para rally com aliado adjacente, passa undefined/empty - o contexto deve tratar isso
+    await rallyUnit(commanderId ?? '', unit.id);
   };
   
   return (
