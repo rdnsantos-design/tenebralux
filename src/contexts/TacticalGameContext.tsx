@@ -130,37 +130,52 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
   
   // Carregar estado inicial ou inicializar se não existir
   useEffect(() => {
+    let cancelled = false;
+    
     const init = async () => {
+      // Evitar múltiplas inicializações
       if (initializingRef.current) return;
+      initializingRef.current = true;
       
-      const existingState = await loadGameState(matchId);
-      
-      if (existingState) {
-        setGameState(existingState);
-      } else {
-        // Não existe estado, inicializar com dados reais do Supabase
-        initializingRef.current = true;
-        console.log('No existing game state, initializing from Supabase data...');
+      try {
+        const existingState = await loadGameState(matchId);
         
-        const initialState = await initializeBattle(matchId);
+        if (cancelled) return;
         
-        if (initialState) {
-          const saved = await initializeGameState(matchId, initialState);
-          if (saved) {
-            setGameState(initialState);
-          } else {
-            setError('Erro ao salvar estado inicial');
-          }
+        if (existingState) {
+          setGameState(existingState);
         } else {
-          setError(initError || 'Erro ao inicializar batalha');
+          // Não existe estado, inicializar com dados reais do Supabase
+          console.log('No existing game state, initializing from Supabase data...');
+          
+          const initialState = await initializeBattle(matchId);
+          
+          if (cancelled) return;
+          
+          if (initialState) {
+            const saved = await initializeGameState(matchId, initialState);
+            if (saved && !cancelled) {
+              setGameState(initialState);
+            } else if (!cancelled) {
+              setError('Erro ao salvar estado inicial');
+            }
+          } else if (!cancelled) {
+            setError(initError || 'Erro ao inicializar batalha');
+          }
         }
-        
-        initializingRef.current = false;
+      } finally {
+        if (!cancelled) {
+          initializingRef.current = false;
+        }
       }
     };
     
     init();
-  }, [matchId, loadGameState, initializeBattle, initializeGameState, initError]);
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId]); // Remover dependências instáveis
   
   // Subscribe para mudanças Realtime
   useEffect(() => {
