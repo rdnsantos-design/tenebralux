@@ -56,6 +56,14 @@ export interface BattleUnit {
   
   availableTacticalCards: string[];
   activeTacticalCard?: string;
+  tacticalCardModifiers?: {
+    attackBonus: number;
+    defenseBonus: number;
+    mobilityBonus: number;
+    attackPenalty: number;
+    defensePenalty: number;
+    mobilityPenalty: number;
+  };
   specialAbilities: SpecialAbility[];
 }
 

@@ -44,6 +44,7 @@ interface TacticalGameContextType {
   endPhase: () => Promise<boolean>;
   rollInitiative: () => Promise<boolean>;
   rallyUnit: (commanderId: string, unitId: string) => Promise<boolean>;
+  useTacticalCard: (unitId: string, cardId: string) => Promise<boolean>;
   
   // Utilitários
   getUnit: (unitId: string) => BattleUnit | undefined;
@@ -711,6 +712,98 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     return success;
   }, [gameState, myPlayerId, matchId, playerId, saveGameState, logAction, checkVictoryCondition]);
   
+  // Usar carta tática em uma unidade
+  const useTacticalCard = useCallback(async (unitId: string, cardId: string): Promise<boolean> => {
+    if (!gameState || !myPlayerId || !isMyTurn) return false;
+    
+    const unit = gameState.units[unitId];
+    if (!unit || unit.owner !== myPlayerId) return false;
+    if (unit.hasActedThisTurn || unit.activeTacticalCard) return false;
+    
+    // Buscar comandante do jogador
+    const commander = Object.values(gameState.commanders).find(c => c.owner === myPlayerId);
+    if (!commander) return false;
+    
+    // Buscar carta do Supabase
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data: card, error: cardError } = await supabase
+      .from('mass_combat_tactical_cards')
+      .select('*')
+      .eq('id', cardId)
+      .single();
+    
+    if (cardError || !card) {
+      console.error('Carta não encontrada:', cardError);
+      return false;
+    }
+    
+    // Verificar comando
+    const commandCost = card.command_required || card.vet_cost || 1;
+    const commandRemaining = commander.command - (commander.usedCommandThisTurn || 0);
+    
+    if (commandCost > commander.command || commandRemaining < 1) {
+      return false;
+    }
+    
+    // Salvar modificadores para reverter depois
+    const cardModifiers = {
+      attackBonus: card.attack_bonus || 0,
+      defenseBonus: card.defense_bonus || 0,
+      mobilityBonus: card.mobility_bonus || 0,
+      attackPenalty: card.attack_penalty || 0,
+      defensePenalty: card.defense_penalty || 0,
+      mobilityPenalty: card.mobility_penalty || 0,
+    };
+    
+    // Aplicar modificadores
+    const newUnits = { ...gameState.units };
+    newUnits[unitId] = {
+      ...unit,
+      currentAttack: Math.max(0, unit.currentAttack + cardModifiers.attackBonus - cardModifiers.attackPenalty),
+      currentDefense: Math.max(0, unit.currentDefense + cardModifiers.defenseBonus - cardModifiers.defensePenalty),
+      currentMovement: Math.max(0, unit.currentMovement + cardModifiers.mobilityBonus - cardModifiers.mobilityPenalty),
+      activeTacticalCard: cardId,
+      tacticalCardModifiers: cardModifiers,
+    };
+    
+    // Atualizar comandante
+    const newCommanders = { ...gameState.commanders };
+    const cmdId = Object.keys(newCommanders).find(id => newCommanders[id].owner === myPlayerId);
+    if (cmdId) {
+      newCommanders[cmdId] = {
+        ...newCommanders[cmdId],
+        usedCommandThisTurn: (newCommanders[cmdId].usedCommandThisTurn || 0) + 1,
+      };
+    }
+    
+    const newState: TacticalGameState = {
+      ...gameState,
+      units: newUnits,
+      commanders: newCommanders,
+      battleLog: [
+        ...gameState.battleLog,
+        {
+          id: crypto.randomUUID(),
+          turn: gameState.turn,
+          phase: gameState.phase,
+          timestamp: Date.now(),
+          type: 'tactical_card',
+          message: `⚡ ${unit.name} ativa "${card.name}"!`,
+        }
+      ],
+    };
+    
+    const action: GameAction = { type: 'USE_TACTICAL_CARD', unitId, cardId };
+    await logAction(matchId, playerId, action);
+    const success = await saveGameState(matchId, newState);
+    
+    if (success) {
+      setGameState(newState);
+    }
+    
+    return success;
+  }, [gameState, myPlayerId, isMyTurn, matchId, playerId, saveGameState, logAction]);
+  
   const endPhase = useCallback(async (): Promise<boolean> => {
     if (!gameState || !isMyTurn) return false;
     
@@ -726,14 +819,41 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     let newUnits = { ...gameState.units };
     let newState = { ...gameState };
     
+    let newCommanders = { ...gameState.commanders };
+    
     // Se chegou em end_turn, avança turno
     if (nextPhase === 'end_turn') {
       nextPhase = 'initiative';
       newTurn++;
       
-      // Reset hasActedThisTurn em todas as unidades
+      // Reset hasActedThisTurn e cartas táticas ativas em todas as unidades
       for (const id of Object.keys(newUnits)) {
-        newUnits[id] = { ...newUnits[id], hasActedThisTurn: false };
+        const unit = newUnits[id];
+        
+        // Reverter modificadores de carta tática se existirem
+        if (unit.activeTacticalCard && unit.tacticalCardModifiers) {
+          const mods = unit.tacticalCardModifiers;
+          newUnits[id] = {
+            ...unit,
+            currentAttack: Math.max(0, unit.currentAttack - mods.attackBonus + mods.attackPenalty),
+            currentDefense: Math.max(0, unit.currentDefense - mods.defenseBonus + mods.defensePenalty),
+            currentMovement: Math.max(0, unit.currentMovement - mods.mobilityBonus + mods.mobilityPenalty),
+            activeTacticalCard: undefined,
+            tacticalCardModifiers: undefined,
+            hasActedThisTurn: false,
+          };
+        } else {
+          newUnits[id] = { ...unit, hasActedThisTurn: false };
+        }
+      }
+      
+      // Reset comando usado dos comandantes
+      for (const id of Object.keys(newCommanders)) {
+        newCommanders[id] = {
+          ...newCommanders[id],
+          usedCommandThisTurn: 0,
+          hasActedThisTurn: false,
+        };
       }
     }
     
@@ -742,6 +862,7 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
       phase: nextPhase,
       turn: newTurn,
       units: newUnits,
+      commanders: newCommanders,
       unitsMovedThisPhase: 0,
       activePlayer: gameState.initiativeWinner || 'player1',
       battleLog: [
@@ -902,6 +1023,7 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     endPhase,
     rollInitiative,
     rallyUnit,
+    useTacticalCard,
     getUnit,
     getCommander,
     getUnitAtHex,
