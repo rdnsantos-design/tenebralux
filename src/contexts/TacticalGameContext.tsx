@@ -297,13 +297,21 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
       newHexes[toKey] = { ...newHexes[toKey], unitId };
     }
     
-    // Lógica de alternância de turno
+    // Lógica de alternância de turno - cada jogador move 1 unidade por vez
+    // A vantagem de iniciativa só dá "1 movimento extra" no início da fase
     let newActivePlayer = gameState.activePlayer;
-    const newUnitsMovedThisPhase = gameState.unitsMovedThisPhase + 1;
+    let newUnitsMovedThisPhase = gameState.unitsMovedThisPhase + 1;
     
-    // Se passou da vantagem de iniciativa, alternar
-    if (newUnitsMovedThisPhase > gameState.initiativeAdvantage) {
+    // Se quem está jogando é o vencedor da iniciativa e ainda não usou a vantagem
+    const initiativeWinner = gameState.initiativeWinner || 'player1';
+    
+    if (gameState.activePlayer === initiativeWinner && gameState.unitsMovedThisPhase < gameState.initiativeAdvantage) {
+      // Vencedor da iniciativa continua (está usando sua vantagem)
+      // Não alterna
+    } else {
+      // Alterna para o outro jogador e reseta contador de movimentos da fase
       newActivePlayer = gameState.activePlayer === 'player1' ? 'player2' : 'player1';
+      // Não resetamos o contador aqui - ele conta total de movimentos na fase
     }
     
     const newState: TacticalGameState = {
