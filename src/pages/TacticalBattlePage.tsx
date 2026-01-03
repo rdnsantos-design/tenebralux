@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { TacticalGameProvider, useTacticalGame } from '@/contexts/TacticalGameContext';
 import { HexGrid } from '@/components/tactical/HexGrid';
 import { UnitDetailPanel } from '@/components/tactical/UnitDetailPanel';
+import { RoutingPanel } from '@/components/tactical/RoutingPanel';
 import { TurnTracker } from '@/components/tactical/TurnTracker';
 import { PhaseModal } from '@/components/tactical/PhaseModal';
 import { useTacticalMatch, TacticalMatch } from '@/hooks/useTacticalMatch';
@@ -172,6 +173,11 @@ function BattleContent() {
               />
             </div>
           )}
+          
+          {/* Routing Panel - sempre visível se houver unidades em fuga */}
+          <div className="p-2 border-b">
+            <RoutingPanel />
+          </div>
           
           {/* Battle log */}
           <div className="flex-1 flex flex-col overflow-hidden">

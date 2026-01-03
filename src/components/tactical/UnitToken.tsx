@@ -150,18 +150,55 @@ export function UnitToken({ unit, isSelected, isValidTarget, onClick }: UnitToke
         </g>
       )}
       
-      {/* Indicador de debandada */}
+      {/* Indicador de debandada com animação */}
       {unit.isRouting && (
-        <g transform={`translate(0, ${-tokenSize - 12})`}>
-          <text
-            textAnchor="middle"
-            fontSize={10}
-            fontWeight="bold"
-            fill="#fbbf24"
+        <>
+          {/* Overlay tremendo */}
+          <circle
+            cx={0}
+            cy={0}
+            r={tokenSize}
+            fill="rgba(255, 100, 0, 0.3)"
+            pointerEvents="none"
           >
-            ⚠ FUGA
-          </text>
-        </g>
+            <animate
+              attributeName="opacity"
+              values="0.2;0.5;0.2"
+              dur="0.3s"
+              repeatCount="indefinite"
+            />
+          </circle>
+          
+          {/* Ícone de fuga */}
+          <g transform={`translate(0, ${-tokenSize - 16})`}>
+            <rect
+              x={-24}
+              y={-8}
+              width={48}
+              height={16}
+              rx={3}
+              fill="#dc2626"
+              stroke="#fca5a5"
+              strokeWidth={1}
+            >
+              <animate
+                attributeName="y"
+                values="-8;-10;-8"
+                dur="0.5s"
+                repeatCount="indefinite"
+              />
+            </rect>
+            <text
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={9}
+              fontWeight="bold"
+              fill="white"
+            >
+              EM FUGA
+            </text>
+          </g>
+        </>
       )}
       
       {/* Indicador de já agiu */}

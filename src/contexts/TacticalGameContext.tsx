@@ -42,6 +42,7 @@ interface TacticalGameContextType {
   setPosture: (unitId: string, posture: Posture) => Promise<boolean>;
   endPhase: () => Promise<boolean>;
   rollInitiative: () => Promise<boolean>;
+  rallyUnit: (commanderId: string, unitId: string) => Promise<boolean>;
   
   // Utilitários
   getUnit: (unitId: string) => BattleUnit | undefined;
@@ -483,6 +484,200 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
       battleLog: [...state.battleLog, ...logs],
     };
   }, []);
+
+  // Processar movimento de unidades em fuga
+  const processRoutingMovement = useCallback((state: TacticalGameState): TacticalGameState => {
+    const newUnits = { ...state.units };
+    const newHexes = { ...state.hexes };
+    const logs: typeof state.battleLog = [];
+    
+    // Processar cada unidade em fuga
+    for (const [id, unit] of Object.entries(newUnits)) {
+      if (!unit.isRouting || unit.currentHealth <= 0) continue;
+      
+      // Determinar direção de fuga (em direção à borda do owner)
+      const escapeDirection = unit.owner === 'player1' ? -1 : 1;
+      
+      // Calcular nova posição
+      let newQ = unit.position.q + (escapeDirection * Math.max(1, unit.currentMovement));
+      
+      // Limitar ao mapa
+      newQ = Math.max(0, Math.min(19, newQ));
+      
+      // Verificar se chegou na borda
+      if ((unit.owner === 'player1' && newQ <= 0) || 
+          (unit.owner === 'player2' && newQ >= 19)) {
+        logs.push({
+          id: crypto.randomUUID(),
+          turn: state.turn,
+          phase: 'rout',
+          timestamp: Date.now(),
+          type: 'rout',
+          message: `💀 ${unit.name} fugiu do campo de batalha!`,
+        });
+        
+        // Remover do hex atual
+        const oldKey = hexKey(unit.position);
+        if (newHexes[oldKey]) {
+          newHexes[oldKey] = { ...newHexes[oldKey], unitId: undefined };
+        }
+        
+        // Marcar como destruída
+        newUnits[id] = { ...unit, currentHealth: 0 };
+        continue;
+      }
+      
+      // Mover para nova posição se não há unidade lá
+      const newKey = hexKey({ q: newQ, r: unit.position.r });
+      if (!newHexes[newKey]?.unitId) {
+        const oldKey = hexKey(unit.position);
+        
+        // Atualizar hexes
+        if (newHexes[oldKey]) {
+          newHexes[oldKey] = { ...newHexes[oldKey], unitId: undefined };
+        }
+        if (newHexes[newKey]) {
+          newHexes[newKey] = { ...newHexes[newKey], unitId: id };
+        }
+        
+        // Atualizar posição da unidade
+        newUnits[id] = { ...unit, position: { q: newQ, r: unit.position.r } };
+        
+        logs.push({
+          id: crypto.randomUUID(),
+          turn: state.turn,
+          phase: 'rout',
+          timestamp: Date.now(),
+          type: 'rout',
+          message: `${unit.name} foge em pânico!`,
+        });
+      }
+    }
+    
+    return {
+      ...state,
+      units: newUnits,
+      hexes: newHexes,
+      battleLog: [...state.battleLog, ...logs],
+    };
+  }, []);
+
+  // Verificar condições de vitória
+  const checkVictoryCondition = useCallback((state: TacticalGameState): PlayerId | null => {
+    const p1Units = Object.values(state.units).filter(
+      u => u.owner === 'player1' && !u.isRouting && u.currentHealth > 0
+    );
+    const p2Units = Object.values(state.units).filter(
+      u => u.owner === 'player2' && !u.isRouting && u.currentHealth > 0
+    );
+    
+    if (p1Units.length === 0 && p2Units.length > 0) return 'player2';
+    if (p2Units.length === 0 && p1Units.length > 0) return 'player1';
+    
+    return null;
+  }, []);
+
+  // Função de rally para unidades em fuga
+  const rallyUnit = useCallback(async (commanderId: string, unitId: string): Promise<boolean> => {
+    if (!gameState || !myPlayerId || gameState.phase !== 'rout') return false;
+    
+    const unit = gameState.units[unitId];
+    if (!unit || !unit.isRouting) return false;
+    if (unit.owner !== myPlayerId) return false;
+    
+    const commander = commanderId ? gameState.commanders[commanderId] : null;
+    
+    // Verificar se comandante está próximo (distância <= 1)
+    if (commander) {
+      const distance = hexDistance(commander.position, unit.position);
+      if (distance > 1) return false;
+      if (commander.hasActedThisTurn) return false;
+    } else {
+      // Verificar se há aliado adjacente
+      const neighbors = getNeighbors(unit.position);
+      const hasAlly = neighbors.some(n => {
+        const key = hexKey(n);
+        const hex = gameState.hexes[key];
+        if (hex?.unitId) {
+          const adj = gameState.units[hex.unitId];
+          return adj && adj.owner === unit.owner && !adj.isRouting && adj.currentHealth > 0;
+        }
+        return false;
+      });
+      if (!hasAlly) return false;
+    }
+    
+    // Aplicar rally
+    const newUnits = { ...gameState.units };
+    const newCommanders = { ...gameState.commanders };
+    
+    const newPermanentPressure = (unit.permanentPressure || 0) + 1;
+    
+    newUnits[unitId] = {
+      ...unit,
+      isRouting: false,
+      permanentPressure: newPermanentPressure,
+      currentPressure: newPermanentPressure,
+      posture: 'Ofensiva',
+    };
+    
+    if (commander) {
+      newCommanders[commanderId] = {
+        ...commander,
+        hasActedThisTurn: true,
+      };
+    }
+    
+    let newState: TacticalGameState = {
+      ...gameState,
+      units: newUnits,
+      commanders: newCommanders,
+      battleLog: [
+        ...gameState.battleLog,
+        {
+          id: crypto.randomUUID(),
+          turn: gameState.turn,
+          phase: gameState.phase,
+          timestamp: Date.now(),
+          type: 'rally',
+          message: commander 
+            ? `${commander.name} reagrupa ${unit.name}! (+1 Pressão Permanente)`
+            : `${unit.name} se reagrupa com aliados! (+1 Pressão Permanente)`,
+        }
+      ],
+    };
+    
+    // Verificar vitória
+    const winner = checkVictoryCondition(newState);
+    if (winner) {
+      newState = {
+        ...newState,
+        isFinished: true,
+        winner,
+        battleLog: [
+          ...newState.battleLog,
+          {
+            id: crypto.randomUUID(),
+            turn: newState.turn,
+            phase: newState.phase,
+            timestamp: Date.now(),
+            type: 'system',
+            message: `🏆 ${winner === 'player1' ? newState.player1Name : newState.player2Name} VENCEU A BATALHA!`,
+          }
+        ],
+      };
+    }
+    
+    const action: GameAction = { type: 'RALLY_UNIT', commanderId, unitId };
+    await logAction(matchId, playerId, action);
+    const success = await saveGameState(matchId, newState);
+    
+    if (success) {
+      setGameState(newState);
+    }
+    
+    return success;
+  }, [gameState, myPlayerId, matchId, playerId, saveGameState, logAction, checkVictoryCondition]);
   
   const endPhase = useCallback(async (): Promise<boolean> => {
     if (!gameState || !isMyTurn) return false;
@@ -561,9 +756,35 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
       };
     }
     
+    // Processar fuga se entrando na fase rout
+    if (newState.phase === 'rout') {
+      newState = processRoutingMovement(newState);
+    }
+    
     // Aplicar reorganização se na fase correta
     if (newState.phase === 'reorganization') {
       newState = applyReorganization(newState);
+    }
+    
+    // Verificar vitória após processamento
+    const winner = checkVictoryCondition(newState);
+    if (winner) {
+      newState = {
+        ...newState,
+        isFinished: true,
+        winner,
+        battleLog: [
+          ...newState.battleLog,
+          {
+            id: crypto.randomUUID(),
+            turn: newState.turn,
+            phase: newState.phase,
+            timestamp: Date.now(),
+            type: 'system',
+            message: `🏆 ${winner === 'player1' ? newState.player1Name : newState.player2Name} VENCEU A BATALHA!`,
+          }
+        ],
+      };
     }
     
     const action: GameAction = { type: 'END_PHASE' };
@@ -575,7 +796,7 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
       setSelectedUnitId(null);
     }
     return success;
-  }, [gameState, isMyTurn, matchId, playerId, saveGameState, logAction, shouldSkipPhase, applyReorganization]);
+  }, [gameState, isMyTurn, matchId, playerId, saveGameState, logAction, shouldSkipPhase, applyReorganization, processRoutingMovement, checkVictoryCondition]);
   
   const rollInitiative = useCallback(async (): Promise<boolean> => {
     if (!gameState || gameState.phase !== 'initiative') return false;
@@ -648,6 +869,7 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     setPosture,
     endPhase,
     rollInitiative,
+    rallyUnit,
     getUnit,
     getCommander,
     getUnitAtHex,
