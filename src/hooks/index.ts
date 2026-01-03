@@ -29,3 +29,6 @@ export * from './useTravel';
 export * from './useArmyData';
 export * from './useDomainData';
 export * from './useMassCombatData';
+
+// Hooks de batalha tática
+export * from './useTacticalBattleInit';

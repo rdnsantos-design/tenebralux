@@ -25,6 +25,7 @@ export interface BattleUnit {
   instanceId?: string;
   name: string;
   unitType: 'Infantaria' | 'Cavalaria' | 'Arqueiros' | 'Cerco';
+  culture?: string;
   experience: ExperienceLevel;
   
   baseAttack: number;
@@ -103,10 +104,12 @@ export interface TacticalGameState {
   player1Id: string;
   player1Name: string;
   player1ArmyId: string;
+  player1Culture?: string;
   
   player2Id: string;
   player2Name: string;
   player2ArmyId: string;
+  player2Culture?: string;
   
   activePlayer: PlayerId;
   initiativeWinner?: PlayerId;

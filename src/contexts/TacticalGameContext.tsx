@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { 
   TacticalGameState, 
   BattleUnit, 
@@ -11,6 +11,7 @@ import {
 } from '@/types/tactical-game';
 import { Posture } from '@/types/cards/unit-card';
 import { useTacticalGameState } from '@/hooks/useTacticalGameState';
+import { useTacticalBattleInit } from '@/hooks/useTacticalBattleInit';
 import { getNeighbors, hexDistance, isValidHex, hexKey } from '@/lib/hexUtils';
 import { resolveMeleeCombat, resolveRangedCombat, applyCombatResult } from '@/lib/combatEngine';
 
@@ -67,8 +68,12 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     loadGameState, 
     saveGameState, 
     subscribeToGameState,
+    initializeGameState,
     logAction,
   } = useTacticalGameState();
+  
+  const { initializeBattle, loading: initLoading, error: initError } = useTacticalBattleInit();
+  const initializingRef = useRef(false);
   
   const [gameState, setGameState] = useState<TacticalGameState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -122,12 +127,39 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     return [];
   }, [gameState, selectedUnitId, myPlayerId]);
   
-  // Carregar estado inicial
+  // Carregar estado inicial ou inicializar se não existir
   useEffect(() => {
-    loadGameState(matchId).then(state => {
-      if (state) setGameState(state);
-    });
-  }, [matchId, loadGameState]);
+    const init = async () => {
+      if (initializingRef.current) return;
+      
+      const existingState = await loadGameState(matchId);
+      
+      if (existingState) {
+        setGameState(existingState);
+      } else {
+        // Não existe estado, inicializar com dados reais do Supabase
+        initializingRef.current = true;
+        console.log('No existing game state, initializing from Supabase data...');
+        
+        const initialState = await initializeBattle(matchId);
+        
+        if (initialState) {
+          const saved = await initializeGameState(matchId, initialState);
+          if (saved) {
+            setGameState(initialState);
+          } else {
+            setError('Erro ao salvar estado inicial');
+          }
+        } else {
+          setError(initError || 'Erro ao inicializar batalha');
+        }
+        
+        initializingRef.current = false;
+      }
+    };
+    
+    init();
+  }, [matchId, loadGameState, initializeBattle, initializeGameState, initError]);
   
   // Subscribe para mudanças Realtime
   useEffect(() => {
@@ -852,8 +884,8 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
   
   const value: TacticalGameContextType = {
     gameState,
-    isLoading: loading,
-    error,
+    isLoading: loading || initLoading,
+    error: error || initError,
     myPlayerId,
     isMyTurn,
     selectedUnitId,
