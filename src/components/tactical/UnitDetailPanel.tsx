@@ -1,5 +1,5 @@
 import React from 'react';
-import { BattleUnit, BattleCommander } from '@/types/tactical-game';
+import { BattleUnit, BattleCommander, TacticalGameState } from '@/types/tactical-game';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -17,6 +17,7 @@ import {
   X
 } from 'lucide-react';
 import { Posture } from '@/types/cards/unit-card';
+import { BattleTacticalCards } from './BattleTacticalCards';
 
 interface UnitDetailPanelProps {
   unit: BattleUnit | null;
@@ -212,7 +213,7 @@ export function UnitDetailPanel({
                 {unit.specialAbilities.map((ability, i) => (
                   <div key={i} className="text-xs p-1 rounded bg-muted/50">
                     <span className="font-medium">{ability.name}</span>
-                    {ability.description && (
+                {ability.description && (
                       <span className="text-muted-foreground ml-1">- {ability.description}</span>
                     )}
                   </div>
@@ -220,6 +221,11 @@ export function UnitDetailPanel({
               </div>
             </div>
           </>
+        )}
+        
+        {/* Cartas Táticas */}
+        {isMyUnit && (
+          <BattleTacticalCards unit={unit} commander={commander || undefined} />
         )}
       </CardContent>
     </Card>

@@ -201,6 +201,22 @@ export function UnitToken({ unit, isSelected, isValidTarget, onClick }: UnitToke
         </>
       )}
       
+      {/* Indicador de carta tática ativa */}
+      {unit.activeTacticalCard && (
+        <g transform={`translate(${tokenSize * 0.6}, ${tokenSize * 0.6})`}>
+          <circle r={8} fill="#d97706" stroke="#fcd34d" strokeWidth={1.5} />
+          <text
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="white"
+            fontSize="10"
+            fontWeight="bold"
+          >
+            ★
+          </text>
+        </g>
+      )}
+      
       {/* Indicador de já agiu */}
       {unit.hasActedThisTurn && (
         <circle
