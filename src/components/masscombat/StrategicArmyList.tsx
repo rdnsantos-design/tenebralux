@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,9 +14,9 @@ import {
   MapPin,
   Crown
 } from 'lucide-react';
-import { StrategicArmy, calculateDefense, calculateHitPoints } from '@/types/combat/strategic-army';
+import { StrategicArmy } from '@/types/combat/strategic-army';
 import { StrategicArmyBuilder } from './StrategicArmyBuilder';
-import { toast } from 'sonner';
+import { useStrategicArmies } from '@/hooks/useStrategicArmies';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,53 +27,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-const STORAGE_KEY = 'strategic-armies';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function StrategicArmyList() {
-  const [armies, setArmies] = useState<StrategicArmy[]>([]);
+  const { armies, loading, saveArmy, deleteArmy } = useStrategicArmies();
   const [editingArmy, setEditingArmy] = useState<StrategicArmy | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [deleteArmy, setDeleteArmy] = useState<StrategicArmy | null>(null);
+  const [armyToDelete, setArmyToDelete] = useState<StrategicArmy | null>(null);
 
-  // Carregar do localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setArmies(JSON.parse(saved));
-      } catch (e) {
-        console.error('Erro ao carregar exércitos:', e);
-      }
-    }
-  }, []);
-
-  // Salvar no localStorage
-  const saveArmies = (newArmies: StrategicArmy[]) => {
-    setArmies(newArmies);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newArmies));
-  };
-
-  const handleSave = (army: StrategicArmy) => {
-    const existing = armies.find(a => a.id === army.id);
-    
-    if (existing) {
-      saveArmies(armies.map(a => a.id === army.id ? army : a));
-      toast.success('Exército atualizado!');
-    } else {
-      saveArmies([...armies, army]);
-      toast.success('Exército criado!');
-    }
-    
+  const handleSave = async (army: StrategicArmy) => {
+    await saveArmy(army);
     setEditingArmy(null);
     setIsCreating(false);
   };
 
-  const handleDelete = () => {
-    if (!deleteArmy) return;
-    saveArmies(armies.filter(a => a.id !== deleteArmy.id));
-    setDeleteArmy(null);
-    toast.success('Exército removido!');
+  const handleDelete = async () => {
+    if (!armyToDelete) return;
+    await deleteArmy(armyToDelete.id);
+    setArmyToDelete(null);
   };
 
   // Se estiver editando ou criando, mostrar o builder
@@ -87,6 +58,21 @@ export function StrategicArmyList() {
           setIsCreating(false);
         }}
       />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Exércitos Estratégicos</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-48 w-full" />
+          ))}
+        </div>
+      </div>
     );
   }
 
@@ -199,7 +185,7 @@ export function StrategicArmyList() {
                     variant="outline"
                     size="sm"
                     className="text-destructive hover:text-destructive"
-                    onClick={() => setDeleteArmy(army)}
+                    onClick={() => setArmyToDelete(army)}
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
@@ -211,12 +197,12 @@ export function StrategicArmyList() {
       )}
 
       {/* Dialog de confirmação de exclusão */}
-      <AlertDialog open={!!deleteArmy} onOpenChange={() => setDeleteArmy(null)}>
+      <AlertDialog open={!!armyToDelete} onOpenChange={() => setArmyToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Exército</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o exército "{deleteArmy?.name}"? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o exército "{armyToDelete?.name}"? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
