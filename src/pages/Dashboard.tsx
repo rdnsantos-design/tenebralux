@@ -2,17 +2,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Map, Route, Crown, Hexagon, Layers, Gamepad2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "@/themes";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { labels } = useTheme();
 
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
+        {/* Theme Switcher no topo direito */}
+        <div className="flex justify-end mb-4">
+          <ThemeSwitcher />
+        </div>
+        
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4">Sistema Tenebra Lux</h1>
+          <h1 className="text-5xl font-bold mb-4">{labels.name}</h1>
           <p className="text-xl text-muted-foreground">
-            Gerencie seus cards e exércitos para suas campanhas
+            {labels.tagline}
           </p>
         </div>
 
@@ -192,7 +200,7 @@ const Dashboard = () => {
 
         <div className="text-center mt-12">
           <p className="text-sm text-muted-foreground">
-            Sistema de gerenciamento para campanhas de Tenebra Lux
+            Sistema de gerenciamento para campanhas de {labels.name}
           </p>
         </div>
       </div>
