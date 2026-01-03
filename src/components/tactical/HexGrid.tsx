@@ -10,6 +10,8 @@ import {
 } from '@/lib/hexUtils';
 import { UnitToken } from './UnitToken';
 import { CommanderToken } from './CommanderToken';
+import { FlankingIndicator } from './FlankingIndicator';
+import { FacingArc } from './FacingArc';
 
 interface HexGridProps {
   hexes: Record<string, HexData>;
@@ -18,6 +20,9 @@ interface HexGridProps {
   selectedHexKey?: string;
   validMoves?: HexCoord[];
   validTargets?: string[];
+  selectedAttacker?: BattleUnit;
+  hoveredTarget?: BattleUnit;
+  showFacingArcs?: boolean;
   onHexClick?: (coord: HexCoord) => void;
   onHexHover?: (coord: HexCoord | null) => void;
 }
@@ -37,6 +42,9 @@ export function HexGrid({
   selectedHexKey,
   validMoves = [],
   validTargets = [],
+  selectedAttacker,
+  hoveredTarget,
+  showFacingArcs = false,
   onHexClick,
   onHexHover,
 }: HexGridProps) {
@@ -208,6 +216,19 @@ export function HexGrid({
       >
         {/* Renderizar todos os hexágonos */}
         {allHexCoords.map(coord => renderHex(coord))}
+        
+        {/* Arco de facing para unidade selecionada */}
+        {showFacingArcs && selectedAttacker && (
+          <FacingArc unit={selectedAttacker} showArc={true} />
+        )}
+        
+        {/* Indicador de flanqueamento ao mirar em alvo */}
+        {selectedAttacker && hoveredTarget && selectedAttacker.id !== hoveredTarget.id && (
+          <FlankingIndicator 
+            attacker={selectedAttacker}
+            defender={hoveredTarget}
+          />
+        )}
         
         {/* Renderizar unidades */}
         {Object.values(units).map(unit => (

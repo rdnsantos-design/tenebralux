@@ -9,10 +9,11 @@ import { UnitDetailPanel } from '@/components/tactical/UnitDetailPanel';
 import { RoutingPanel } from '@/components/tactical/RoutingPanel';
 import { TurnTracker } from '@/components/tactical/TurnTracker';
 import { PhaseModal } from '@/components/tactical/PhaseModal';
+import { CombatPreview } from '@/components/tactical/CombatPreview';
 import { useTacticalMatch, TacticalMatch } from '@/hooks/useTacticalMatch';
 import { usePlayerId } from '@/hooks/usePlayerId';
 import { hexKey } from '@/lib/hexUtils';
-import { GamePhase } from '@/types/tactical-game';
+import { GamePhase, HexCoord, BattleUnit } from '@/types/tactical-game';
 import { ArrowLeft, Loader2, Users, Clock } from 'lucide-react';
 
 function BattleContent() {
@@ -34,6 +35,8 @@ function BattleContent() {
     setPosture,
     canUsePosture,
   } = useTacticalGame();
+  
+  const [hoveredTarget, setHoveredTarget] = useState<BattleUnit | null>(null);
   
   if (isLoading || !gameState) {
     return (
@@ -77,6 +80,26 @@ function BattleContent() {
     if (selectedUnitId && canUsePosture(selectedUnitId, posture)) {
       await setPosture(selectedUnitId, posture);
     }
+  };
+  
+  const handleHexHover = (coord: HexCoord | null) => {
+    if (!coord || !gameState) {
+      setHoveredTarget(null);
+      return;
+    }
+    
+    const key = hexKey(coord);
+    const hex = gameState.hexes[key];
+    
+    if (hex?.unitId && selectedUnitId) {
+      const targetUnit = gameState.units[hex.unitId];
+      if (targetUnit && targetUnit.owner !== myPlayerId) {
+        setHoveredTarget(targetUnit);
+        return;
+      }
+    }
+    
+    setHoveredTarget(null);
   };
   
   // Count units per player
@@ -154,7 +177,11 @@ function BattleContent() {
             selectedHexKey={selectedHexKey}
             validMoves={validMoves}
             validTargets={validTargets}
+            selectedAttacker={selectedUnit || undefined}
+            hoveredTarget={hoveredTarget || undefined}
+            showFacingArcs={true}
             onHexClick={handleHexClick}
+            onHexHover={handleHexHover}
           />
         </div>
         
@@ -171,6 +198,13 @@ function BattleContent() {
                 onPostureChange={handlePostureChange}
                 onClose={() => selectUnit(null)}
               />
+            </div>
+          )}
+          
+          {/* Combat Preview quando mirando em alvo */}
+          {selectedUnit && hoveredTarget && validTargets.includes(hoveredTarget.id) && (
+            <div className="p-2 border-b">
+              <CombatPreview attacker={selectedUnit} defender={hoveredTarget} />
             </div>
           )}
           
