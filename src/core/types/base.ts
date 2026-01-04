@@ -30,35 +30,46 @@ export interface CharacterVirtues {
   harmonia: number;    // 0-3
 }
 
-// === STATS DERIVADOS ===
+// === STATS DERIVADOS (CORRIGIDO) ===
 export interface DerivedStats {
   // Combate Físico
-  vitalidade: number;
-  evasao: number;
-  guarda: number;
-  reacao: number;
-  movimento: number;
+  vitalidade: number;   // Corpo×2 + Resistência
+  evasao: number;       // Reflexos×2 + Instinto
+  guarda: number;       // Reflexos×2 + Esquiva + Armadura
+  reacao: number;       // Intuição + Reflexos + Prontidão
+  movimento: number;    // Corpo×2 + Atletismo
   
   // Combate Social
-  vontade: number;
-  conviccao: number;
-  influencia: number;
+  vontade: number;      // Raciocínio×2 + Resiliência
+  conviccao: number;    // Lógica + Determinação
+  influencia: number;   // Carisma
   
   // Recursos
-  tensaoMaxima: number;
-  fortitude: number;
+  tensao: number;       // Raciocínio + Determinação
+  fortitude: number;    // Autocontrole
 }
 
-// === STATS DE COMANDO (para batalhas) ===
+// === STATS DE REGÊNCIA (NOVO - substitui CommandStats) ===
+export interface RegencyStats {
+  comando: number;       // Carisma + Pesquisa
+  estrategia: number;    // Raciocínio + Militarismo
+  administracao: number; // Raciocínio + Economia
+  politica: number;      // Raciocínio + Diplomacia
+  tecnologia: number;    // Conhecimento + Engenharia (Akashic)
+  geomancia: number;     // Conhecimento + Arcanismo (Tenebra)
+}
+
+// === STATS DE COMANDO (DEPRECADO - usar RegencyStats) ===
+// Mantido para compatibilidade temporária
 export interface CommandStats {
-  strategy: number;    // Estratégia (1-6)
-  command: number;     // Comando (1-6)
-  guard: number;       // Guarda (1-6)
+  strategy: number;    // Mapeado de estrategia
+  command: number;     // Mapeado de comando
+  guard: number;       // Calculado: floor(guarda / 3)
 }
 
-// === STATS DE DOMÍNIO (para 4X) ===
+// === STATS DE DOMÍNIO ===
 export interface DomainStats {
-  administration: number;
+  administration: number;  // Mapeado de administracao
   bloodline?: number;
   regencyPoints: number;
 }
