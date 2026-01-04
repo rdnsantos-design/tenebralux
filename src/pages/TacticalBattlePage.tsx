@@ -252,24 +252,30 @@ export default function TacticalBattlePage() {
   const [match, setMatch] = useState<TacticalMatch | null>(null);
   const [matchError, setMatchError] = useState<string | null>(null);
   
-  const fetchMatch = useCallback(async () => {
-    if (matchId) {
-      const m = await getMatch(matchId);
-      if (m) {
-        setMatch(m);
-      } else {
-        setMatchError('Partida não encontrada');
+  useEffect(() => {
+    const fetchMatch = async () => {
+      if (matchId) {
+        const m = await getMatch(matchId);
+        if (m) {
+          setMatch(m);
+        } else {
+          setMatchError('Partida não encontrada');
+        }
       }
-    }
+    };
+    fetchMatch();
   }, [matchId, getMatch]);
   
-  useEffect(() => {
-    fetchMatch();
-  }, [fetchMatch]);
-  
   if (!matchId) {
-    navigate('/tactical');
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
+        <p className="text-destructive">ID da partida não fornecido</p>
+        <Button onClick={() => navigate('/tactical')}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+      </div>
+    );
   }
   
   if (matchLoading || (!match && !matchError)) {
