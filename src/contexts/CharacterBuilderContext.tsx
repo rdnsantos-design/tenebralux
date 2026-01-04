@@ -127,8 +127,16 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
         break;
 
       case 3: // Perícias
-        // Validar que não excedeu pontos por atributo
-        // Implementação detalhada no Step 3
+        // Validar que todos os pontos foram distribuídos
+        const totalAttributePoints = Object.values(draft.attributes || {}).reduce((sum, val) => sum + (val || 0), 0);
+        const totalSkillPoints = Object.values(draft.skills || {}).reduce((sum, val) => sum + (val || 0), 0);
+        
+        if (totalSkillPoints !== totalAttributePoints) {
+          errors.push({
+            field: 'skills',
+            message: `Distribua todos os pontos de perícia (${totalSkillPoints}/${totalAttributePoints})`
+          });
+        }
         break;
 
       case 5: // Bênçãos

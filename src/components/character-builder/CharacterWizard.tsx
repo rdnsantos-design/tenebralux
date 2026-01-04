@@ -3,6 +3,7 @@ import { useCharacterBuilder } from '@/contexts/CharacterBuilderContext';
 import { CharacterBuilderLayout } from './CharacterBuilderLayout';
 import { StepConcept } from './steps/StepConcept';
 import { StepAttributes } from './steps/StepAttributes';
+import { StepSkills } from './steps/StepSkills';
 import { StepPlaceholder } from './steps/StepPlaceholder';
 
 export function CharacterWizard() {
@@ -15,8 +16,7 @@ export function CharacterWizard() {
       case 2:
         return <StepAttributes />;
       case 3:
-        // return <StepSkills />;
-        return <StepPlaceholder />;
+        return <StepSkills />;
       case 4:
         // return <StepDerived />;
         return <StepPlaceholder />;
