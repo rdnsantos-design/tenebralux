@@ -6,6 +6,7 @@ import { StepAttributes } from './steps/StepAttributes';
 import { StepSkills } from './steps/StepSkills';
 import { StepDerived } from './steps/StepDerived';
 import { StepBlessings } from './steps/StepBlessings';
+import { StepVirtues } from './steps/StepVirtues';
 import { StepPlaceholder } from './steps/StepPlaceholder';
 
 export function CharacterWizard() {
@@ -24,8 +25,7 @@ export function CharacterWizard() {
       case 5:
         return <StepBlessings />;
       case 6:
-        // return <StepVirtues />;
-        return <StepPlaceholder />;
+        return <StepVirtues />;
       case 7:
         // return <StepEquipment />;
         return <StepPlaceholder />;
