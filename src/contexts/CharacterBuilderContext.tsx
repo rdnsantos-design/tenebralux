@@ -139,6 +139,11 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
         }
         break;
 
+      case 4: // Derivados
+        // Step informativo - sempre válido se chegou aqui
+        // Os valores são calculados automaticamente
+        break;
+
       case 5: // Bênçãos
         // Cada bênção precisa de um desafio
         if (draft.blessingIds?.length) {
