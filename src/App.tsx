@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/themes";
+import { AuthProvider } from "@/contexts/AuthContext";
 import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
 import ArmyManagement from "./pages/ArmyManagement";
@@ -21,6 +22,7 @@ import FieldCommanders from "./pages/FieldCommanders";
 import GameRoom from "./pages/GameRoom";
 import NotFound from "./pages/NotFound";
 import CharacterBuilder from "./pages/CharacterBuilder";
+import AuthCallback from "./pages/AuthCallback";
 
 // Tactical Battle Pages
 import TacticalHomePage from "./pages/TacticalHomePage";
@@ -35,49 +37,54 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/cards" element={<Index />} />
-            <Route path="/army" element={<ArmyManagement />} />
-            <Route path="/tactical-cards" element={<TacticalCards />} />
-            <Route path="/characters" element={<CharacterCards />} />
-            <Route path="/domains" element={<Domains />} />
-            <Route path="/battlemap" element={<BattleMap />} />
-            <Route path="/battle-map" element={<BattleMap />} />
-            <Route path="/mass-combat" element={<MassCombat />} />
-            <Route path="/mass-combat-cards" element={<MassCombatCards />} />
-            <Route path="/travel" element={<Travel />} />
-            <Route path="/tactical-game" element={<TacticalGame />} />
-            <Route path="/tactical-home" element={<TacticalHome />} />
-            <Route path="/strategic-game" element={<StrategicGame />} />
-            <Route path="/field-commanders" element={<FieldCommanders />} />
-            <Route path="/game" element={<GameRoom />} />
-            <Route path="/game/:roomCode" element={<GameRoom />} />
-            
-            {/* Character Builder Routes */}
-            <Route path="/character-builder" element={<CharacterBuilder />} />
-            <Route path="/character-builder/create" element={<CharacterBuilder />} />
-            
-            {/* Tactical Battle Routes */}
-            <Route path="/tactical" element={<TacticalHomePage />} />
-            <Route path="/tactical/create" element={<CreateTacticalMatchPage />} />
-            <Route path="/tactical/join" element={<JoinTacticalMatchPage />} />
-            <Route path="/tactical/lobby/:matchId" element={<TacticalLobbyPage />} />
-            <Route path="/tactical/my-matches" element={<MyTacticalMatchesPage />} />
-            <Route path="/tactical/battle-test" element={<TacticalBattleTestPage />} />
-            <Route path="/tactical/battle/:matchId" element={<TacticalBattlePage />} />
-            
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/cards" element={<Index />} />
+              <Route path="/army" element={<ArmyManagement />} />
+              <Route path="/tactical-cards" element={<TacticalCards />} />
+              <Route path="/characters" element={<CharacterCards />} />
+              <Route path="/domains" element={<Domains />} />
+              <Route path="/battlemap" element={<BattleMap />} />
+              <Route path="/battle-map" element={<BattleMap />} />
+              <Route path="/mass-combat" element={<MassCombat />} />
+              <Route path="/mass-combat-cards" element={<MassCombatCards />} />
+              <Route path="/travel" element={<Travel />} />
+              <Route path="/tactical-game" element={<TacticalGame />} />
+              <Route path="/tactical-home" element={<TacticalHome />} />
+              <Route path="/strategic-game" element={<StrategicGame />} />
+              <Route path="/field-commanders" element={<FieldCommanders />} />
+              <Route path="/game" element={<GameRoom />} />
+              <Route path="/game/:roomCode" element={<GameRoom />} />
+              
+              {/* Character Builder Routes */}
+              <Route path="/character-builder" element={<CharacterBuilder />} />
+              <Route path="/character-builder/create" element={<CharacterBuilder />} />
+              
+              {/* Auth Routes */}
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              
+              {/* Tactical Battle Routes */}
+              <Route path="/tactical" element={<TacticalHomePage />} />
+              <Route path="/tactical/create" element={<CreateTacticalMatchPage />} />
+              <Route path="/tactical/join" element={<JoinTacticalMatchPage />} />
+              <Route path="/tactical/lobby/:matchId" element={<TacticalLobbyPage />} />
+              <Route path="/tactical/my-matches" element={<MyTacticalMatchesPage />} />
+              <Route path="/tactical/battle-test" element={<TacticalBattleTestPage />} />
+              <Route path="/tactical/battle/:matchId" element={<TacticalBattlePage />} />
+              
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

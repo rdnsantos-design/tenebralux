@@ -233,6 +233,48 @@ export type Database = {
         }
         Relationships: []
       }
+      characters: {
+        Row: {
+          created_at: string | null
+          culture_id: string | null
+          data: Json
+          faction_id: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          share_code: string | null
+          theme: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          culture_id?: string | null
+          data: Json
+          faction_id?: string | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+          share_code?: string | null
+          theme?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          culture_id?: string | null
+          data?: Json
+          faction_id?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          share_code?: string | null
+          theme?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       field_commanders: {
         Row: {
           ac: number | null
@@ -1202,6 +1244,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
       }
       province_distances: {
         Row: {
@@ -2180,6 +2249,7 @@ export type Database = {
       }
       finalize_scenario: { Args: { p_room_id: string }; Returns: Json }
       generate_room_code: { Args: never; Returns: string }
+      generate_share_code: { Args: never; Returns: string }
       generate_tactical_join_code: { Args: never; Returns: string }
       get_match_state:
         | { Args: { p_room_id: string }; Returns: Json }

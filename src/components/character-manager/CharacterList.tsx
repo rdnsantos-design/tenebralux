@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { SavedCharacter } from '@/types/character-storage';
-import { useCharacterStorage } from '@/hooks/useCharacterStorage';
+import { useCharacterStorageHybrid } from '@/hooks/useCharacterStorageHybrid';
 import { CharacterCard } from './CharacterCard';
 import { CharacterFilters } from './CharacterFilters';
 import { ImportExportDialog } from './ImportExportDialog';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
+import { UserMenu } from '@/components/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -32,14 +33,22 @@ export function CharacterList({
     filteredCharacters,
     isLoading,
     error,
-    stats,
     filters,
     setFilters,
     remove,
     duplicate,
     exportAll,
     importFromJson,
-  } = useCharacterStorage();
+    storageMode,
+    characters,
+  } = useCharacterStorageHybrid();
+
+  // Stats calculados localmente
+  const stats = {
+    count: characters.length,
+    maxCount: 50,
+    storageUsed: storageMode === 'cloud' ? 'Cloud' : 'Local',
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<SavedCharacter | null>(null);
@@ -114,7 +123,8 @@ export function CharacterList({
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-4">
+          <UserMenu />
           <Button variant="outline" onClick={() => setShowImportExport(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Importar
