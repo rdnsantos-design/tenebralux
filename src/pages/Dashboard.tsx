@@ -107,45 +107,23 @@ const Dashboard = () => {
         {/* Módulos Compartilhados */}
         <div>
           <h2 className="text-2xl font-semibold mb-6 text-center">Módulos Compartilhados</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
             {/* Criador de Personagem */}
             <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
               <CardHeader className="text-center pb-4">
                 <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center">
                   <UserPlus className="w-8 h-8 text-primary" />
                 </div>
-                <CardTitle className="text-lg">Criador de Personagem</CardTitle>
+                <CardTitle className="text-lg">Personagens</CardTitle>
               </CardHeader>
               <CardContent className="text-center space-y-3">
                 <p className="text-muted-foreground text-sm">
-                  Crie personagens completos para todos os modos de jogo
+                  Crie e gerencie personagens completos
                 </p>
                 <Button 
                   size="sm" 
                   className="w-full"
                   onClick={() => navigate('/character-builder')}
-                >
-                  Criar
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Personagens e Regentes */}
-            <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center">
-                  <Crown className="w-8 h-8 text-primary" />
-                </div>
-                <CardTitle className="text-lg">Personagens</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center space-y-3">
-                <p className="text-muted-foreground text-sm">
-                  Heróis, regentes e personagens com sistema de Poder
-                </p>
-                <Button 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => navigate('/characters')}
                 >
                   Acessar
                 </Button>
