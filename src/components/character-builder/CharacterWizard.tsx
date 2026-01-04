@@ -8,7 +8,7 @@ import { StepDerived } from './steps/StepDerived';
 import { StepBlessings } from './steps/StepBlessings';
 import { StepVirtues } from './steps/StepVirtues';
 import { StepEquipment } from './steps/StepEquipment';
-import { StepPlaceholder } from './steps/StepPlaceholder';
+import { StepSummary } from './steps/StepSummary';
 
 export function CharacterWizard() {
   const { currentStep } = useCharacterBuilder();
@@ -30,10 +30,9 @@ export function CharacterWizard() {
       case 7:
         return <StepEquipment />;
       case 8:
-        // return <StepSummary />;
-        return <StepPlaceholder />;
+        return <StepSummary />;
       default:
-        return <StepPlaceholder />;
+        return <StepSummary />;
     }
   };
 
