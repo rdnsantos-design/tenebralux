@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Map, Route, Crown, Hexagon, Layers, Gamepad2 } from "lucide-react";
+import { Users, Map, Route, Crown, Hexagon, Layers, Gamepad2, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/themes";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -107,7 +107,29 @@ const Dashboard = () => {
         {/* Módulos Compartilhados */}
         <div>
           <h2 className="text-2xl font-semibold mb-6 text-center">Módulos Compartilhados</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
+            {/* Criador de Personagem */}
+            <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center">
+                  <UserPlus className="w-8 h-8 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Criador de Personagem</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-3">
+                <p className="text-muted-foreground text-sm">
+                  Crie personagens completos para todos os modos de jogo
+                </p>
+                <Button 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => navigate('/character-builder')}
+                >
+                  Criar
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Personagens e Regentes */}
             <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
               <CardHeader className="text-center pb-4">
