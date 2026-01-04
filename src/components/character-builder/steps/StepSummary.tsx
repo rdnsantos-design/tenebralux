@@ -426,7 +426,7 @@ interface StatBadgeProps {
 }
 
 function StatBadge({ label, value, color, icon: Icon }: StatBadgeProps) {
-  const colorClasses = {
+  const colorClasses: Record<string, string> = {
     red: 'bg-red-500/10 text-red-500 border-red-500/30',
     blue: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
     amber: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
