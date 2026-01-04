@@ -99,3 +99,7 @@ export const ATTRIBUTE_IDS = ATTRIBUTES.map(a => a.id);
 export function getAttributesByVirtue(virtueId: string): AttributeDefinition[] {
   return ATTRIBUTES.filter(a => a.virtueId === virtueId);
 }
+
+export function getAttributeById(id: string): AttributeDefinition | undefined {
+  return ATTRIBUTES.find(a => a.id === id);
+}
