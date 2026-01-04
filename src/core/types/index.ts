@@ -1,10 +1,20 @@
-// Base
+// Base types
 export * from './base';
 
-// Entidades principais
+// Character system
 export * from './character';
-export * from './unit';
+
+// Commander system  
 export * from './commander';
-export * from './army';
+
+// Card system
 export * from './card';
+
+// Domain system
 export * from './domain';
+
+// Army system
+export * from './army';
+
+// Unit system
+export * from './unit';

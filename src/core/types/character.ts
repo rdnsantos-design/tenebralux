@@ -3,10 +3,12 @@ import {
   CharacterAttributes, 
   CharacterVirtues,
   DerivedStats,
+  RegencyStats,
   CommandStats,
   DomainStats,
   ExperienceLevel 
 } from './base';
+import { ThemeId } from '@/themes/types';
 
 // === PERÍCIA ===
 export interface Skill {
@@ -22,6 +24,7 @@ export interface Blessing {
   name: string;
   description: string;
   category: string;
+  benefit: string;
   selectedChallenge?: Challenge;
 }
 
@@ -47,13 +50,13 @@ export interface Character extends BaseEntity {
   faction?: string;
   culture?: string;
   
-  // Atributos base
+  // Atributos base (8)
   attributes: CharacterAttributes;
   
   // Perícias (mapa de skill_id -> level)
   skills: Record<string, number>;
   
-  // Virtudes
+  // Virtudes (4)
   virtues: CharacterVirtues;
   
   // Bênçãos e Desafios
@@ -62,18 +65,21 @@ export interface Character extends BaseEntity {
   // Stats derivados (calculados)
   derivedStats?: DerivedStats;
   
+  // Stats de regência (calculados)
+  regencyStats?: RegencyStats;
+  
   // Equipamento
   equipment: Equipment[];
   
   // Experiência geral
   experiencePoints?: number;
   
-  // === PAPÉIS EM OUTROS MÓDULOS ===
+  // === COMPATIBILIDADE COM MÓDULOS EXISTENTES ===
   
-  // Como Comandante (Batalha/Campanha)
+  // Para Batalha/Campanha (derivado de regencyStats)
   commandStats?: CommandStats;
   
-  // Como Regente (Domínio)
+  // Para Domínio
   domainStats?: DomainStats;
   
   // IDs de onde está sendo usado
@@ -82,9 +88,15 @@ export interface Character extends BaseEntity {
 }
 
 // === FUNÇÕES DE CÁLCULO ===
+
+/**
+ * Calcula os stats derivados do personagem
+ * Fórmulas atualizadas conforme planilha do RPG
+ */
 export function calculateDerivedStats(
   attributes: CharacterAttributes,
-  skills: Record<string, number>
+  skills: Record<string, number>,
+  armorBonus: number = 0
 ): DerivedStats {
   const getSkill = (id: string) => skills[id] || 0;
   
@@ -92,30 +104,106 @@ export function calculateDerivedStats(
     // Combate Físico
     vitalidade: attributes.corpo * 2 + getSkill('resistencia'),
     evasao: attributes.reflexos * 2 + getSkill('instinto'),
-    guarda: attributes.reflexos * 2 + getSkill('esquiva'), // + armadura depois
+    guarda: attributes.reflexos * 2 + getSkill('esquiva') + armorBonus,
     reacao: attributes.intuicao + attributes.reflexos + getSkill('prontidao'),
     movimento: attributes.corpo * 2 + getSkill('atletismo'),
     
     // Combate Social
     vontade: attributes.raciocinio * 2 + getSkill('resiliencia'),
-    conviccao: attributes.determinacao * 2 + getSkill('logica'),
+    conviccao: getSkill('logica') + attributes.determinacao,
     influencia: attributes.carisma,
     
     // Recursos
-    tensaoMaxima: attributes.determinacao * 2 + getSkill('autocontrole'),
-    fortitude: attributes.corpo + attributes.determinacao,
+    tensao: attributes.raciocinio + attributes.determinacao,
+    fortitude: getSkill('autocontrole'),
   };
 }
 
-export function calculateCommandStats(
+/**
+ * Calcula os stats de regência do personagem
+ * Usado para Batalha, Campanha e Domínio
+ */
+export function calculateRegencyStats(
   attributes: CharacterAttributes,
-  skills: Record<string, number>
-): CommandStats {
+  skills: Record<string, number>,
+  theme: ThemeId
+): RegencyStats {
   const getSkill = (id: string) => skills[id] || 0;
   
   return {
-    strategy: Math.min(6, Math.floor((attributes.raciocinio + getSkill('estrategia')) / 2)),
-    command: Math.min(6, Math.floor((attributes.carisma + getSkill('lideranca')) / 2)),
-    guard: Math.min(6, Math.floor((attributes.corpo + getSkill('resistencia')) / 2)),
+    comando: attributes.carisma + getSkill('pesquisa'),
+    estrategia: attributes.raciocinio + getSkill('militarismo'),
+    administracao: attributes.raciocinio + getSkill('economia'),
+    politica: attributes.raciocinio + getSkill('diplomacia'),
+    tecnologia: theme === 'akashic' 
+      ? attributes.conhecimento + getSkill('engenharia') 
+      : 0,
+    geomancia: theme === 'tenebralux' 
+      ? attributes.conhecimento + getSkill('computacao')
+      : 0,
+  };
+}
+
+/**
+ * Converte RegencyStats para CommandStats (compatibilidade)
+ * Usado pelo sistema tático existente
+ */
+export function regencyToCommandStats(
+  regency: RegencyStats,
+  derived: DerivedStats
+): CommandStats {
+  return {
+    strategy: Math.min(6, regency.estrategia),
+    command: Math.min(6, regency.comando),
+    guard: Math.min(6, Math.floor(derived.guarda / 3)),
+  };
+}
+
+/**
+ * Calcula o custo em pontos de poder do personagem
+ * Para uso em modos táticos com limite de pontos
+ */
+export function calculateCharacterPowerCost(
+  regency: RegencyStats,
+  escolta: number = 0
+): number {
+  const regencyTotal = 
+    regency.comando +
+    regency.estrategia +
+    regency.administracao +
+    regency.politica +
+    Math.max(regency.tecnologia, regency.geomancia);
+  
+  // Regência custa 2 pontos por nível, Escolta custa 1 ponto por nível
+  return (regencyTotal * 2) + escolta;
+}
+
+/**
+ * Cria um personagem com valores iniciais padrão
+ */
+export function createDefaultCharacter(theme: ThemeId): Partial<Character> {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    theme,
+    attributes: {
+      conhecimento: 1,
+      raciocinio: 1,
+      corpo: 1,
+      reflexos: 1,
+      determinacao: 1,
+      coordenacao: 1,
+      carisma: 1,
+      intuicao: 1,
+    },
+    skills: {},
+    virtues: {
+      sabedoria: 0,
+      coragem: 0,
+      perseveranca: 0,
+      harmonia: 0,
+    },
+    blessings: [],
+    equipment: [],
   };
 }
