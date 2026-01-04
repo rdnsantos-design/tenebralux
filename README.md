@@ -1,4 +1,11 @@
-# Welcome to your Lovable project
+# 🎮 Tenebra Lux - Character Builder
+
+[![CI](https://github.com/SEU_USUARIO/SEU_REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/SEU_USUARIO/SEU_REPO/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.2-61dafb.svg)](https://reactjs.org/)
+[![Vitest](https://img.shields.io/badge/Vitest-1.0-green.svg)](https://vitest.dev/)
+
+> Sistema de criação de personagens para o RPG Tenebra Lux / Akashic Odyssey
 
 ## Project info
 

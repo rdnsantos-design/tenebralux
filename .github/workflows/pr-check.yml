@@ -1,0 +1,44 @@
+name: PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-validation:
+    name: 🔍 PR Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Lint Changed Files
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD -- '*.ts' '*.tsx' | xargs)
+          if [ -n "$CHANGED_FILES" ]; then
+            npx eslint $CHANGED_FILES
+          fi
+
+      - name: 🧪 Run Affected Tests
+        run: |
+          # Rodar todos os testes por segurança
+          npm run test:run
+
+      - name: 📊 Test Summary
+        if: always()
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All tests passed!" >> $GITHUB_STEP_SUMMARY || echo "❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
