@@ -5,3 +5,4 @@ export * from './regency';
 export * from './derivedStats';
 export * from './factions';
 export * from './cultures';
+export * from './blessings';
