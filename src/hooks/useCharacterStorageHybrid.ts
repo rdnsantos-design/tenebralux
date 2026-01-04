@@ -46,7 +46,7 @@ interface UseCharacterStorageHybridReturn {
 }
 
 export function useCharacterStorageHybrid(): UseCharacterStorageHybridReturn {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { isOnline, wasOffline, resetWasOffline } = useOnlineStatus();
   
   const [characters, setCharacters] = useState<SavedCharacter[]>([]);
@@ -70,6 +70,9 @@ export function useCharacterStorageHybrid(): UseCharacterStorageHybridReturn {
   // ═══════════════════════════════════════════════════════════════
 
   const loadCharacters = useCallback(async () => {
+    // Aguardar o auth resolver antes de carregar
+    if (isAuthLoading) return;
+
     setIsLoading(true);
     setError(null);
 
@@ -89,12 +92,14 @@ export function useCharacterStorageHybrid(): UseCharacterStorageHybridReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [storageMode]);
+  }, [storageMode, isAuthLoading]);
 
   // Carregar na montagem e quando auth muda
   useEffect(() => {
-    loadCharacters();
-  }, [loadCharacters]);
+    if (!isAuthLoading) {
+      loadCharacters();
+    }
+  }, [loadCharacters, isAuthLoading]);
 
   // ═══════════════════════════════════════════════════════════════
   // SYNC AUTOMÁTICO AO RECONECTAR
