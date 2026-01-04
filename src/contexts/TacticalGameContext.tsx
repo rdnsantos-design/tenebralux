@@ -262,6 +262,13 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     setSelectedUnitId(null);
   }, []);
   
+  // Função auxiliar para verificar se um jogador tem unidades que podem mover
+  const playerHasMovableUnits = useCallback((state: TacticalGameState, player: PlayerId): boolean => {
+    return Object.values(state.units).some(
+      unit => unit.owner === player && !unit.hasActedThisTurn && !unit.isRouting
+    );
+  }, []);
+
   // Ações de jogo
   const moveUnit = useCallback(async (unitId: string, to: HexCoord): Promise<boolean> => {
     if (!gameState || !myPlayerId || !isMyTurn) return false;
@@ -298,10 +305,17 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
       newHexes[toKey] = { ...newHexes[toKey], unitId };
     }
     
-    // Lógica de alternância de turno - cada jogador move 1 unidade por vez
-    // A vantagem de iniciativa só dá "1 movimento extra" no início da fase
+    // Lógica de alternância de turno
     let newActivePlayer = gameState.activePlayer;
     let newUnitsMovedThisPhase = gameState.unitsMovedThisPhase + 1;
+    
+    // Criar estado temporário para verificar unidades restantes
+    const tempState = { ...gameState, units: newUnits };
+    
+    // Verificar se o jogador atual ainda tem unidades para mover
+    const currentPlayerHasMore = playerHasMovableUnits(tempState, gameState.activePlayer);
+    const otherPlayer = gameState.activePlayer === 'player1' ? 'player2' : 'player1';
+    const otherPlayerHasMore = playerHasMovableUnits(tempState, otherPlayer);
     
     // Só aplicar vantagem de iniciativa se houver um vencedor definido
     const initiativeWinner = gameState.initiativeWinner;
@@ -309,10 +323,15 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     if (initiativeWinner && gameState.activePlayer === initiativeWinner && gameState.unitsMovedThisPhase < gameState.initiativeAdvantage) {
       // Vencedor da iniciativa continua (está usando sua vantagem)
       // Não alterna
-    } else {
-      // Alterna para o outro jogador
-      newActivePlayer = gameState.activePlayer === 'player1' ? 'player2' : 'player1';
+    } else if (!currentPlayerHasMore && otherPlayerHasMore) {
+      // Jogador atual não tem mais unidades, passa para o outro
+      newActivePlayer = otherPlayer;
+    } else if (currentPlayerHasMore && otherPlayerHasMore) {
+      // Ambos têm unidades, alterna normalmente
+      newActivePlayer = otherPlayer;
     }
+    // Se só o jogador atual tem unidades, ele continua
+    // Se nenhum tem unidades, mantém o jogador atual (fase deve acabar)
     
     const newState: TacticalGameState = {
       ...gameState,
@@ -344,7 +363,7 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     }
     
     return success;
-  }, [gameState, myPlayerId, isMyTurn, matchId, playerId, saveGameState, logAction]);
+  }, [gameState, myPlayerId, isMyTurn, matchId, playerId, saveGameState, logAction, playerHasMovableUnits]);
   
   const attackUnit = useCallback(async (attackerId: string, targetId: string): Promise<boolean> => {
     if (!gameState || !myPlayerId || !isMyTurn) return false;
