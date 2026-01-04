@@ -1,5 +1,6 @@
 import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
+import { screen, within, waitFor } from '@testing-library/dom';
 import { ThemeProvider } from '@/themes/ThemeContext';
 import { CharacterBuilderProvider } from '@/contexts/CharacterBuilderContext';
 import { BrowserRouter } from 'react-router-dom';
@@ -76,9 +77,16 @@ const renderWithCharacterBuilder = (
   options?: Omit<RenderOptions, 'wrapper'>
 ) => render(ui, { wrapper: CharacterBuilderWrapper, ...options });
 
-export * from '@testing-library/react';
+// Re-export testing library utilities
+export { render } from '@testing-library/react';
+export type { RenderOptions } from '@testing-library/react';
+export { screen, within, waitFor } from '@testing-library/dom';
+export { renderHook, act } from '@testing-library/react';
 export { 
-  customRender as render, 
+  customRender, 
   renderWithTheme, 
-  renderWithCharacterBuilder 
+  renderWithCharacterBuilder,
+  AllProviders,
+  ThemeWrapper,
+  CharacterBuilderWrapper
 };

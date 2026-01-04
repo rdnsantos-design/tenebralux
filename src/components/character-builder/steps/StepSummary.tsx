@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useCharacterBuilder } from '@/contexts/CharacterBuilderContext';
 import { useTheme } from '@/themes';
+import { useCharacterPDF } from '@/hooks/useCharacterPDF';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +40,9 @@ import {
   Edit,
   Download,
   Save,
-  Crown
+  Crown,
+  Loader2,
+  FileText
 } from 'lucide-react';
 
 // Ícones das virtudes
@@ -65,6 +68,7 @@ const ATTRIBUTE_ICONS: Record<string, React.ElementType> = {
 export function StepSummary() {
   const { draft, goToStep, finalizeCharacter, canFinalize } = useCharacterBuilder();
   const { activeTheme } = useTheme();
+  const { downloadPDF, previewPDF, isGenerating, error: pdfError } = useCharacterPDF();
 
   // Dados processados
   const faction = draft.factionId ? getFactionById(draft.factionId) : null;
@@ -127,9 +131,16 @@ export function StepSummary() {
     }
   };
 
-  const handleExportPDF = () => {
-    // Placeholder para exportação PDF
-    alert('Exportação de PDF será implementada em breve!');
+  const handleExportPDF = async () => {
+    try {
+      await downloadPDF(draft, activeTheme);
+    } catch (err) {
+      console.error('Erro ao exportar PDF:', err);
+    }
+  };
+
+  const handlePreviewPDF = () => {
+    previewPDF(draft, activeTheme);
   };
 
   return (
@@ -356,6 +367,13 @@ export function StepSummary() {
         )}
       </SummarySection>
 
+      {/* PDF Error Display */}
+      {pdfError && (
+        <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm border border-destructive/30">
+          {pdfError}
+        </div>
+      )}
+
       {/* Ações */}
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30">
         <CardContent className="py-6">
@@ -363,11 +381,31 @@ export function StepSummary() {
             <Button 
               variant="outline" 
               size="lg"
+              onClick={handlePreviewPDF}
+              className="gap-2"
+              disabled={isGenerating || !draft.name}
+            >
+              <FileText className="w-4 h-4" />
+              Visualizar PDF
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg"
               onClick={handleExportPDF}
               className="gap-2"
+              disabled={isGenerating || !draft.name}
             >
-              <Download className="w-4 h-4" />
-              Exportar PDF
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Gerando...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Baixar PDF
+                </>
+              )}
             </Button>
             <Button 
               size="lg"
