@@ -32,3 +32,8 @@ export * from './useMassCombatData';
 
 // Hooks de batalha tática
 export * from './useTacticalBattleInit';
+
+// Hooks de personagens
+export * from './useCharacterStorage';
+export * from './useCharacterStorageHybrid';
+export * from './useTacticalIntegration';
