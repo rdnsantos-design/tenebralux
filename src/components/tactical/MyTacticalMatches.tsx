@@ -5,12 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Clock, Play, Trophy, X, Eye } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { ArrowLeft, Clock, Play, Trophy, X, Eye, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlayerId } from '@/hooks/usePlayerId';
 import { TacticalMatch } from '@/hooks/useTacticalMatch';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 export function MyTacticalMatches() {
   const navigate = useNavigate();
@@ -18,6 +20,7 @@ export function MyTacticalMatches() {
   const [matches, setMatches] = useState<TacticalMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadMatches();
@@ -36,6 +39,28 @@ export function MyTacticalMatches() {
       setMatches(data as TacticalMatch[]);
     }
     setLoading(false);
+  };
+
+  const deleteMatch = async (matchId: string) => {
+    setDeletingId(matchId);
+    
+    // Delete related data first
+    await supabase.from('tactical_game_states').delete().eq('match_id', matchId);
+    await supabase.from('tactical_game_actions').delete().eq('match_id', matchId);
+    
+    // Delete the match
+    const { error } = await supabase
+      .from('tactical_matches')
+      .delete()
+      .eq('id', matchId);
+
+    if (error) {
+      toast.error('Erro ao excluir partida');
+    } else {
+      toast.success('Partida excluída');
+      setMatches(prev => prev.filter(m => m.id !== matchId));
+    }
+    setDeletingId(null);
   };
 
   const filteredMatches = matches.filter(match => {
@@ -161,6 +186,37 @@ export function MyTacticalMatches() {
                               Ver Lobby
                             </Button>
                           )}
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={(e) => e.stopPropagation()}
+                                disabled={deletingId === match.id}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir partida?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação não pode ser desfeita. A partida será permanentemente excluída.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deleteMatch(match.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                     </CardContent>
