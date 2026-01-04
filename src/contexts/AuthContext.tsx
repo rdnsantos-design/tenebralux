@@ -2,6 +2,13 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+// ═══════════════════════════════════════════════════════════════
+// NOTA DE SEGURANÇA:
+// Habilite "Leaked Password Protection" no painel do Supabase:
+// Authentication → Settings → Security → Enable Leaked Password Protection
+// Isso impede o uso de senhas que foram vazadas em violações de dados.
+// ═══════════════════════════════════════════════════════════════
+
 interface Profile {
   id: string;
   username: string | null;

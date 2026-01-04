@@ -5,6 +5,7 @@ import { CharacterCard } from './CharacterCard';
 import { CharacterFilters } from './CharacterFilters';
 import { ImportExportDialog } from './ImportExportDialog';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
+import { ConnectionStatus } from './ConnectionStatus';
 import { UserMenu } from '@/components/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ import {
   Search,
   Loader2,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -32,6 +34,7 @@ export function CharacterList({
   const {
     filteredCharacters,
     isLoading,
+    isSyncing,
     error,
     filters,
     setFilters,
@@ -41,6 +44,7 @@ export function CharacterList({
     importFromJson,
     storageMode,
     characters,
+    syncNow,
   } = useCharacterStorageHybrid();
 
   // Stats calculados localmente
@@ -112,30 +116,61 @@ export function CharacterList({
     );
   }
 
+  // Sync manual
+  const handleSyncNow = async () => {
+    try {
+      const result = await syncNow();
+      if (result.synced > 0) {
+        toast.success(`${result.synced} personagem(ns) sincronizado(s)`);
+      } else {
+        toast.success('Tudo sincronizado!');
+      }
+      if (result.errors.length > 0) {
+        result.errors.forEach(e => toast.error(e));
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao sincronizar');
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Meus Personagens</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">Meus Personagens</h1>
+            <ConnectionStatus />
+          </div>
           <p className="text-muted-foreground">
             {stats.count} de {stats.maxCount} personagens ({stats.storageUsed})
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
           <UserMenu />
+          {storageMode === 'cloud' && (
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handleSyncNow}
+              disabled={isSyncing}
+              title="Sincronizar agora"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setShowImportExport(true)}>
             <Upload className="w-4 h-4 mr-2" />
-            Importar
+            <span className="hidden sm:inline">Importar</span>
           </Button>
           <Button variant="outline" onClick={exportAll} disabled={stats.count === 0}>
             <Download className="w-4 h-4 mr-2" />
-            Exportar Todos
+            <span className="hidden sm:inline">Exportar</span>
           </Button>
           <Button onClick={onCreateNew}>
             <Plus className="w-4 h-4 mr-2" />
-            Novo Personagem
+            <span className="hidden sm:inline">Novo Personagem</span>
           </Button>
         </div>
       </div>

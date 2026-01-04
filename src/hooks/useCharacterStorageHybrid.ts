@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { SavedCharacter, CharacterListFilters } from '@/types/character-storage';
 import { CharacterDraft } from '@/types/character-builder';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOnlineStatus } from './useOnlineStatus';
+import { toast } from 'sonner';
 
 // Serviços locais
 import * as localService from '@/services/storage/characterStorage';
@@ -19,6 +21,7 @@ interface UseCharacterStorageHybridReturn {
   isSyncing: boolean;
   error: string | null;
   storageMode: StorageMode;
+  isOnline: boolean;
 
   // Filtros
   filters: CharacterListFilters;
@@ -44,6 +47,7 @@ interface UseCharacterStorageHybridReturn {
 
 export function useCharacterStorageHybrid(): UseCharacterStorageHybridReturn {
   const { user, isAuthenticated } = useAuth();
+  const { isOnline, wasOffline, resetWasOffline } = useOnlineStatus();
   
   const [characters, setCharacters] = useState<SavedCharacter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +58,9 @@ export function useCharacterStorageHybrid(): UseCharacterStorageHybridReturn {
     sortBy: 'updatedAt',
     sortOrder: 'desc',
   });
+
+  // Ref para evitar sync duplicado
+  const syncInProgressRef = useRef(false);
 
   // Determinar modo de storage
   const storageMode: StorageMode = isAuthenticated ? 'cloud' : 'local';
@@ -88,6 +95,76 @@ export function useCharacterStorageHybrid(): UseCharacterStorageHybridReturn {
   useEffect(() => {
     loadCharacters();
   }, [loadCharacters]);
+
+  // ═══════════════════════════════════════════════════════════════
+  // SYNC AUTOMÁTICO AO RECONECTAR
+  // ═══════════════════════════════════════════════════════════════
+
+  const syncAfterReconnect = useCallback(async () => {
+    if (syncInProgressRef.current) return;
+    if (!user) return;
+
+    syncInProgressRef.current = true;
+    setIsSyncing(true);
+
+    try {
+      toast.info('Reconectado! Sincronizando dados...');
+
+      // Pegar personagens locais e da cloud
+      const localChars = localService.getAllCharacters();
+      const cloudChars = await cloudService.fetchAllCharacters();
+
+      const localIds = new Set(localChars.map(c => c.id));
+      const cloudIds = new Set(cloudChars.map(c => c.id));
+
+      let synced = 0;
+
+      // Enviar locais novos/modificados para cloud
+      for (const local of localChars) {
+        const cloudVersion = cloudChars.find(c => c.id === local.id);
+
+        if (!cloudVersion) {
+          // Novo local, enviar para cloud
+          await cloudService.createCharacter(local.data, user.id);
+          synced++;
+        } else if (new Date(local.updatedAt) > new Date(cloudVersion.updatedAt)) {
+          // Local mais recente, atualizar cloud
+          await cloudService.updateCharacter(local.id, local.data);
+          synced++;
+        }
+      }
+
+      // Baixar novos da cloud para local
+      for (const cloud of cloudChars) {
+        if (!localIds.has(cloud.id)) {
+          localService.saveCharacter(cloud.data, cloud.id);
+          synced++;
+        }
+      }
+
+      if (synced > 0) {
+        toast.success(`${synced} personagem(ns) sincronizado(s)`);
+        await loadCharacters();
+      } else {
+        toast.success('Tudo sincronizado!');
+      }
+
+      resetWasOffline();
+    } catch (err) {
+      console.error('Erro no sync automático:', err);
+      toast.error('Erro ao sincronizar. Tente manualmente.');
+    } finally {
+      setIsSyncing(false);
+      syncInProgressRef.current = false;
+    }
+  }, [user, loadCharacters, resetWasOffline]);
+
+  // Disparar sync quando reconectar
+  useEffect(() => {
+    if (isOnline && wasOffline && user) {
+      syncAfterReconnect();
+    }
+  }, [isOnline, wasOffline, user, syncAfterReconnect]);
 
   // ═══════════════════════════════════════════════════════════════
   // CRUD
@@ -179,7 +256,7 @@ export function useCharacterStorageHybrid(): UseCharacterStorageHybridReturn {
   }, []);
 
   // ═══════════════════════════════════════════════════════════════
-  // SINCRONIZAÇÃO
+  // SINCRONIZAÇÃO MANUAL
   // ═══════════════════════════════════════════════════════════════
 
   const syncNow = useCallback(async () => {
@@ -237,6 +314,7 @@ export function useCharacterStorageHybrid(): UseCharacterStorageHybridReturn {
     isSyncing,
     error,
     storageMode,
+    isOnline,
     filters,
     setFilters,
     loadCharacters,
