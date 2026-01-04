@@ -65,31 +65,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Listener de autenticação
   useEffect(() => {
-    // Verificar sessão existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Escutar mudanças de autenticação (listener primeiro para não perder eventos)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Atualizações síncronas apenas (evita deadlock)
       setSession(session);
       setUser(session?.user ?? null);
+
       if (session?.user) {
-        loadProfile(session.user.id);
+        // Deferir chamadas ao backend
+        setTimeout(() => {
+          loadProfile(session.user.id).catch(() => {
+            // Silenciar aqui; erros de profile não devem bloquear a app
+          });
+        }, 0);
+      } else {
+        setProfile(null);
       }
+
       setIsLoading(false);
     });
 
-    // Escutar mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    // Verificar sessão existente (depois do listener)
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          await loadProfile(session.user.id);
-        } else {
-          setProfile(null);
+          setTimeout(() => {
+            loadProfile(session.user.id).catch(() => {
+              // Silenciar aqui; erros de profile não devem bloquear a app
+            });
+          }, 0);
         }
 
         setIsLoading(false);
-      }
-    );
+      })
+      .catch(() => {
+        setIsLoading(false);
+      });
 
     return () => subscription.unsubscribe();
   }, [loadProfile]);
