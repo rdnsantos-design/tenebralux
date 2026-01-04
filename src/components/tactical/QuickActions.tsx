@@ -7,7 +7,8 @@ import {
   Swords, 
   Eye,
   EyeOff,
-  Grid3X3
+  Grid3X3,
+  SkipForward
 } from 'lucide-react';
 
 interface QuickActionsProps {
@@ -23,16 +24,33 @@ export function QuickActions({
   showFacing,
   onToggleFacing
 }: QuickActionsProps) {
-  const { gameState, myPlayerId, isMyTurn, selectedUnitId, validMoves, validTargets } = useTacticalGame();
+  const { gameState, myPlayerId, isMyTurn, selectedUnitId, validMoves, validTargets, passTurn } = useTacticalGame();
   
   if (!gameState) return null;
   
   const selectedUnit = selectedUnitId ? gameState.units[selectedUnitId] : null;
   const isMyUnit = selectedUnit?.owner === myPlayerId;
   
+  const handlePassTurn = async () => {
+    await passTurn();
+  };
+  
   return (
     <div className="bg-slate-800 rounded-lg p-2 space-y-2">
       <h4 className="text-xs text-slate-400">Ações Rápidas</h4>
+      
+      {/* Botão de passar turno - sempre visível quando é meu turno */}
+      {isMyTurn && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full text-xs h-8 border-amber-500 text-amber-400 hover:bg-amber-500/20"
+          onClick={handlePassTurn}
+        >
+          <SkipForward className="h-3 w-3 mr-1" />
+          Passar a Vez
+        </Button>
+      )}
       
       {/* Info da seleção */}
       {selectedUnit && (
