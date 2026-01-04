@@ -14,13 +14,13 @@ function CharacterBuilderContent() {
     setView('builder');
   };
 
-  const handleEdit = (id: string) => {
-    loadCharacter(id);
+  const handleEdit = async (id: string) => {
+    await loadCharacter(id);
     setView('builder');
   };
 
-  const handleContinue = (id: string) => {
-    loadCharacter(id);
+  const handleContinue = async (id: string) => {
+    await loadCharacter(id);
     setView('builder');
   };
 
