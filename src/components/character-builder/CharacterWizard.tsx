@@ -1,10 +1,10 @@
 import React from 'react';
 import { useCharacterBuilder } from '@/contexts/CharacterBuilderContext';
 import { CharacterBuilderLayout } from './CharacterBuilderLayout';
+import { StepConcept } from './steps/StepConcept';
 import { StepPlaceholder } from './steps/StepPlaceholder';
 
 // Imports futuros dos steps
-// import { StepConcept } from './steps/StepConcept';
 // import { StepAttributes } from './steps/StepAttributes';
 // etc...
 
@@ -14,8 +14,7 @@ export function CharacterWizard() {
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        // return <StepConcept />;
-        return <StepPlaceholder />;
+        return <StepConcept />;
       case 2:
         // return <StepAttributes />;
         return <StepPlaceholder />;
