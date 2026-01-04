@@ -42,6 +42,7 @@ interface TacticalGameContextType {
   attackUnit: (attackerId: string, targetId: string) => Promise<boolean>;
   setPosture: (unitId: string, posture: Posture) => Promise<boolean>;
   endPhase: () => Promise<boolean>;
+  passTurn: () => Promise<boolean>;
   rollInitiative: () => Promise<boolean>;
   rallyUnit: (commanderId: string, unitId: string) => Promise<boolean>;
   useTacticalCard: (unitId: string, cardId: string) => Promise<boolean>;
@@ -974,6 +975,40 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     return success;
   }, [gameState, isMyTurn, matchId, playerId, saveGameState, logAction, shouldSkipPhase, applyReorganization, processRoutingMovement, checkVictoryCondition]);
   
+  // Passar a vez para o oponente (sem fazer ação)
+  const passTurn = useCallback(async (): Promise<boolean> => {
+    if (!gameState || !isMyTurn) return false;
+    
+    // Simplesmente alterna o jogador ativo
+    const newActivePlayer = gameState.activePlayer === 'player1' ? 'player2' : 'player1';
+    
+    const newState: TacticalGameState = {
+      ...gameState,
+      activePlayer: newActivePlayer,
+      battleLog: [
+        ...gameState.battleLog,
+        {
+          id: crypto.randomUUID(),
+          turn: gameState.turn,
+          phase: gameState.phase,
+          timestamp: Date.now(),
+          type: 'system',
+          message: `${myPlayerId === 'player1' ? gameState.player1Name : gameState.player2Name} passou a vez`,
+        }
+      ],
+    };
+    
+    const action: GameAction = { type: 'PASS_TURN' };
+    await logAction(matchId, playerId, action);
+    const success = await saveGameState(matchId, newState);
+    
+    if (success) {
+      setGameState(newState);
+      setSelectedUnitId(null);
+    }
+    return success;
+  }, [gameState, isMyTurn, myPlayerId, matchId, playerId, saveGameState, logAction]);
+  
   const rollInitiative = useCallback(async (): Promise<boolean> => {
     if (!gameState || gameState.phase !== 'initiative') return false;
     
@@ -1044,6 +1079,7 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     attackUnit,
     setPosture,
     endPhase,
+    passTurn,
     rollInitiative,
     rallyUnit,
     useTacticalCard,

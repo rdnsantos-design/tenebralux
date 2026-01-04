@@ -149,6 +149,7 @@ export type GameAction =
   | { type: 'USE_TACTICAL_CARD'; unitId: string; cardId: string }
   | { type: 'RALLY_UNIT'; commanderId: string; unitId: string }
   | { type: 'END_PHASE' }
+  | { type: 'PASS_TURN' }
   | { type: 'ROLL_INITIATIVE'; player1Roll: number; player2Roll: number }
   | { type: 'SURRENDER'; playerId: PlayerId };
 
