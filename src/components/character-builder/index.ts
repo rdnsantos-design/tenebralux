@@ -3,3 +3,4 @@ export * from './CharacterWizard';
 export * from './steps/StepPlaceholder';
 export * from './steps/StepConcept';
 export * from './steps/StepAttributes';
+export * from './steps/StepSkills';
