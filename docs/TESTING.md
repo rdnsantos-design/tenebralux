@@ -23,13 +23,17 @@ src/test/
 │   │   └── equipment.test.ts    # Armas, armaduras, itens
 │   ├── pdf/
 │   │   └── characterSheetPDF.test.ts  # Serviço PDF
-│   └── hooks/
-│       └── useCharacterPDF.test.ts    # Hook PDF
+│   ├── hooks/
+│   │   ├── useCharacterPDF.test.ts    # Hook PDF
+│   │   └── useCharacterStorage.test.ts # Hook de armazenamento
+│   └── services/
+│       └── characterStorage.test.ts   # Serviço de storage
 ├── integration/
 │   └── CharacterBuilderContext.test.tsx  # Contexto completo
 ├── components/
 │   ├── StepConcept.test.tsx     # Componente de conceito
-│   └── StepSummary.pdf.test.tsx # Integração PDF no resumo
+│   ├── StepSummary.pdf.test.tsx # Integração PDF no resumo
+│   └── CharacterManager.test.tsx # Componentes de gerenciamento
 └── e2e/
     └── character-builder-flow.test.tsx  # Fluxo completo
 ```
@@ -97,6 +101,30 @@ npx vitest --testPathPattern="pdf|PDF"
   - getPDFBlob: 3 testes
   - previewPDF: 2 testes
 
+### Unit Tests - Storage (~60 testes)
+- characterStorage.test.ts:
+  - getAllCharacters: 3 testes
+  - getCharacterById: 2 testes
+  - saveCharacter: 5 testes
+  - deleteCharacter: 3 testes
+  - duplicateCharacter: 2 testes
+  - filterCharacters: 10 testes
+  - exportCharacters: 2 testes
+  - exportSingleCharacter: 2 testes
+  - importCharacters: 6 testes
+  - getStorageStats: 3 testes
+- useCharacterStorage.test.ts:
+  - Initial State: 4 testes
+  - loadCharacters: 2 testes
+  - getCharacter: 2 testes
+  - save: 4 testes
+  - remove: 3 testes
+  - duplicate: 2 testes
+  - export: 2 testes
+  - importFromJson: 3 testes
+  - filters: 2 testes
+  - stats: 1 teste
+
 ### Integration Tests - Context (~20 testes)
 - Initial State: 5 testes
 - updateDraft: 5 testes
@@ -105,9 +133,14 @@ npx vitest --testPathPattern="pdf|PDF"
 - Calculations: 3 testes
 - Finalization: 2 testes
 
-### Component Tests (~15 testes)
+### Component Tests (~45 testes)
 - StepConcept: 3 testes
 - StepSummary.pdf: 8 testes
+- CharacterManager.test.tsx:
+  - CharacterCard: 10 testes
+  - CharacterFilters: 3 testes
+  - DeleteConfirmDialog: 4 testes
+  - ImportExportDialog: 8 testes
 
 ### E2E Tests (~5 testes - placeholders)
 - Full flow: 1 teste
@@ -115,7 +148,7 @@ npx vitest --testPathPattern="pdf|PDF"
 - Theme switching: 1 teste
 - Calculation integration: 3 testes
 
-## Total: ~145 testes
+## Total: ~210 testes
 
 ## Arquivos de Serviço PDF
 
