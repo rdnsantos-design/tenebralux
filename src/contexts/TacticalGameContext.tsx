@@ -303,16 +303,15 @@ export function TacticalGameProvider({ children, matchId, playerId }: TacticalGa
     let newActivePlayer = gameState.activePlayer;
     let newUnitsMovedThisPhase = gameState.unitsMovedThisPhase + 1;
     
-    // Se quem está jogando é o vencedor da iniciativa e ainda não usou a vantagem
-    const initiativeWinner = gameState.initiativeWinner || 'player1';
+    // Só aplicar vantagem de iniciativa se houver um vencedor definido
+    const initiativeWinner = gameState.initiativeWinner;
     
-    if (gameState.activePlayer === initiativeWinner && gameState.unitsMovedThisPhase < gameState.initiativeAdvantage) {
+    if (initiativeWinner && gameState.activePlayer === initiativeWinner && gameState.unitsMovedThisPhase < gameState.initiativeAdvantage) {
       // Vencedor da iniciativa continua (está usando sua vantagem)
       // Não alterna
     } else {
-      // Alterna para o outro jogador e reseta contador de movimentos da fase
+      // Alterna para o outro jogador
       newActivePlayer = gameState.activePlayer === 'player1' ? 'player2' : 'player1';
-      // Não resetamos o contador aqui - ele conta total de movimentos na fase
     }
     
     const newState: TacticalGameState = {
