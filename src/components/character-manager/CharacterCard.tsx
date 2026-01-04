@@ -1,6 +1,7 @@
 import React from 'react';
 import { SavedCharacter } from '@/types/character-storage';
 import { getFactionById } from '@/data/character/factions';
+import { BattleButton } from './BattleButton';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -110,11 +111,12 @@ export function CharacterCard({
         </p>
       </CardContent>
 
-      <CardFooter className="p-4 pt-0">
-        <Button onClick={onContinue} className="w-full">
+      <CardFooter className="p-4 pt-0 flex gap-2">
+        <Button onClick={onContinue} className="flex-1">
           <Play className="w-4 h-4 mr-2" />
           Continuar
         </Button>
+        <BattleButton character={character} size="icon" />
       </CardFooter>
     </Card>
   );
