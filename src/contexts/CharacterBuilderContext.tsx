@@ -169,6 +169,11 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
           });
         }
         break;
+        
+      case 7: // Equipamento
+        // Recomendado ter arma, mas não obrigatório
+        // Apenas valida se não excedeu o orçamento
+        break;
     }
 
     return { isValid: errors.length === 0, errors };
