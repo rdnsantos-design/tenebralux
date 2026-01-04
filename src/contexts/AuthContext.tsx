@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar profile
+  // Carregar profile (cria se não existir)
   const loadProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
@@ -42,6 +42,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!error && data) {
       setProfile(data as Profile);
+    } else if (error?.code === 'PGRST116') {
+      // Perfil não existe, criar um novo
+      const { data: newProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert({ id: userId })
+        .select()
+        .single();
+      
+      if (!insertError && newProfile) {
+        setProfile(newProfile as Profile);
+      }
     }
   }, []);
 
