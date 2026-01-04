@@ -25,17 +25,21 @@ src/test/
 │   │   └── characterSheetPDF.test.ts  # Serviço PDF
 │   ├── hooks/
 │   │   ├── useCharacterPDF.test.ts    # Hook PDF
-│   │   └── useCharacterStorage.test.ts # Hook de armazenamento
+│   │   ├── useCharacterStorage.test.ts # Hook de armazenamento
+│   │   └── useTacticalIntegration.test.ts # Hook de integração tática
 │   └── services/
-│       └── characterStorage.test.ts   # Serviço de storage
+│       ├── characterStorage.test.ts   # Serviço de storage
+│       └── characterConverter.test.ts # Conversão Character → Tático
 ├── integration/
 │   └── CharacterBuilderContext.test.tsx  # Contexto completo
 ├── components/
 │   ├── StepConcept.test.tsx     # Componente de conceito
 │   ├── StepSummary.pdf.test.tsx # Integração PDF no resumo
-│   └── CharacterManager.test.tsx # Componentes de gerenciamento
+│   ├── CharacterManager.test.tsx # Componentes de gerenciamento
+│   └── BattleButton.test.tsx    # Botão de batalha
 └── e2e/
-    └── character-builder-flow.test.tsx  # Fluxo completo
+    ├── character-builder-flow.test.tsx  # Fluxo completo
+    └── character-to-battle.test.tsx     # Fluxo Character → Batalha
 ```
 
 ## Executando os Testes
@@ -58,6 +62,12 @@ npx vitest src/test/integration
 
 # Executar apenas testes de PDF
 npx vitest --testPathPattern="pdf|PDF"
+
+# Executar apenas testes de integração tática
+npx vitest --testPathPattern="tactical|BattleButton|character-to-battle"
+
+# Coverage para integração tática
+npx vitest --coverage --testPathPattern="tactical"
 ```
 
 ## Cobertura Esperada
@@ -142,13 +152,37 @@ npx vitest --testPathPattern="pdf|PDF"
   - DeleteConfirmDialog: 4 testes
   - ImportExportDialog: 8 testes
 
-### E2E Tests (~5 testes - placeholders)
+### E2E Tests (~8 testes)
 - Full flow: 1 teste
 - Validation flow: 1 teste
 - Theme switching: 1 teste
 - Calculation integration: 3 testes
+- Character to Battle flow: 3 testes
 
-## Total: ~210 testes
+### Unit Tests - Tactical Integration (~45 testes)
+- characterConverter.test.ts:
+  - convertCharacterToUnit: 12 testes
+  - Unit Type Detection: 6 testes
+  - generateCombatCards: 10 testes
+  - convertTeamToTactical: 6 testes
+  - validateCharacterForBattle: 5 testes
+  - Card Effects: 4 testes
+  - Theme Support: 4 testes
+  - Equipment Processing: 3 testes
+- useTacticalIntegration.test.ts:
+  - Estado inicial: 3 testes
+  - prepareForBattle: 6 testes
+  - prepareTeam: 3 testes
+  - validateCharacter: 3 testes
+  - goToBattle: 2 testes
+
+### Component Tests - BattleButton (~20 testes)
+- Renderização: 4 testes
+- Interação: 8 testes
+- Variants: 4 testes
+- Error States: 3 testes
+
+## Total: ~280 testes
 
 ## Arquivos de Serviço PDF
 
