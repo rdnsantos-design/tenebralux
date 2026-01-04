@@ -4,7 +4,7 @@ import { Character, CharacterAttributes, calculateDerivedStats, calculateRegency
 import { useTheme } from '@/themes';
 import { getSkillsByAttribute } from '@/data/character/skills';
 import { getStartingVirtue } from '@/data/character/virtues';
-import { getCharacterById, saveCharacter } from '@/services/storage/characterStorage';
+import { useCharacterStorageHybrid } from '@/hooks/useCharacterStorageHybrid';
 
 interface CharacterBuilderContextType {
   // Estado
@@ -22,7 +22,7 @@ interface CharacterBuilderContextType {
   updateDraft: (data: Partial<CharacterDraft>) => void;
   resetBuilder: () => void;
   setSimplifiedMode: (value: boolean) => void;
-  loadCharacter: (id: string) => void;
+  loadCharacter: (id: string) => Promise<void>;
   saveCurrentCharacter: () => Promise<{ id: string } | null>;
   
   // Validação
@@ -58,6 +58,7 @@ const BASE_ATTRIBUTE_POINTS = 8; // 8 atributos x 1 ponto mínimo
 
 export function CharacterBuilderProvider({ children }: { children: React.ReactNode }) {
   const { activeTheme } = useTheme();
+  const { save: saveToStorage, getCharacter } = useCharacterStorageHybrid();
   
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [draft, setDraft] = useState<CharacterDraft>({
@@ -91,26 +92,30 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
   }, [activeTheme]);
 
   // Carregar personagem existente
-  const loadCharacter = useCallback((id: string) => {
-    const saved = getCharacterById(id);
-    if (saved) {
-      setDraft(saved.data);
-      setCurrentStep(1);
-      setEditingCharacterId(id);
+  const loadCharacter = useCallback(async (id: string) => {
+    try {
+      const saved = await getCharacter(id);
+      if (saved) {
+        setDraft(saved.data);
+        setCurrentStep(1);
+        setEditingCharacterId(id);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar personagem:', error);
     }
-  }, []);
+  }, [getCharacter]);
 
-  // Salvar personagem atual
+  // Salvar personagem atual (usando storage híbrido)
   const saveCurrentCharacter = useCallback(async () => {
     try {
-      const saved = saveCharacter(draft, editingCharacterId || undefined);
+      const saved = await saveToStorage(draft, editingCharacterId || undefined);
       setEditingCharacterId(saved.id);
       return saved;
     } catch (error) {
       console.error('Erro ao salvar personagem:', error);
       return null;
     }
-  }, [draft, editingCharacterId]);
+  }, [draft, editingCharacterId, saveToStorage]);
 
   // Cálculos
   const getAttributeTotal = useCallback((): number => {
