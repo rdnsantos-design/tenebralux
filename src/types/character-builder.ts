@@ -24,6 +24,7 @@ export interface CharacterDraft {
   
   // Step 6: Virtudes
   virtues?: Partial<CharacterVirtues>;
+  startingVirtue?: string; // Virtude inicial escolhida (se facção permite escolha)
   
   // Step 7: Equipamento
   weaponId?: string;

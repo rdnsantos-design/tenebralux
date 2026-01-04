@@ -3,6 +3,7 @@ import { CharacterDraft, WizardStep, StepValidation, ValidationError } from '@/t
 import { Character, CharacterAttributes, calculateDerivedStats, calculateRegencyStats } from '@/core/types';
 import { useTheme } from '@/themes';
 import { getSkillsByAttribute } from '@/data/character/skills';
+import { getStartingVirtue } from '@/data/character/virtues';
 
 interface CharacterBuilderContextType {
   // Estado
@@ -155,6 +156,17 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
               });
             }
           }
+        }
+        break;
+        
+      case 6: // Virtudes
+        // Se facção não define virtude, jogador precisa escolher
+        const startingVirtue = getStartingVirtue(draft.factionId);
+        if (startingVirtue === 'choice' && !draft.startingVirtue) {
+          errors.push({ 
+            field: 'startingVirtue', 
+            message: 'Escolha uma virtude inicial' 
+          });
         }
         break;
     }
