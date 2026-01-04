@@ -184,6 +184,23 @@ npx vitest --coverage --testPathPattern="tactical"
 
 ## Total: ~280 testes
 
+### Unit Tests - Online/Sync (~24 testes) - Prompt 16.1
+- useOnlineStatus.test.ts:
+  - Estado inicial: 3 testes
+  - Eventos de conexão: 3 testes
+  - resetWasOffline: 1 teste
+  - Cleanup: 1 teste
+- useCharacterStorageHybrid.sync.test.ts:
+  - Sync Automático: 4 testes
+  - Sync Logic: 2 testes
+- CharacterCard.battle.test.tsx:
+  - Integração BattleButton: 6 testes
+- offline-sync.test.tsx:
+  - E2E Offline → Online: 4 testes
+  - BattleButton fluxo: 2 testes
+
+## Total Geral: ~304 testes
+
 ## Arquivos de Serviço PDF
 
 ### src/services/pdf/characterSheetPDF.ts
