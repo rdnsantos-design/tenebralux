@@ -4,12 +4,14 @@ import { Character, CharacterAttributes, calculateDerivedStats, calculateRegency
 import { useTheme } from '@/themes';
 import { getSkillsByAttribute } from '@/data/character/skills';
 import { getStartingVirtue } from '@/data/character/virtues';
+import { getCharacterById, saveCharacter } from '@/services/storage/characterStorage';
 
 interface CharacterBuilderContextType {
   // Estado
   currentStep: WizardStep;
   draft: CharacterDraft;
   isSimplifiedMode: boolean;
+  editingCharacterId: string | null;
   
   // Navegação
   nextStep: () => boolean;
@@ -20,6 +22,8 @@ interface CharacterBuilderContextType {
   updateDraft: (data: Partial<CharacterDraft>) => void;
   resetBuilder: () => void;
   setSimplifiedMode: (value: boolean) => void;
+  loadCharacter: (id: string) => void;
+  saveCurrentCharacter: () => Promise<{ id: string } | null>;
   
   // Validação
   validateStep: (step: WizardStep) => StepValidation;
@@ -63,6 +67,7 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
     virtues: { sabedoria: 0, coragem: 0, perseveranca: 0, harmonia: 0 },
   });
   const [isSimplifiedMode, setSimplifiedMode] = useState(false);
+  const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null);
 
   // Atualizar tema do draft quando theme global muda
   useEffect(() => {
@@ -82,7 +87,30 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
       virtues: { sabedoria: 0, coragem: 0, perseveranca: 0, harmonia: 0 },
     });
     setSimplifiedMode(false);
+    setEditingCharacterId(null);
   }, [activeTheme]);
+
+  // Carregar personagem existente
+  const loadCharacter = useCallback((id: string) => {
+    const saved = getCharacterById(id);
+    if (saved) {
+      setDraft(saved.data);
+      setCurrentStep(1);
+      setEditingCharacterId(id);
+    }
+  }, []);
+
+  // Salvar personagem atual
+  const saveCurrentCharacter = useCallback(async () => {
+    try {
+      const saved = saveCharacter(draft, editingCharacterId || undefined);
+      setEditingCharacterId(saved.id);
+      return saved;
+    } catch (error) {
+      console.error('Erro ao salvar personagem:', error);
+      return null;
+    }
+  }, [draft, editingCharacterId]);
 
   // Cálculos
   const getAttributeTotal = useCallback((): number => {
@@ -271,12 +299,15 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
     currentStep,
     draft,
     isSimplifiedMode,
+    editingCharacterId,
     nextStep,
     prevStep,
     goToStep,
     updateDraft,
     resetBuilder,
     setSimplifiedMode,
+    loadCharacter,
+    saveCurrentCharacter,
     validateStep,
     getStepValidation,
     canProceedToStep,
@@ -289,11 +320,14 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
     currentStep,
     draft,
     isSimplifiedMode,
+    editingCharacterId,
     nextStep,
     prevStep,
     goToStep,
     updateDraft,
     resetBuilder,
+    loadCharacter,
+    saveCurrentCharacter,
     validateStep,
     getStepValidation,
     canProceedToStep,

@@ -65,8 +65,12 @@ const ATTRIBUTE_ICONS: Record<string, React.ElementType> = {
   intuicao: Eye,
 };
 
-export function StepSummary() {
-  const { draft, goToStep, finalizeCharacter, canFinalize } = useCharacterBuilder();
+interface StepSummaryProps {
+  onFinish?: () => void;
+}
+
+export function StepSummary({ onFinish }: StepSummaryProps) {
+  const { draft, goToStep, finalizeCharacter, canFinalize, saveCurrentCharacter } = useCharacterBuilder();
   const { activeTheme } = useTheme();
   const { downloadPDF, previewPDF, isGenerating, error: pdfError } = useCharacterPDF();
 
@@ -114,20 +118,21 @@ export function StepSummary() {
     return virtueId ? getVirtueById(virtueId) : null;
   }, [virtues]);
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (!canFinalize()) {
       alert('Há erros de validação. Revise as seções antes de finalizar.');
       return;
     }
     
-    const character = finalizeCharacter();
-    if (character) {
-      // Salvar no localStorage
-      const characters = JSON.parse(localStorage.getItem('akashic_characters') || '[]');
-      characters.push(character);
-      localStorage.setItem('akashic_characters', JSON.stringify(characters));
-      
-      alert(`Personagem "${draft.name}" criado com sucesso!`);
+    try {
+      const saved = await saveCurrentCharacter();
+      if (saved) {
+        alert(`Personagem "${draft.name}" salvo com sucesso!`);
+        onFinish?.();
+      }
+    } catch (err) {
+      console.error('Erro ao salvar:', err);
+      alert('Erro ao salvar personagem.');
     }
   };
 

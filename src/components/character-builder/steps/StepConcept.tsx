@@ -3,6 +3,7 @@ import { useCharacterBuilder } from '@/contexts/CharacterBuilderContext';
 import { useTheme } from '@/themes';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -24,7 +25,11 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?:
   Circle,
 };
 
-export function StepConcept() {
+interface StepConceptProps {
+  onBack?: () => void;
+}
+
+export function StepConcept({ onBack }: StepConceptProps) {
   const { draft, updateDraft, getStepValidation } = useCharacterBuilder();
   const { activeTheme, setActiveTheme } = useTheme();
   const validation = getStepValidation(1);
@@ -62,11 +67,18 @@ export function StepConcept() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold">Conceito do Personagem</h2>
-        <p className="text-muted-foreground">
-          Defina a identidade básica do seu personagem: quem ele é e de onde vem.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Conceito do Personagem</h2>
+          <p className="text-muted-foreground">
+            Defina a identidade básica do seu personagem: quem ele é e de onde vem.
+          </p>
+        </div>
+        {onBack && (
+          <Button variant="outline" onClick={onBack}>
+            Voltar à Lista
+          </Button>
+        )}
       </div>
 
       {/* Nome */}
