@@ -20,6 +20,7 @@ import StrategicGame from "./pages/StrategicGame";
 import FieldCommanders from "./pages/FieldCommanders";
 import GameRoom from "./pages/GameRoom";
 import NotFound from "./pages/NotFound";
+import CharacterBuilder from "./pages/CharacterBuilder";
 
 // Tactical Battle Pages
 import TacticalHomePage from "./pages/TacticalHomePage";
@@ -57,6 +58,10 @@ const App = () => (
             <Route path="/field-commanders" element={<FieldCommanders />} />
             <Route path="/game" element={<GameRoom />} />
             <Route path="/game/:roomCode" element={<GameRoom />} />
+            
+            {/* Character Builder Routes */}
+            <Route path="/character-builder" element={<CharacterBuilder />} />
+            <Route path="/character-builder/create" element={<CharacterBuilder />} />
             
             {/* Tactical Battle Routes */}
             <Route path="/tactical" element={<TacticalHomePage />} />
