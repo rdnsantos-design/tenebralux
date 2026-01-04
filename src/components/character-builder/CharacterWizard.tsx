@@ -10,13 +10,18 @@ import { StepVirtues } from './steps/StepVirtues';
 import { StepEquipment } from './steps/StepEquipment';
 import { StepSummary } from './steps/StepSummary';
 
-export function CharacterWizard() {
+interface CharacterWizardProps {
+  onBack?: () => void;
+  onFinish?: () => void;
+}
+
+export function CharacterWizard({ onBack, onFinish }: CharacterWizardProps) {
   const { currentStep } = useCharacterBuilder();
 
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return <StepConcept />;
+        return <StepConcept onBack={onBack} />;
       case 2:
         return <StepAttributes />;
       case 3:
@@ -30,9 +35,9 @@ export function CharacterWizard() {
       case 7:
         return <StepEquipment />;
       case 8:
-        return <StepSummary />;
+        return <StepSummary onFinish={onFinish} />;
       default:
-        return <StepSummary />;
+        return <StepSummary onFinish={onFinish} />;
     }
   };
 
