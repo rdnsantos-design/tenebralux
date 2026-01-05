@@ -56,13 +56,37 @@ export function useTacticalMatch() {
     setLoading(true);
     try {
       const id = playerId || crypto.randomUUID();
+      const normalizedCode = joinCode.toUpperCase();
+
+      // Prevent joining as player2 from the same browser identity as player1
+      const { data: existing, error: existingError } = await supabase
+        .from('tactical_matches')
+        .select('id, player1_id, player2_id, status')
+        .eq('join_code', normalizedCode)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+      if (!existing || existing.status !== 'waiting') {
+        toast({ title: 'Erro ao entrar', description: 'Código inválido ou partida não disponível', variant: 'destructive' });
+        return null;
+      }
+
+      if (existing.player1_id === id) {
+        toast({
+          title: 'Você já é o Jogador 1',
+          description: 'Para entrar como Jogador 2, use uma janela anônima/privada ou gere um novo ID de jogador.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('tactical_matches')
         .update({
           player2_id: id,
           player2_name: playerName,
         })
-        .eq('join_code', joinCode.toUpperCase())
+        .eq('join_code', normalizedCode)
         .eq('status', 'waiting')
         .is('player2_id', null)
         .select()
@@ -140,6 +164,26 @@ export function useTacticalMatch() {
     return !error;
   };
 
+  const resetPlayer2 = async (matchId: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('tactical_matches')
+      .update({
+        player2_id: null,
+        player2_name: null,
+        player2_army_id: null,
+        player2_ready: false,
+      })
+      .eq('id', matchId);
+
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      return false;
+    }
+
+    toast({ title: 'Vaga do Jogador 2 liberada' });
+    return true;
+  };
+
   const subscribeToMatch = (matchId: string, callback: (match: TacticalMatch) => void) => {
     const channel = supabase
       .channel(`tactical_match_${matchId}`)
@@ -168,6 +212,7 @@ export function useTacticalMatch() {
     setArmy,
     setReady,
     startMatch,
+    resetPlayer2,
     subscribeToMatch,
   };
 }
