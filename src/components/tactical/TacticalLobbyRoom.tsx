@@ -20,7 +20,7 @@ export function TacticalLobbyRoom() {
   const { matchId } = useParams<{ matchId: string }>();
   const { playerId } = usePlayerId();
   const { toast } = useToast();
-  const { getMatch, setArmy, setReady, startMatch, subscribeToMatch } = useTacticalMatch();
+  const { getMatch, setArmy, setReady, startMatch, resetPlayer2, subscribeToMatch } = useTacticalMatch();
   const { armies } = useStrategicArmies();
 
   const [match, setMatch] = useState<TacticalMatch | null>(null);
@@ -86,6 +86,11 @@ export function TacticalLobbyRoom() {
     setStarting(true);
     await startMatch(matchId);
     // Navigation handled by subscription
+  };
+
+  const handleResetPlayer2 = async () => {
+    if (!matchId) return;
+    await resetPlayer2(matchId);
   };
 
   const getArmyName = (armyId: string | null) => {
@@ -154,6 +159,24 @@ export function TacticalLobbyRoom() {
             </div>
           </CardContent>
         </Card>
+
+        {isPlayer1 && match.player2_id && match.player2_id === match.player1_id && (
+          <Card className="mb-6">
+            <CardContent className="py-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <p className="font-medium">Jogador 2 entrou com o mesmo ID do Jogador 1</p>
+                  <p className="text-sm text-muted-foreground">
+                    Isso acontece ao testar no mesmo navegador. Libere a vaga do Jogador 2 e entre pelo modo anônimo/privado.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={handleResetPlayer2}>
+                  Liberar Jogador 2
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Layout Principal */}
         <div className="grid md:grid-cols-3 gap-6">
