@@ -30,7 +30,8 @@ export function TacticalLobbyRoom() {
   const [starting, setStarting] = useState(false);
 
   const isPlayer1 = match?.player1_id === playerId;
-  const isPlayer2 = match?.player2_id === playerId;
+  // Only be player2 if we're not player1 (handles same-device testing)
+  const isPlayer2 = !isPlayer1 && match?.player2_id === playerId;
   const myReady = isPlayer1 ? match?.player1_ready : match?.player2_ready;
   const myArmyId = isPlayer1 ? match?.player1_army_id : match?.player2_army_id;
   const bothReady = match?.player1_ready && match?.player2_ready;
