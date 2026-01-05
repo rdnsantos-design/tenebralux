@@ -197,6 +197,24 @@ export function TacticalLobbyRoom() {
                       </Dialog>
                     )}
                   </div>
+                ) : isPlayer1 ? (
+                  <Dialog open={armySelectorOpen} onOpenChange={setArmySelectorOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        Selecionar Exército
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Selecionar Exército</DialogTitle>
+                      </DialogHeader>
+                      <TacticalArmySelector
+                        selectedArmyId=""
+                        onSelect={handleArmySelect}
+                        maxPower={match.max_power_points}
+                      />
+                    </DialogContent>
+                  </Dialog>
                 ) : (
                   <p className="text-muted-foreground italic">Selecionando...</p>
                 )}
@@ -206,8 +224,9 @@ export function TacticalLobbyRoom() {
                 <span>Pronto</span>
                 {isPlayer1 ? (
                   <Switch
-                    checked={match.player1_ready}
+                    checked={match.player1_ready || false}
                     onCheckedChange={handleReadyToggle}
+                    disabled={!match.player1_army_id}
                   />
                 ) : (
                   <Badge variant={match.player1_ready ? 'default' : 'outline'}>
@@ -314,6 +333,24 @@ export function TacticalLobbyRoom() {
                           </Dialog>
                         )}
                       </div>
+                    ) : isPlayer2 ? (
+                      <Dialog open={armySelectorOpen} onOpenChange={setArmySelectorOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            Selecionar Exército
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Selecionar Exército</DialogTitle>
+                          </DialogHeader>
+                          <TacticalArmySelector
+                            selectedArmyId=""
+                            onSelect={handleArmySelect}
+                            maxPower={match.max_power_points}
+                          />
+                        </DialogContent>
+                      </Dialog>
                     ) : (
                       <p className="text-muted-foreground italic">Selecionando...</p>
                     )}
@@ -323,8 +360,9 @@ export function TacticalLobbyRoom() {
                     <span>Pronto</span>
                     {isPlayer2 ? (
                       <Switch
-                        checked={match.player2_ready}
+                        checked={match.player2_ready || false}
                         onCheckedChange={handleReadyToggle}
+                        disabled={!match.player2_army_id}
                       />
                     ) : (
                       <Badge variant={match.player2_ready ? 'default' : 'outline'}>
