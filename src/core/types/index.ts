@@ -4,6 +4,9 @@ export * from './base';
 // Character system
 export * from './character';
 
+// Unified Character system
+export * from './unified-character';
+
 // Commander system  
 export * from './commander';
 
