@@ -4,10 +4,16 @@ import { Users, Map, Route, Crown, Hexagon, Layers, Gamepad2, UserPlus } from "l
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/themes";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import AkashicHome from "./AkashicHome";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { labels } = useTheme();
+  const { labels, activeTheme } = useTheme();
+
+  // Render Akashic-specific home for akashic theme
+  if (activeTheme === 'akashic') {
+    return <AkashicHome />;
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
