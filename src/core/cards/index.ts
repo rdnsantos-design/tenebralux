@@ -6,3 +6,4 @@
 
 export * from './types';
 export * from './hooks';
+export { UnifiedCardEditor } from './UnifiedCardEditor';
