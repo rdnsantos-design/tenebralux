@@ -37,3 +37,4 @@ export * from './useTacticalBattleInit';
 export * from './useCharacterStorage';
 export * from './useCharacterStorageHybrid';
 export * from './useTacticalIntegration';
+export * from './useUnifiedCharacter';
