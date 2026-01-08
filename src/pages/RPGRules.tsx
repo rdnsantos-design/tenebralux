@@ -2,9 +2,11 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Gift, Swords, BookOpen, Users } from 'lucide-react';
+import { ArrowLeft, Gift, Swords, BookOpen, Users, BarChart3, ListChecks } from 'lucide-react';
 import { PrivilegeManager } from '@/components/rpg/PrivilegeManager';
 import { FactionManager } from '@/components/rpg/FactionManager';
+import { AttributeManager } from '@/components/rpg/AttributeManager';
+import { SkillManager } from '@/components/rpg/SkillManager';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
 export default function RPGRules() {
@@ -35,21 +37,37 @@ export default function RPGRules() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="privileges" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+        <Tabs defaultValue="attributes" className="space-y-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5">
+            <TabsTrigger value="attributes" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Atributos</span>
+            </TabsTrigger>
+            <TabsTrigger value="skills" className="flex items-center gap-2">
+              <ListChecks className="w-4 h-4" />
+              <span className="hidden sm:inline">Perícias</span>
+            </TabsTrigger>
             <TabsTrigger value="privileges" className="flex items-center gap-2">
               <Gift className="w-4 h-4" />
-              Privilégios
+              <span className="hidden sm:inline">Privilégios</span>
             </TabsTrigger>
             <TabsTrigger value="factions" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Facções
+              <span className="hidden sm:inline">Facções</span>
             </TabsTrigger>
             <TabsTrigger value="equipment" className="flex items-center gap-2">
               <Swords className="w-4 h-4" />
-              Equipamentos
+              <span className="hidden sm:inline">Equip.</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="attributes">
+            <AttributeManager />
+          </TabsContent>
+
+          <TabsContent value="skills">
+            <SkillManager />
+          </TabsContent>
 
           <TabsContent value="privileges">
             <PrivilegeManager />
