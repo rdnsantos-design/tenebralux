@@ -1516,6 +1516,124 @@ export type Database = {
         }
         Relationships: []
       }
+      rpg_attributes: {
+        Row: {
+          created_at: string
+          description: string
+          focus_label: string | null
+          icon: string
+          id: string
+          name: string
+          sort_order: number
+          theme: string
+          updated_at: string
+          virtue_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          focus_label?: string | null
+          icon?: string
+          id: string
+          name: string
+          sort_order?: number
+          theme?: string
+          updated_at?: string
+          virtue_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          focus_label?: string | null
+          icon?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          theme?: string
+          updated_at?: string
+          virtue_id?: string
+        }
+        Relationships: []
+      }
+      rpg_skill_specializations: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          skill_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          skill_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          skill_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_skill_specializations_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_skills: {
+        Row: {
+          attribute_id: string
+          created_at: string
+          description: string
+          id: string
+          name: string
+          sort_order: number
+          theme: string
+          updated_at: string
+        }
+        Insert: {
+          attribute_id: string
+          created_at?: string
+          description: string
+          id: string
+          name: string
+          sort_order?: number
+          theme?: string
+          updated_at?: string
+        }
+        Update: {
+          attribute_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          theme?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_skills_attribute_id_fkey"
+            columns: ["attribute_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_attributes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       strategic_armies: {
         Row: {
           attack: number
