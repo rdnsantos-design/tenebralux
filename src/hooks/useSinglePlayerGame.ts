@@ -160,17 +160,25 @@ export function useSinglePlayerGame() {
     setState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      // Buscar cartas táticas
+      // Buscar cartas táticas para ambas as culturas (player e bot)
       const { data: cards, error } = await supabase
         .from('mass_combat_tactical_cards')
         .select('*')
-        .or(`culture.eq.${playerCulture},culture.is.null`)
-        .limit(30);
+        .or(`culture.eq.${playerCulture},culture.eq.${botCulture},culture.is.null`)
+        .limit(40);
       
       if (error) throw error;
       
-      // Distribuir cartas para jogador e bot
-      const playerCards: BotCard[] = (cards || []).slice(0, 7).map(c => ({
+      console.log('[SinglePlayer] Cartas carregadas:', cards?.length);
+      
+      // Separar cartas por cultura
+      const neutralCards = (cards || []).filter(c => !c.culture);
+      const playerCultureCards = (cards || []).filter(c => c.culture === playerCulture);
+      const botCultureCards = (cards || []).filter(c => c.culture === botCulture);
+      
+      // Criar deck do jogador: cartas neutras + cartas da sua cultura
+      const playerDeckSource = [...playerCultureCards, ...neutralCards];
+      const playerCards: BotCard[] = playerDeckSource.slice(0, 7).map(c => ({
         id: c.id,
         name: c.name,
         card_type: c.card_type as BotCard['card_type'],
@@ -181,7 +189,9 @@ export function useSinglePlayerGame() {
         vet_cost: c.vet_cost,
       }));
       
-      const botCards: BotCard[] = (cards || []).slice(7, 14).map(c => ({
+      // Criar deck do bot: cartas da cultura dele + cartas neutras
+      const botDeckSource = [...botCultureCards, ...neutralCards];
+      const botCards: BotCard[] = botDeckSource.slice(0, 7).map(c => ({
         id: c.id,
         name: c.name,
         card_type: c.card_type as BotCard['card_type'],
@@ -191,6 +201,9 @@ export function useSinglePlayerGame() {
         command_required: c.command_required,
         vet_cost: c.vet_cost,
       }));
+      
+      console.log('[SinglePlayer] Deck do jogador:', playerCards.length, 'cartas');
+      console.log('[SinglePlayer] Deck do bot:', botCards.length, 'cartas');
       
       // Criar comandantes básicos
       const playerCommanders: BotCommander[] = [
@@ -300,6 +313,147 @@ export function useSinglePlayerGame() {
     addLog('Combate iniciado! Fase de Iniciativa');
   }, [addLog]);
   
+  // Turno do bot - declarado primeiro para poder ser usado por processCombatRound
+  const triggerBotTurn = useCallback(() => {
+    setState(prev => {
+      const delay = getBotDelayMs(prev.botDifficulty);
+      
+      console.log('[Bot] Iniciando turno do bot, delay:', delay);
+      console.log('[Bot] Mão do bot:', prev.botHand.length, 'cartas');
+      
+      // Usar setTimeout fora do setState
+      setTimeout(() => {
+        setState(current => {
+          const botState: BotGameState = {
+            phase: current.combatPhase,
+            myHp: current.botHp,
+            opponentHp: current.playerHp,
+            myHand: current.botHand,
+            myCommanders: current.botCommanders,
+            cmdFree: current.botCmdState.general.cmd_free,
+            round: current.round,
+          };
+          
+          const decision = makeBotDecision(botState, current.botDifficulty);
+          console.log('[Bot] Decisão:', decision);
+          
+          if (decision.action === 'play_card' && decision.cardIndex !== undefined && decision.cardIndex < current.botHand.length) {
+            const card = current.botHand[decision.cardIndex];
+            const damage = (card.attack_bonus || 0) + Math.floor(Math.random() * 5) + 1;
+            
+            console.log('[Bot] Jogando carta:', card.name, 'Dano:', damage);
+            
+            const newPlayerHp = Math.max(0, current.playerHp - damage);
+            const newBotHand = current.botHand.filter((_, i) => i !== decision.cardIndex);
+            
+            // Verificar vitória do bot
+            if (newPlayerHp <= 0) {
+              return {
+                ...current,
+                playerHp: newPlayerHp,
+                botHand: newBotHand,
+                isLoading: false,
+                phase: 'finished' as SinglePlayerPhase,
+                winner: 'bot' as const,
+                battleLog: [
+                  ...current.battleLog,
+                  { message: `${current.botName} jogou ${card.name}`, timestamp: Date.now() },
+                  { message: `${current.botName} causou ${damage} de dano!`, timestamp: Date.now() + 1 },
+                  { message: `${current.botName} venceu!`, timestamp: Date.now() + 2 },
+                ],
+              };
+            }
+            
+            return {
+              ...current,
+              playerHp: newPlayerHp,
+              botHand: newBotHand,
+              isLoading: false,
+              battleLog: [
+                ...current.battleLog,
+                { message: `${current.botName} jogou ${card.name}`, timestamp: Date.now() },
+                { message: `${current.botName} causou ${damage} de dano!`, timestamp: Date.now() + 1 },
+              ],
+            };
+          } else {
+            // Bot passou
+            console.log('[Bot] Passou o turno');
+            return {
+              ...current,
+              isLoading: false,
+              round: current.round + 1,
+              battleLog: [
+                ...current.battleLog,
+                { message: `${current.botName} passou`, timestamp: Date.now() },
+                { message: `--- Rodada ${current.round + 1} ---`, timestamp: Date.now() + 1 },
+              ],
+              // Restaurar CMD parcial
+              playerCmdState: {
+                ...current.playerCmdState,
+                commanders: {
+                  'player-cmd-1': { cmd_free: Math.min(3, (current.playerCmdState.commanders['player-cmd-1']?.cmd_free || 0) + 1) },
+                  'player-cmd-2': { cmd_free: Math.min(2, (current.playerCmdState.commanders['player-cmd-2']?.cmd_free || 0) + 1) },
+                },
+              },
+              botCmdState: {
+                ...current.botCmdState,
+                commanders: {
+                  'bot-cmd-1': { cmd_free: Math.min(3, (current.botCmdState.commanders['bot-cmd-1']?.cmd_free || 0) + 1) },
+                  'bot-cmd-2': { cmd_free: Math.min(2, (current.botCmdState.commanders['bot-cmd-2']?.cmd_free || 0) + 1) },
+                },
+              },
+            };
+          }
+        });
+      }, delay);
+      
+      return { ...prev, isLoading: true };
+    });
+  }, []);
+  
+  // Processar rodada de combate
+  const processCombatRound = useCallback((actor: 'player' | 'bot', card: BotCard | null) => {
+    // Simular dano (simplificado) para ações do jogador
+    if (actor === 'player' && card) {
+      const damage = (card.attack_bonus || 0) + Math.floor(Math.random() * 5) + 1;
+      
+      setState(prev => {
+        const newBotHp = Math.max(0, prev.botHp - damage);
+        
+        // Verificar vitória do jogador
+        if (newBotHp <= 0) {
+          return {
+            ...prev,
+            botHp: newBotHp,
+            phase: 'finished' as SinglePlayerPhase,
+            winner: 'player' as const,
+            battleLog: [
+              ...prev.battleLog,
+              { message: `Você causou ${damage} de dano!`, timestamp: Date.now() },
+              { message: 'Você venceu!', timestamp: Date.now() + 1 },
+            ],
+          };
+        }
+        
+        return {
+          ...prev,
+          botHp: newBotHp,
+          battleLog: [
+            ...prev.battleLog,
+            { message: `Você causou ${damage} de dano!`, timestamp: Date.now() },
+          ],
+        };
+      });
+    }
+    
+    // Se foi o jogador, agora é a vez do bot
+    if (actor === 'player') {
+      setTimeout(() => {
+        triggerBotTurn();
+      }, 500);
+    }
+  }, [triggerBotTurn]);
+  
   // Jogar carta
   const playCard = useCallback(async (cardIndex: number, commanderId: string) => {
     const card = state.playerHand[cardIndex];
@@ -334,120 +488,13 @@ export function useSinglePlayerGame() {
     
     // Processar efeitos da carta (simplificado)
     processCombatRound('player', card);
-  }, [state, addLog]);
+  }, [state, addLog, processCombatRound]);
   
   // Passar turno
   const passTurn = useCallback(() => {
     addLog('Você passou o turno');
     processCombatRound('player', null);
-  }, [addLog]);
-  
-  // Processar rodada de combate
-  const processCombatRound = useCallback((actor: 'player' | 'bot', card: BotCard | null) => {
-    // Simular dano (simplificado)
-    if (card) {
-      const damage = (card.attack_bonus || 0) + Math.floor(Math.random() * 5) + 1;
-      
-      if (actor === 'player') {
-        setState(prev => ({
-          ...prev,
-          botHp: Math.max(0, prev.botHp - damage),
-        }));
-        addLog(`Você causou ${damage} de dano!`);
-      } else {
-        setState(prev => ({
-          ...prev,
-          playerHp: Math.max(0, prev.playerHp - damage),
-        }));
-        addLog(`${state.botName} causou ${damage} de dano!`);
-      }
-    }
-    
-    // Verificar vitória
-    setTimeout(() => {
-      setState(prev => {
-        if (prev.botHp <= 0) {
-          return { ...prev, phase: 'finished', winner: 'player' };
-        }
-        if (prev.playerHp <= 0) {
-          return { ...prev, phase: 'finished', winner: 'bot' };
-        }
-        
-        // Se foi o jogador, agora é a vez do bot
-        if (actor === 'player') {
-          triggerBotTurn();
-        }
-        
-        return prev;
-      });
-    }, 500);
-  }, [state.botName, addLog]);
-  
-  // Turno do bot
-  const triggerBotTurn = useCallback(() => {
-    const delay = getBotDelayMs(state.botDifficulty);
-    
-    setState(prev => ({ ...prev, isLoading: true }));
-    
-    botTimerRef.current = setTimeout(() => {
-      const botState: BotGameState = {
-        phase: state.combatPhase,
-        myHp: state.botHp,
-        opponentHp: state.playerHp,
-        myHand: state.botHand,
-        myCommanders: state.botCommanders,
-        cmdFree: state.botCmdState.general.cmd_free,
-        round: state.round,
-      };
-      
-      const decision = makeBotDecision(botState, state.botDifficulty);
-      
-      if (decision.action === 'play_card' && decision.cardIndex !== undefined) {
-        const card = state.botHand[decision.cardIndex];
-        
-        setState(prev => ({
-          ...prev,
-          botHand: prev.botHand.filter((_, i) => i !== decision.cardIndex),
-          isLoading: false,
-        }));
-        
-        addLog(`${state.botName} jogou ${card?.name || 'uma carta'}`);
-        processCombatRound('bot', card);
-      } else {
-        setState(prev => ({ ...prev, isLoading: false }));
-        addLog(`${state.botName} passou`);
-        
-        // Avançar rodada
-        advanceRound();
-      }
-    }, delay);
-  }, [state, addLog]);
-  
-  // Avançar rodada
-  const advanceRound = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      round: prev.round + 1,
-      combatPhase: 'initiative_maneuver',
-      // Restaurar CMD parcial
-      playerCmdState: {
-        ...prev.playerCmdState,
-        commanders: {
-          'player-cmd-1': { cmd_free: Math.min(3, (prev.playerCmdState.commanders['player-cmd-1']?.cmd_free || 0) + 1) },
-          'player-cmd-2': { cmd_free: Math.min(2, (prev.playerCmdState.commanders['player-cmd-2']?.cmd_free || 0) + 1) },
-        },
-      },
-      botCmdState: {
-        ...prev.botCmdState,
-        commanders: {
-          'bot-cmd-1': { cmd_free: Math.min(3, (prev.botCmdState.commanders['bot-cmd-1']?.cmd_free || 0) + 1) },
-          'bot-cmd-2': { cmd_free: Math.min(2, (prev.botCmdState.commanders['bot-cmd-2']?.cmd_free || 0) + 1) },
-        },
-      },
-    }));
-    
-    addLog(`--- Rodada ${state.round + 1} ---`);
-  }, [state.round, addLog]);
+  }, [addLog, processCombatRound]);
   
   // Reset
   const resetGame = useCallback(() => {
