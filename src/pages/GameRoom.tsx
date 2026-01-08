@@ -15,7 +15,7 @@ import { TestChecklist } from '@/components/multiplayer/TestChecklist';
 import { SinglePlayerGame } from '@/components/singleplayer/SinglePlayerGame';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Loader2, Swords, Bot, Users } from 'lucide-react';
+import { Loader2, Swords, Bot, Users, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePhaseGuard } from '@/hooks/usePhaseGuard';
 
@@ -257,6 +257,15 @@ export default function GameRoom() {
   // Menu inicial - escolher modo
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+      <Button 
+        variant="ghost" 
+        className="absolute top-4 left-4" 
+        onClick={() => navigate('/')}
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Voltar
+      </Button>
+      
       <div className="mb-8 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Swords className="h-8 w-8 text-primary" />
