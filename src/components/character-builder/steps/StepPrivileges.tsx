@@ -48,7 +48,7 @@ export function StepPrivileges() {
   const { draft, updateDraft, getStepValidation } = useCharacterBuilder();
   const validation = getStepValidation(5);
   
-  const selectedPrivileges = draft.blessingIds || [];
+  const selectedPrivileges = draft.privilegeIds || [];
   const selectedChallenges = draft.challengeIds || {};
   
   const [expandedPrivilege, setExpandedPrivilege] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export function StepPrivileges() {
       delete newChallenges[privilegeId];
       
       updateDraft({
-        blessingIds: newPrivileges,
+        privilegeIds: newPrivileges,
         challengeIds: newChallenges,
       });
       setExpandedPrivilege(null);
@@ -77,7 +77,7 @@ export function StepPrivileges() {
       : [...selectedPrivileges, privilegeId];
     
     updateDraft({
-      blessingIds: newPrivileges,
+      privilegeIds: newPrivileges,
       challengeIds: {
         ...selectedChallenges,
         [privilegeId]: challengeId,

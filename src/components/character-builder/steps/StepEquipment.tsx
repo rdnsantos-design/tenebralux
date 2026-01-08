@@ -21,21 +21,21 @@ import {
   getEquipmentById,
   getCurrencyName
 } from '@/data/character/equipment';
-import { BLESSINGS } from '@/data/character/blessings';
+import { PRIVILEGES } from '@/data/character/privileges';
 
 export function StepEquipment() {
   const { draft, updateDraft } = useCharacterBuilder();
   const { activeTheme } = useTheme();
   const themeId = activeTheme;
 
-  // Check for Wealth blessing bonus
-  const hasWealthBlessing = useMemo(() => {
-    if (!draft.blessingIds) return false;
-    const wealthBlessing = BLESSINGS.find(b => b.id === 'family_wealth');
-    return wealthBlessing && draft.blessingIds.includes(wealthBlessing.id);
-  }, [draft.blessingIds]);
+  // Check for Wealth privilege bonus
+  const hasWealthPrivilege = useMemo(() => {
+    if (!draft.privilegeIds) return false;
+    const wealthPrivilege = PRIVILEGES.find(p => p.id === 'nascido_elite');
+    return wealthPrivilege && draft.privilegeIds.includes(wealthPrivilege.id);
+  }, [draft.privilegeIds]);
 
-  const totalCredits = hasWealthBlessing ? STARTING_CREDITS + 50 : STARTING_CREDITS;
+  const totalCredits = hasWealthPrivilege ? STARTING_CREDITS + 50 : STARTING_CREDITS;
 
   // Calculate spent credits
   const selectedItems = useMemo(() => {
@@ -172,8 +172,8 @@ export function StepEquipment() {
                 <div className="font-medium">{getCurrencyName(themeId)}</div>
                 <div className="text-sm text-muted-foreground">
                   {spentCredits} gastos de {totalCredits}
-                  {hasWealthBlessing && (
-                    <span className="text-green-500 ml-1">(+50 Riqueza Familiar)</span>
+                  {hasWealthPrivilege && (
+                    <span className="text-green-500 ml-1">(+50 Nascido na Elite)</span>
                   )}
                 </div>
               </div>
