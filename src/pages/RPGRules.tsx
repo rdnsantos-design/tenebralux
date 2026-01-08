@@ -2,7 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Gift, Swords, BookOpen, Users, BarChart3, ListChecks } from 'lucide-react';
+import { ArrowLeft, Gift, Swords, BookOpen, Users, BarChart3, ListChecks, AlertTriangle } from 'lucide-react';
 import { PrivilegeManager } from '@/components/rpg/PrivilegeManager';
 import { FactionManager } from '@/components/rpg/FactionManager';
 import { AttributeManager } from '@/components/rpg/AttributeManager';
@@ -49,7 +49,7 @@ export default function RPGRules() {
             </TabsTrigger>
             <TabsTrigger value="privileges" className="flex items-center gap-2">
               <Gift className="w-4 h-4" />
-              <span className="hidden sm:inline">Privilégios</span>
+              <span className="hidden sm:inline">Legados</span>
             </TabsTrigger>
             <TabsTrigger value="factions" className="flex items-center gap-2">
               <Users className="w-4 h-4" />

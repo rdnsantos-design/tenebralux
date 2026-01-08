@@ -1555,6 +1555,118 @@ export type Database = {
         }
         Relationships: []
       }
+      rpg_challenges: {
+        Row: {
+          created_at: string
+          description: string
+          effect: string | null
+          id: string
+          name: string
+          privilege_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          effect?: string | null
+          id: string
+          name: string
+          privilege_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          effect?: string | null
+          id?: string
+          name?: string
+          privilege_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_challenges_privilege_id_fkey"
+            columns: ["privilege_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_privileges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_privilege_categories: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rpg_privileges: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string
+          effect: string | null
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description: string
+          effect?: string | null
+          id: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string
+          effect?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_privileges_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_privilege_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rpg_skill_specializations: {
         Row: {
           created_at: string
