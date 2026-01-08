@@ -12,7 +12,7 @@ import { DeckbuildingPanel } from '@/components/multiplayer/DeckbuildingPanel';
 import { DeploymentScreen } from '@/components/multiplayer/DeploymentScreen';
 import { CombatScreen } from '@/components/multiplayer/CombatScreen';
 import { TestChecklist } from '@/components/multiplayer/TestChecklist';
-import { SinglePlayerGame } from '@/components/singleplayer/SinglePlayerGame';
+import { SinglePlayerGameV2 } from '@/components/singleplayer/SinglePlayerGameV2';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Loader2, Swords, Bot, Users, ArrowLeft } from 'lucide-react';
@@ -211,7 +211,7 @@ export default function GameRoom() {
 
   // Single Player Mode
   if (mode === 'singleplayer') {
-    return <SinglePlayerGame onBack={() => setMode('menu')} />;
+    return <SinglePlayerGameV2 onBack={() => setMode('menu')} />;
   }
 
   // Multiplayer Mode - Tela inicial
