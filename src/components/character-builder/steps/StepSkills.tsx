@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useCharacterBuilder } from '@/contexts/CharacterBuilderContext';
 import { useTheme } from '@/themes';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,19 +12,43 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { ATTRIBUTES } from '@/data/character/attributes';
 import { getSkillsByAttribute, getSkillLabel } from '@/data/character/skills';
 import { getVirtueByAttribute } from '@/data/character/virtues';
 import { CharacterAttributes } from '@/core/types';
-import { Minus, Plus, RotateCcw, Check, AlertCircle } from 'lucide-react';
+import { Minus, Plus, RotateCcw, Check, AlertCircle, Sparkles, X, Loader2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
+import { useRpgSkillSpecializations, RpgSkillSpecialization } from '@/hooks/useRpgSkills';
 
-const MAX_SKILL_VALUE = 3;
+// Na criação de personagem: máximo 4 níveis por perícia
+// O 4º nível pode ser normal OU uma especialização (3 níveis + 1 especialização)
+const MAX_SKILL_VALUE_CREATION = 4;
 const MIN_SKILL_VALUE = 0;
+
+import { SkillSpecialization } from '@/types/character-builder';
 
 export function StepSkills() {
   const { draft, updateDraft } = useCharacterBuilder();
   const { activeTheme } = useTheme();
+  const { data: allSpecializations = [], isLoading: specsLoading } = useRpgSkillSpecializations();
+
+  const [specDialogOpen, setSpecDialogOpen] = useState(false);
+  const [pendingSkillId, setPendingSkillId] = useState<string | null>(null);
+  const [pendingAttributeId, setPendingAttributeId] = useState<string | null>(null);
 
   const attributes = draft.attributes || {
     conhecimento: 1,
@@ -38,11 +62,16 @@ export function StepSkills() {
   };
 
   const skills = draft.skills || {};
+  const skillSpecializations: Record<string, SkillSpecialization> = draft.skillSpecializations || {};
 
-  // Calcular pontos usados por atributo
+  // Calcular pontos usados por atributo (cada nível custa 1, especialização também custa 1)
   const getUsedPointsForAttribute = (attributeId: string): number => {
     const attrSkills = getSkillsByAttribute(attributeId);
-    return attrSkills.reduce((sum, skill) => sum + (skills[skill.id] || 0), 0);
+    return attrSkills.reduce((sum, skill) => {
+      const baseValue = skills[skill.id] || 0;
+      const hasSpec = skillSpecializations[skill.id] !== undefined;
+      return sum + baseValue + (hasSpec ? 1 : 0);
+    }, 0);
   };
 
   // Calcular pontos restantes por atributo
@@ -52,42 +81,126 @@ export function StepSkills() {
     return available - used;
   };
 
-  // Handler para mudar valor de perícia
-  const handleSkillChange = (skillId: string, attributeId: string, delta: number) => {
-    const currentValue = skills[skillId] || 0;
-    const newValue = currentValue + delta;
+  // Obter o "nível efetivo" de uma perícia (níveis + especialização se houver)
+  const getEffectiveSkillLevel = (skillId: string): number => {
+    const base = skills[skillId] || 0;
+    const hasSpec = skillSpecializations[skillId] !== undefined;
+    return base + (hasSpec ? 1 : 0);
+  };
 
-    // Validações
-    if (newValue < MIN_SKILL_VALUE || newValue > MAX_SKILL_VALUE) return;
-    if (delta > 0 && getRemainingPointsForAttribute(attributeId) <= 0) return;
+  // Handler para aumentar perícia
+  const handleSkillIncrease = (skillId: string, attributeId: string) => {
+    const currentBase = skills[skillId] || 0;
+    const hasSpec = skillSpecializations[skillId] !== undefined;
+    const effectiveLevel = currentBase + (hasSpec ? 1 : 0);
 
+    // Se já está no máximo (4), não pode aumentar
+    if (effectiveLevel >= MAX_SKILL_VALUE_CREATION) return;
+    // Se não tem pontos sobrando, não pode aumentar
+    if (getRemainingPointsForAttribute(attributeId) <= 0) return;
+
+    // Se vai para o nível 4, oferece escolha: nível normal ou especialização
+    if (effectiveLevel === 3 && !hasSpec) {
+      // Abre dialog para escolher entre nível 4 ou especialização
+      setPendingSkillId(skillId);
+      setPendingAttributeId(attributeId);
+      setSpecDialogOpen(true);
+      return;
+    }
+
+    // Caso normal: apenas aumenta o nível
     updateDraft({
       skills: {
         ...skills,
-        [skillId]: newValue,
+        [skillId]: currentBase + 1,
       },
     });
   };
 
+  // Handler para diminuir perícia
+  const handleSkillDecrease = (skillId: string, attributeId: string) => {
+    const currentBase = skills[skillId] || 0;
+    const hasSpec = skillSpecializations[skillId] !== undefined;
+
+    // Se tem especialização e vai diminuir, remove a especialização primeiro
+    if (hasSpec) {
+      const newSpecs = { ...skillSpecializations };
+      delete newSpecs[skillId];
+      updateDraft({ skillSpecializations: newSpecs });
+      return;
+    }
+
+    // Caso normal: diminui o nível
+    if (currentBase <= MIN_SKILL_VALUE) return;
+
+    updateDraft({
+      skills: {
+        ...skills,
+        [skillId]: currentBase - 1,
+      },
+    });
+  };
+
+  // Escolher nível 4 normal
+  const handleChooseNormalLevel = () => {
+    if (!pendingSkillId) return;
+    
+    const currentBase = skills[pendingSkillId] || 0;
+    updateDraft({
+      skills: {
+        ...skills,
+        [pendingSkillId]: currentBase + 1,
+      },
+    });
+    
+    setSpecDialogOpen(false);
+    setPendingSkillId(null);
+    setPendingAttributeId(null);
+  };
+
+  // Escolher especialização
+  const handleChooseSpecialization = (spec: RpgSkillSpecialization) => {
+    if (!pendingSkillId) return;
+
+    updateDraft({
+      skillSpecializations: {
+        ...skillSpecializations,
+        [pendingSkillId]: {
+          skillId: pendingSkillId,
+          specializationId: spec.id,
+          specializationName: spec.name,
+        },
+      },
+    });
+
+    setSpecDialogOpen(false);
+    setPendingSkillId(null);
+    setPendingAttributeId(null);
+  };
+
   // Reset todas as perícias
   const handleResetAll = () => {
-    updateDraft({ skills: {} });
+    updateDraft({ skills: {}, skillSpecializations: {} });
   };
 
   // Reset perícias de um atributo
   const handleResetAttribute = (attributeId: string) => {
     const attrSkills = getSkillsByAttribute(attributeId);
     const newSkills = { ...skills };
+    const newSpecs = { ...skillSpecializations };
+    
     attrSkills.forEach(skill => {
       delete newSkills[skill.id];
+      delete newSpecs[skill.id];
     });
-    updateDraft({ skills: newSkills });
+    
+    updateDraft({ skills: newSkills, skillSpecializations: newSpecs });
   };
 
   // Verificar se todos os pontos foram distribuídos
   const allPointsDistributed = useMemo(() => {
     return ATTRIBUTES.every(attr => getRemainingPointsForAttribute(attr.id) === 0);
-  }, [attributes, skills]);
+  }, [attributes, skills, skillSpecializations]);
 
   // Calcular totais
   const totalAvailable = useMemo(() => {
@@ -95,8 +208,18 @@ export function StepSkills() {
   }, [attributes]);
 
   const totalUsed = useMemo(() => {
-    return Object.values(skills).reduce((sum, val) => sum + (val || 0), 0);
-  }, [skills]);
+    const skillPoints = Object.values(skills).reduce((sum, val) => sum + (val || 0), 0);
+    const specPoints = Object.keys(skillSpecializations).length;
+    return skillPoints + specPoints;
+  }, [skills, skillSpecializations]);
+
+  // Especializações da perícia pendente
+  const pendingSkillSpecs = useMemo(() => {
+    if (!pendingSkillId) return [];
+    return allSpecializations.filter(s => s.skill_id === pendingSkillId);
+  }, [pendingSkillId, allSpecializations]);
+
+  const pendingSkillLabel = pendingSkillId ? getSkillLabel(pendingSkillId, activeTheme) : '';
 
   return (
     <div className="space-y-6">
@@ -217,18 +340,27 @@ export function StepSkills() {
                   </div>
 
                   {/* Lista de Perícias */}
-                  {attrSkills.map((skill) => (
-                    <SkillRow
-                      key={skill.id}
-                      skillId={skill.id}
-                      label={getSkillLabel(skill.id, activeTheme)}
-                      value={skills[skill.id] || 0}
-                      virtueColor={virtue?.color || '#888'}
-                      canIncrease={remaining > 0}
-                      onIncrease={() => handleSkillChange(skill.id, attribute.id, 1)}
-                      onDecrease={() => handleSkillChange(skill.id, attribute.id, -1)}
-                    />
-                  ))}
+                  {attrSkills.map((skill) => {
+                    const baseValue = skills[skill.id] || 0;
+                    const specialization = skillSpecializations[skill.id];
+                    const effectiveLevel = baseValue + (specialization ? 1 : 0);
+                    
+                    return (
+                      <SkillRow
+                        key={skill.id}
+                        skillId={skill.id}
+                        label={getSkillLabel(skill.id, activeTheme)}
+                        baseValue={baseValue}
+                        specialization={specialization}
+                        effectiveLevel={effectiveLevel}
+                        maxLevel={MAX_SKILL_VALUE_CREATION}
+                        virtueColor={virtue?.color || '#888'}
+                        canIncrease={remaining > 0 && effectiveLevel < MAX_SKILL_VALUE_CREATION}
+                        onIncrease={() => handleSkillIncrease(skill.id, attribute.id)}
+                        onDecrease={() => handleSkillDecrease(skill.id, attribute.id)}
+                      />
+                    );
+                  })}
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -246,13 +378,99 @@ export function StepSkills() {
                 Cada atributo fornece pontos iguais ao seu valor para distribuir entre suas perícias.
               </p>
               <p className="mt-1">
-                Perícias podem ter nível de 0 a {MAX_SKILL_VALUE}. Em testes, você rola 
-                <span className="font-medium"> Atributo + Perícia</span> dados.
+                Perícias podem ter nível de 0 a {MAX_SKILL_VALUE_CREATION} na criação. 
+                No 4º nível, você pode escolher entre um <strong>nível normal</strong> ou uma <strong>especialização</strong>.
+              </p>
+              <p className="mt-1">
+                <Sparkles className="w-3 h-3 inline mr-1" />
+                Especialização = 3 níveis + 1 ênfase específica (bônus em situações relacionadas)
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog de Escolha: Nível 4 ou Especialização */}
+      <Dialog open={specDialogOpen} onOpenChange={setSpecDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Escolha para {pendingSkillLabel}</DialogTitle>
+            <DialogDescription>
+              Ao alcançar o 4º nível, você pode escolher entre um nível normal ou uma especialização.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Opção: Nível Normal */}
+            <Button 
+              variant="outline" 
+              className="w-full justify-start h-auto py-3"
+              onClick={handleChooseNormalLevel}
+            >
+              <div className="text-left">
+                <div className="font-medium">Nível 4 Normal</div>
+                <div className="text-xs text-muted-foreground">
+                  +1 dado em todos os testes desta perícia
+                </div>
+              </div>
+            </Button>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">ou</span>
+              </div>
+            </div>
+
+            {/* Opção: Especialização */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Sparkles className="w-4 h-4 text-primary" />
+                Escolher Especialização (Ênfase)
+              </div>
+              
+              {specsLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                </div>
+              ) : pendingSkillSpecs.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhuma especialização disponível para esta perícia.
+                </p>
+              ) : (
+                <div className="grid gap-2 max-h-48 overflow-y-auto">
+                  {pendingSkillSpecs.map((spec) => (
+                    <Button
+                      key={spec.id}
+                      variant="ghost"
+                      className="w-full justify-start h-auto py-2 border hover:border-primary"
+                      onClick={() => handleChooseSpecialization(spec)}
+                    >
+                      <div className="text-left">
+                        <div className="font-medium text-sm">{spec.name}</div>
+                        {spec.description && (
+                          <div className="text-xs text-muted-foreground">
+                            {spec.description}
+                          </div>
+                        )}
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSpecDialogOpen(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -261,7 +479,10 @@ export function StepSkills() {
 interface SkillRowProps {
   skillId: string;
   label: string;
-  value: number;
+  baseValue: number;
+  specialization?: SkillSpecialization;
+  effectiveLevel: number;
+  maxLevel: number;
   virtueColor: string;
   canIncrease: boolean;
   onIncrease: () => void;
@@ -270,24 +491,49 @@ interface SkillRowProps {
 
 function SkillRow({ 
   label, 
-  value, 
+  baseValue,
+  specialization,
+  effectiveLevel,
+  maxLevel,
   virtueColor,
   canIncrease, 
   onIncrease, 
   onDecrease 
 }: SkillRowProps) {
-  const isMin = value <= MIN_SKILL_VALUE;
-  const isMax = value >= MAX_SKILL_VALUE;
+  const isMin = effectiveLevel <= MIN_SKILL_VALUE;
+  const isMax = effectiveLevel >= maxLevel;
 
   return (
     <div className="flex items-center gap-3 py-1">
       {/* Nome da Perícia */}
-      <span className={cn(
-        "min-w-[140px] text-sm",
-        value > 0 ? "font-medium" : "text-muted-foreground"
+      <div className={cn(
+        "min-w-[140px]",
+        effectiveLevel > 0 ? "font-medium" : "text-muted-foreground"
       )}>
-        {label}
-      </span>
+        <span className="text-sm">{label}</span>
+        {specialization && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge 
+                  variant="secondary" 
+                  className="ml-2 text-xs gap-1 cursor-help"
+                  style={{ backgroundColor: `${virtueColor}20`, color: virtueColor }}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  {specialization.specializationName}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Especialização em {specialization.specializationName}</p>
+                <p className="text-xs text-muted-foreground">
+                  +1 dado adicional em testes relacionados
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
 
       {/* Controles */}
       <div className="flex items-center gap-2 ml-auto">
@@ -302,22 +548,31 @@ function SkillRow({
         </Button>
 
         {/* Valor com dots */}
-        <div className="flex items-center gap-1 w-20 justify-center">
-          {Array.from({ length: MAX_SKILL_VALUE }).map((_, i) => (
-            <div
-              key={i}
-              className={cn(
-                "w-4 h-4 rounded-full border-2 transition-all",
-                i < value 
-                  ? "border-transparent" 
-                  : "border-muted-foreground/30 bg-transparent"
-              )}
-              style={{ 
-                backgroundColor: i < value ? virtueColor : 'transparent',
-              }}
-            />
-          ))}
-          <span className="ml-2 text-sm font-bold w-4 text-center">{value}</span>
+        <div className="flex items-center gap-1 w-28 justify-center">
+          {Array.from({ length: maxLevel }).map((_, i) => {
+            const isFilled = i < effectiveLevel;
+            const isSpecSlot = i === baseValue && specialization;
+            
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center",
+                  isFilled 
+                    ? "border-transparent" 
+                    : "border-muted-foreground/30 bg-transparent"
+                )}
+                style={{ 
+                  backgroundColor: isFilled ? virtueColor : 'transparent',
+                }}
+              >
+                {isSpecSlot && (
+                  <Sparkles className="w-2.5 h-2.5 text-white" />
+                )}
+              </div>
+            );
+          })}
+          <span className="ml-2 text-sm font-bold w-4 text-center">{effectiveLevel}</span>
         </div>
 
         <Button

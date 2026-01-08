@@ -1,6 +1,13 @@
 import { Character, CharacterAttributes, CharacterVirtues } from '@/core/types';
 import { ThemeId } from '@/themes/types';
 
+// Estrutura para armazenar especialização escolhida
+export interface SkillSpecialization {
+  skillId: string;
+  specializationId: string;
+  specializationName: string;
+}
+
 // Estado do draft durante a criação
 export interface CharacterDraft {
   // Step 1: Conceito
@@ -14,6 +21,7 @@ export interface CharacterDraft {
   
   // Step 3: Perícias
   skills?: Record<string, number>;
+  skillSpecializations?: Record<string, SkillSpecialization>; // skillId -> especialização
   
   // Step 4: Derivados (calculados)
   // Não armazena - calcula em tempo real
