@@ -18,9 +18,9 @@ export interface CharacterDraft {
   // Step 4: Derivados (calculados)
   // Não armazena - calcula em tempo real
   
-  // Step 5: Bênçãos e Desafios
-  blessingIds?: string[];
-  challengeIds?: Record<string, string>; // blessingId -> challengeId
+  // Step 5: Privilégios e Desafios
+  privilegeIds?: string[];
+  challengeIds?: Record<string, string>; // privilegeId -> challengeId
   
   // Step 6: Virtudes
   virtues?: Partial<CharacterVirtues>;
@@ -50,7 +50,7 @@ export const WIZARD_STEPS: WizardStepDefinition[] = [
   { step: 2, id: 'attributes', name: 'Atributos', description: '8 atributos base', icon: 'BarChart3' },
   { step: 3, id: 'skills', name: 'Perícias', description: '40 perícias', icon: 'ListChecks' },
   { step: 4, id: 'derived', name: 'Características', description: 'Valores calculados', icon: 'Calculator' },
-  { step: 5, id: 'blessings', name: 'Legados', description: 'Bênçãos e desafios', icon: 'Gift' },
+  { step: 5, id: 'privileges', name: 'Legados', description: 'Privilégios e desafios', icon: 'Gift' },
   { step: 6, id: 'virtues', name: 'Virtudes', description: '4 virtudes', icon: 'Sparkles' },
   { step: 7, id: 'equipment', name: 'Equipamento', description: 'Armas e armaduras', icon: 'Swords' },
   { step: 8, id: 'summary', name: 'Resumo', description: 'Ficha completa', icon: 'FileText' },

@@ -8,7 +8,7 @@ import { CharacterDraft } from '@/types/character-builder';
 import { ATTRIBUTES } from '@/data/character/attributes';
 import { getSkillLabel, SKILLS } from '@/data/character/skills';
 import { getVirtueById, VIRTUES } from '@/data/character/virtues';
-import { getBlessingById } from '@/data/character/blessings';
+import { getPrivilegeById } from '@/data/character/privileges';
 import { getEquipmentById, getEquipmentName } from '@/data/character/equipment';
 import { getFactionById } from '@/data/character/factions';
 import { getCultureById } from '@/data/character/cultures';
@@ -293,22 +293,22 @@ export function generateCharacterPDF(character: CharacterDraft, options: PDFOpti
     yPos += 10;
   }
 
-  // Blessings Section
-  yPos = drawHeader('LEGADOS (BÊNÇÃOS E DESAFIOS)', yPos);
+  // Privileges Section
+  yPos = drawHeader('LEGADOS (PRIVILÉGIOS E DESAFIOS)', yPos);
   
-  const blessingIds = character.blessingIds || [];
-  if (blessingIds.length > 0) {
-    blessingIds.forEach((blessingId) => {
-      const blessing = getBlessingById(blessingId);
-      if (blessing) {
+  const privilegeIds = character.privilegeIds || [];
+  if (privilegeIds.length > 0) {
+    privilegeIds.forEach((privilegeId) => {
+      const privilege = getPrivilegeById(privilegeId);
+      if (privilege) {
         doc.setTextColor(...colors.accent);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text(`✦ ${blessing.name}`, margin, yPos + 5);
+        doc.text(`✦ ${privilege.name}`, margin, yPos + 5);
         
-        const challengeId = character.challengeIds?.[blessingId];
+        const challengeId = character.challengeIds?.[privilegeId];
         const challenge = challengeId 
-          ? blessing.challenges.find(c => c.id === challengeId) 
+          ? privilege.challenges.find(c => c.id === challengeId) 
           : null;
         
         if (challenge) {

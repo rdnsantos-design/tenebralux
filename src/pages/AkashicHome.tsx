@@ -39,7 +39,7 @@ const gameModes: GameModeData[] = [
     options: [
       { label: 'Criar Agente', description: 'Novo personagem do zero', path: '/character-builder', icon: UserPlus },
       { label: 'Meus Agentes', description: 'Gerenciar personagens', path: '/character-builder', icon: Users },
-      { label: 'Regras & Dados', description: 'Referência rápida', path: '/character-builder', icon: Settings },
+      { label: 'Regras & Dados', description: 'Editar sistema', path: '/rpg-rules', icon: Settings },
     ],
   },
   {

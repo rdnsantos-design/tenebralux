@@ -15,7 +15,7 @@ import {
 import { ATTRIBUTES } from '@/data/character/attributes';
 import { getSkillLabel } from '@/data/character/skills';
 import { VIRTUES, getVirtueById } from '@/data/character/virtues';
-import { getBlessingById } from '@/data/character/blessings';
+import { getPrivilegeById } from '@/data/character/privileges';
 import { getEquipmentById, getEquipmentName } from '@/data/character/equipment';
 import { getFactionById } from '@/data/character/factions';
 import { getCultureById } from '@/data/character/cultures';
@@ -91,17 +91,17 @@ export function StepSummary({ onFinish }: StepSummaryProps) {
     return calculateRegencyStats(attributes, skills, activeTheme);
   }, [attributes, skills, activeTheme]);
 
-  // Bênçãos e desafios
-  const blessingsWithChallenges = useMemo(() => {
-    return (draft.blessingIds || []).map(blessingId => {
-      const blessing = getBlessingById(blessingId);
-      const challengeId = draft.challengeIds?.[blessingId];
+  // Privilégios e desafios
+  const privilegesWithChallenges = useMemo(() => {
+    return (draft.privilegeIds || []).map(privilegeId => {
+      const privilege = getPrivilegeById(privilegeId);
+      const challengeId = draft.challengeIds?.[privilegeId];
       const challenge = challengeId 
-        ? blessing?.challenges.find(c => c.id === challengeId) 
+        ? privilege?.challenges.find(c => c.id === challengeId) 
         : null;
-      return { blessing, challenge };
-    }).filter(b => b.blessing);
-  }, [draft.blessingIds, draft.challengeIds]);
+      return { privilege, challenge };
+    }).filter(b => b.privilege);
+  }, [draft.privilegeIds, draft.challengeIds]);
 
   // Equipamento
   const equipment = useMemo(() => {
@@ -295,14 +295,14 @@ export function StepSummary({ onFinish }: StepSummaryProps) {
         step={5}
         onEdit={() => goToStep(5)}
       >
-        {blessingsWithChallenges.length > 0 ? (
+        {privilegesWithChallenges.length > 0 ? (
           <div className="space-y-3">
-            {blessingsWithChallenges.map(({ blessing, challenge }) => (
-              <div key={blessing!.id} className="p-3 rounded-lg bg-muted/50">
+            {privilegesWithChallenges.map(({ privilege, challenge }) => (
+              <div key={privilege!.id} className="p-3 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-2 mb-1">
                   <Gift className="w-4 h-4 text-green-500" />
                   <span className="font-medium text-green-600 dark:text-green-400">
-                    {blessing!.name}
+                    {privilege!.name}
                   </span>
                 </div>
                 {challenge && (

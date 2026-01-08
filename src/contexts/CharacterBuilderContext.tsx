@@ -178,14 +178,14 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
         // Os valores são calculados automaticamente
         break;
 
-      case 5: // Bênçãos
-        // Cada bênção precisa de um desafio
-        if (draft.blessingIds?.length) {
-          for (const blessingId of draft.blessingIds) {
-            if (!draft.challengeIds?.[blessingId]) {
+      case 5: // Privilégios
+        // Cada privilégio precisa de um desafio
+        if (draft.privilegeIds?.length) {
+          for (const privilegeId of draft.privilegeIds) {
+            if (!draft.challengeIds?.[privilegeId]) {
               errors.push({ 
-                field: `challenge_${blessingId}`, 
-                message: 'Selecione um desafio para esta bênção' 
+                field: `challenge_${privilegeId}`, 
+                message: 'Selecione um desafio para este privilégio' 
               });
             }
           }

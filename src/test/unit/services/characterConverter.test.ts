@@ -41,7 +41,7 @@ const mockCharacter: CharacterDraft = {
     coragem: 1,
   },
   startingVirtue: 'coragem',
-  blessingIds: [],
+  privilegeIds: [],
   weaponId: 'sword',
   armorId: 'chainmail',
 };
