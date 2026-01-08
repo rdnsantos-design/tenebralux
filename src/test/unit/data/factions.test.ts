@@ -4,6 +4,9 @@ import {
   TENEBRA_FACTIONS,
   getFactionsByTheme,
   getFactionById,
+  getFactionVirtue,
+  getFactionAttributeBonuses,
+  getFactionFreeSkills,
 } from '@/data/character/factions';
 
 describe('Data - Factions', () => {
@@ -23,6 +26,8 @@ describe('Data - Factions', () => {
         expect(faction).toHaveProperty('id');
         expect(faction).toHaveProperty('name');
         expect(faction).toHaveProperty('theme');
+        expect(faction).toHaveProperty('color');
+        expect(faction).toHaveProperty('icon');
         expect(faction.theme).toBe('akashic');
       });
     });
@@ -44,6 +49,8 @@ describe('Data - Factions', () => {
         expect(faction).toHaveProperty('id');
         expect(faction).toHaveProperty('name');
         expect(faction).toHaveProperty('theme');
+        expect(faction).toHaveProperty('color');
+        expect(faction).toHaveProperty('icon');
         expect(faction.theme).toBe('tenebralux');
       });
     });
@@ -81,6 +88,65 @@ describe('Data - Factions', () => {
     it('should return undefined for invalid ID', () => {
       const result = getFactionById('invalid-faction');
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('getFactionVirtue', () => {
+    it('should return virtue for faction with virtue', () => {
+      const hegemonia = AKASHIC_FACTIONS.find(f => f.id === 'hegemonia');
+      if (hegemonia?.virtue) {
+        const result = getFactionVirtue('hegemonia');
+        expect(result).toBe('coragem');
+      }
+    });
+
+    it('should return choice for faction with free choice', () => {
+      const alianca = AKASHIC_FACTIONS.find(f => f.id === 'alianca');
+      if (alianca?.virtue === 'choice') {
+        const result = getFactionVirtue('alianca');
+        expect(result).toBe('choice');
+      }
+    });
+
+    it('should return undefined for invalid faction', () => {
+      const result = getFactionVirtue('invalid');
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('getFactionAttributeBonuses', () => {
+    it('should return attribute bonuses for faction with bonuses', () => {
+      const concordia = AKASHIC_FACTIONS.find(f => f.id === 'concordia');
+      if (concordia?.attributeBonuses) {
+        const result = getFactionAttributeBonuses('concordia');
+        expect(result).toContain('raciocinio');
+        expect(result).toContain('corpo');
+      }
+    });
+
+    it('should return empty array for faction without bonuses', () => {
+      const result = getFactionAttributeBonuses('hegemonia');
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getFactionFreeSkills', () => {
+    it('should return free skills for faction with skills', () => {
+      const hegemonia = AKASHIC_FACTIONS.find(f => f.id === 'hegemonia');
+      if (hegemonia?.freeSkills) {
+        const result = getFactionFreeSkills('hegemonia');
+        expect(result).toBeDefined();
+        expect(result?.points).toBe(5);
+        expect(result?.skillCount).toBe(1);
+      }
+    });
+
+    it('should return undefined for faction without free skills', () => {
+      const corporacoes = AKASHIC_FACTIONS.find(f => f.id === 'corporacoes');
+      if (!corporacoes?.freeSkills) {
+        const result = getFactionFreeSkills('corporacoes');
+        expect(result).toBeUndefined();
+      }
     });
   });
 });
