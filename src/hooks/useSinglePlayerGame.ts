@@ -119,7 +119,7 @@ export function useSinglePlayerGame() {
     }));
   }, []);
   
-  // Iniciar jogo
+  // Iniciar jogo (método antigo - mantido para compatibilidade)
   const startGame = useCallback(async (difficulty: BotDifficulty) => {
     setState(prev => ({
       ...initialState,
@@ -129,7 +129,6 @@ export function useSinglePlayerGame() {
       isLoading: true,
     }));
     
-    // Bot escolhe cultura
     const botCulture = makeBotCultureChoice(difficulty);
     
     setState(prev => ({
@@ -139,6 +138,102 @@ export function useSinglePlayerGame() {
     }));
     
     addLog(`${getBotName(difficulty)} entra na arena com a cultura ${botCulture}`);
+  }, [addLog]);
+  
+  // Iniciar jogo com exército pré-construído
+  const startGameWithArmy = useCallback(async (army: { 
+    name: string; 
+    culture: string; 
+    cultureName?: string;
+    hitPoints: number;
+    attack: number;
+    defense: number;
+    mobility: number;
+    commanders: Array<{ templateId: string; especializacao: string; comando: number; estrategia: number; guarda: number; isGeneral?: boolean }>;
+    tacticalCards: Array<{ cardId: string; cardName: string; vetCost: number }>;
+  }, difficulty: BotDifficulty) => {
+    const botCulture = makeBotCultureChoice(difficulty);
+    
+    // Converter comandantes do exército para o formato do jogo
+    const playerCommanders: BotCommander[] = army.commanders.map((cmd, i) => ({
+      instance_id: `player-cmd-${i}`,
+      numero: i,
+      especializacao: cmd.especializacao,
+      comando_base: cmd.comando,
+      cmd_free: cmd.comando,
+      estrategia: cmd.estrategia,
+      guarda_current: cmd.guarda,
+      is_general: cmd.isGeneral || false,
+    }));
+    
+    // Converter cartas do exército para o formato do jogo
+    const playerCards: BotCard[] = army.tacticalCards.map(card => ({
+      id: card.cardId,
+      name: card.cardName,
+      card_type: 'tática' as const,
+      attack_bonus: 0,
+      defense_bonus: 0,
+      mobility_bonus: 0,
+      command_required: 1,
+      vet_cost: card.vetCost,
+    }));
+    
+    // Criar comandantes do bot
+    const botCommanders: BotCommander[] = [
+      { instance_id: 'bot-cmd-1', numero: 1, especializacao: 'Infantaria', comando_base: 3, cmd_free: 3, estrategia: 2, guarda_current: 2, is_general: false },
+      { instance_id: 'bot-cmd-2', numero: 2, especializacao: 'Cavalaria', comando_base: 2, cmd_free: 2, estrategia: 3, guarda_current: 1, is_general: false },
+      { instance_id: 'bot-general', numero: 0, especializacao: 'General', comando_base: 1, cmd_free: 1, estrategia: 4, guarda_current: 3, is_general: true },
+    ];
+    
+    setState({
+      ...initialState,
+      phase: 'combat',
+      combatPhase: 'initiative_maneuver',
+      botDifficulty: difficulty,
+      botName: getBotName(difficulty),
+      botCulture,
+      playerCulture: army.cultureName || army.culture,
+      playerHp: army.hitPoints,
+      botHp: 10, // Bot tem HP baseado na dificuldade
+      playerHand: playerCards,
+      playerCommanders,
+      playerCmdState: {
+        general: { cmd_total: 1, cmd_free: 1, strategy_total: 4 },
+        commanders: Object.fromEntries(playerCommanders.map(c => [c.instance_id, { cmd_free: c.comando_base }])),
+      },
+      botHand: [], // Será preenchido
+      botCommanders,
+      botCmdState: {
+        general: { cmd_total: 1, cmd_free: 1, strategy_total: 4 },
+        commanders: { 'bot-cmd-1': { cmd_free: 3 }, 'bot-cmd-2': { cmd_free: 2 } },
+      },
+    });
+    
+    addLog(`Combate iniciado! ${army.name} vs ${getBotName(difficulty)} (${botCulture})`);
+    
+    // Carregar cartas do bot
+    try {
+      const { data: cards } = await supabase
+        .from('mass_combat_tactical_cards')
+        .select('*')
+        .or(`culture.eq.${botCulture},culture.is.null`)
+        .limit(7);
+      
+      const botCards: BotCard[] = (cards || []).map(c => ({
+        id: c.id,
+        name: c.name,
+        card_type: c.card_type as BotCard['card_type'],
+        attack_bonus: c.attack_bonus,
+        defense_bonus: c.defense_bonus,
+        mobility_bonus: c.mobility_bonus,
+        command_required: c.command_required,
+        vet_cost: c.vet_cost,
+      }));
+      
+      setState(prev => ({ ...prev, botHand: botCards }));
+    } catch (err) {
+      console.error('Erro ao carregar cartas do bot:', err);
+    }
   }, [addLog]);
   
   // Jogador seleciona cultura

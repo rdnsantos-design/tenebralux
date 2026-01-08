@@ -1,3 +1,8 @@
+/**
+ * Componente principal do modo Single Player
+ * Gerencia o fluxo: Lista de Exércitos → Builder → Jogo
+ */
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,11 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Swords, Heart, Shield, Zap, Trophy, Bot, 
-  ArrowLeft, Play, RotateCcw, Loader2
+  ArrowLeft, Play, RotateCcw, Loader2, Crown
 } from 'lucide-react';
-import { useSinglePlayerGame } from '@/hooks/useSinglePlayerGame';
 import { BotDifficulty } from '@/lib/botEngine';
-import { useMassCombatCultures } from '@/hooks/useMassCombatCultures';
+import { StrategicArmy } from '@/types/combat/strategic-army';
+import { useLocalArmies } from '@/hooks/useLocalArmies';
+import { SinglePlayerArmyList } from './SinglePlayerArmyList';
+import { SinglePlayerArmyBuilder } from './SinglePlayerArmyBuilder';
+import { useSinglePlayerGame } from '@/hooks/useSinglePlayerGame';
 
 const DIFFICULTY_CONFIG: Record<BotDifficulty, { label: string; color: string; description: string }> = {
   easy: { 
@@ -29,31 +37,127 @@ const DIFFICULTY_CONFIG: Record<BotDifficulty, { label: string; color: string; d
   },
 };
 
+type SinglePlayerView = 
+  | 'army_list' 
+  | 'army_builder' 
+  | 'difficulty_select'
+  | 'combat'
+  | 'finished';
+
 interface SinglePlayerGameProps {
   onBack: () => void;
 }
 
 export function SinglePlayerGame({ onBack }: SinglePlayerGameProps) {
-  const { state, startGame, selectCulture, confirmDeck, playCard, passTurn, resetGame } = useSinglePlayerGame();
-  const { data: cultures = [] } = useMassCombatCultures();
+  const [view, setView] = useState<SinglePlayerView>('army_list');
+  const [selectedArmy, setSelectedArmy] = useState<StrategicArmy | null>(null);
+  const [editingArmy, setEditingArmy] = useState<StrategicArmy | undefined>(undefined);
+  const { save: saveArmy } = useLocalArmies();
+  
+  const { state, startGameWithArmy, playCard, passTurn, resetGame } = useSinglePlayerGame();
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [selectedCommanderId, setSelectedCommanderId] = useState<string | null>(null);
-  
-  // Tela de seleção de dificuldade
-  if (state.phase === 'setup') {
+
+  // Handler: selecionar exército para jogar
+  const handleSelectArmy = (army: StrategicArmy) => {
+    setSelectedArmy(army);
+    setView('difficulty_select');
+  };
+
+  // Handler: criar novo exército
+  const handleCreateNew = () => {
+    setEditingArmy(undefined);
+    setView('army_builder');
+  };
+
+  // Handler: editar exército
+  const handleEditArmy = (army: StrategicArmy) => {
+    setEditingArmy(army);
+    setView('army_builder');
+  };
+
+  // Handler: salvar exército do builder
+  const handleSaveArmy = (army: StrategicArmy) => {
+    saveArmy(army);
+    setView('army_list');
+  };
+
+  // Handler: iniciar jogo com dificuldade
+  const handleStartGame = async (difficulty: BotDifficulty) => {
+    if (!selectedArmy) return;
+    await startGameWithArmy(selectedArmy, difficulty);
+    setView('combat');
+  };
+
+  // Handler: voltar ao menu
+  const handleBackToMenu = () => {
+    resetGame();
+    setSelectedArmy(null);
+    setSelectedCardIndex(null);
+    setSelectedCommanderId(null);
+    setView('army_list');
+  };
+
+  // ========== VIEWS ==========
+
+  // Lista de exércitos
+  if (view === 'army_list') {
+    return (
+      <SinglePlayerArmyList
+        onSelectArmy={handleSelectArmy}
+        onCreateNew={handleCreateNew}
+        onEditArmy={handleEditArmy}
+        onBack={onBack}
+      />
+    );
+  }
+
+  // Builder de exército
+  if (view === 'army_builder') {
+    return (
+      <SinglePlayerArmyBuilder
+        army={editingArmy}
+        onSave={handleSaveArmy}
+        onCancel={() => setView('army_list')}
+      />
+    );
+  }
+
+  // Seleção de dificuldade
+  if (view === 'difficulty_select' && selectedArmy) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-        <Button variant="ghost" className="absolute top-4 left-4" onClick={onBack}>
+        <Button variant="ghost" className="absolute top-4 left-4" onClick={() => setView('army_list')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar
         </Button>
         
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Bot className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Modo Single Player</h1>
+            <h1 className="text-2xl font-bold">Escolha a Dificuldade</h1>
           </div>
-          <p className="text-muted-foreground">Escolha a dificuldade do bot</p>
+          <p className="text-muted-foreground">
+            Jogando com: <span className="font-medium text-foreground">{selectedArmy.name}</span>
+          </p>
+          <div className="flex items-center justify-center gap-3 mt-2 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Swords className="w-4 h-4 text-red-500" />
+              {selectedArmy.attack}
+            </span>
+            <span className="flex items-center gap-1">
+              <Shield className="w-4 h-4 text-blue-500" />
+              {selectedArmy.defense}
+            </span>
+            <span className="flex items-center gap-1">
+              <Zap className="w-4 h-4 text-yellow-500" />
+              {selectedArmy.mobility}
+            </span>
+            <span className="flex items-center gap-1">
+              <Heart className="w-4 h-4 text-pink-500" />
+              {selectedArmy.hitPoints} PV
+            </span>
+          </div>
         </div>
         
         <div className="grid gap-4 w-full max-w-md">
@@ -63,7 +167,7 @@ export function SinglePlayerGame({ onBack }: SinglePlayerGameProps) {
               <Card 
                 key={diff}
                 className="cursor-pointer hover:border-primary transition-colors"
-                onClick={() => startGame(diff)}
+                onClick={() => handleStartGame(diff)}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
@@ -81,104 +185,9 @@ export function SinglePlayerGame({ onBack }: SinglePlayerGameProps) {
       </div>
     );
   }
-  
-  // Tela de seleção de cultura
-  if (state.phase === 'culture_selection') {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-2">Escolha sua Cultura</h1>
-          <p className="text-muted-foreground">
-            Bot ({state.botName}) escolheu: <Badge variant="outline">{state.botCulture}</Badge>
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-2xl">
-          {cultures.map((culture) => (
-            <Card 
-              key={culture.id}
-              className="cursor-pointer hover:border-primary transition-colors"
-              onClick={() => selectCulture(culture.name)}
-            >
-              <CardContent className="p-4 text-center">
-                <h3 className="font-bold">{culture.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{culture.specialization}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        
-        {state.isLoading && (
-          <div className="mt-4 flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Carregando...</span>
-          </div>
-        )}
-      </div>
-    );
-  }
-  
-  // Tela de deckbuilding (simplificada - confirmar deck)
-  if (state.phase === 'deckbuilding') {
-    return (
-      <div className="min-h-screen flex flex-col items-center bg-background p-4">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold mb-2">Seu Deck</h1>
-          <p className="text-muted-foreground">Cultura: {state.playerCulture}</p>
-        </div>
-        
-        <Card className="w-full max-w-2xl mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Cartas ({state.playerHand.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {state.playerHand.map((card, index) => (
-                <div key={card.id} className="p-2 border rounded text-xs">
-                  <div className="font-medium">{card.name}</div>
-                  <div className="text-muted-foreground capitalize">{card.card_type}</div>
-                  {card.attack_bonus ? <span className="text-red-500">+{card.attack_bonus} ATQ</span> : null}
-                  {card.defense_bonus ? <span className="text-blue-500 ml-1">+{card.defense_bonus} DEF</span> : null}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="w-full max-w-2xl mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Comandantes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              {state.playerCommanders.map((cmd) => (
-                <div 
-                  key={cmd.instance_id} 
-                  className={`p-2 border rounded text-xs flex-1 ${cmd.is_general ? 'border-yellow-500 bg-yellow-500/10' : ''}`}
-                >
-                  <div className="font-medium">
-                    {cmd.is_general && <Trophy className="w-3 h-3 inline mr-1 text-yellow-500" />}
-                    {cmd.especializacao}
-                  </div>
-                  <div className="text-muted-foreground">
-                    CMD: {cmd.comando_base} | EST: {cmd.estrategia}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Button size="lg" onClick={confirmDeck} disabled={state.isLoading}>
-          <Play className="w-4 h-4 mr-2" />
-          Iniciar Combate
-        </Button>
-      </div>
-    );
-  }
-  
+
   // Tela de combate
-  if (state.phase === 'combat') {
+  if (view === 'combat' || state.phase === 'combat') {
     const canPlayCard = selectedCardIndex !== null && selectedCommanderId !== null;
     
     return (
@@ -197,7 +206,7 @@ export function SinglePlayerGame({ onBack }: SinglePlayerGameProps) {
           <Card className="border-primary/50">
             <CardContent className="py-3">
               <div className="flex items-center justify-between">
-                <span className="font-bold">Você</span>
+                <span className="font-bold">{selectedArmy?.name || 'Você'}</span>
                 <div className="flex items-center gap-1">
                   <Heart className="w-4 h-4 text-red-500" />
                   <span className="font-bold">{state.playerHp}</span>
@@ -206,8 +215,23 @@ export function SinglePlayerGame({ onBack }: SinglePlayerGameProps) {
               <div className="w-full h-2 bg-muted rounded-full mt-2">
                 <div 
                   className="h-full bg-green-500 rounded-full transition-all"
-                  style={{ width: `${state.playerHp}%` }}
+                  style={{ width: `${(state.playerHp / (selectedArmy?.hitPoints || 100)) * 100}%` }}
                 />
+              </div>
+              {/* Atributos */}
+              <div className="flex gap-2 mt-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Swords className="w-3 h-3 text-red-500" />
+                  {selectedArmy?.attack || 0}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-blue-500" />
+                  {selectedArmy?.defense || 5}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-yellow-500" />
+                  {selectedArmy?.mobility || 0}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -226,6 +250,10 @@ export function SinglePlayerGame({ onBack }: SinglePlayerGameProps) {
                   className="h-full bg-red-500 rounded-full transition-all"
                   style={{ width: `${state.botHp}%` }}
                 />
+              </div>
+              {/* Cultura do bot */}
+              <div className="text-xs text-muted-foreground mt-2">
+                {state.botCulture}
               </div>
             </CardContent>
           </Card>
@@ -346,9 +374,9 @@ export function SinglePlayerGame({ onBack }: SinglePlayerGameProps) {
       </div>
     );
   }
-  
+
   // Tela de fim de jogo
-  if (state.phase === 'finished') {
+  if (state.phase === 'finished' || view === 'finished') {
     const isWinner = state.winner === 'player';
     
     return (
@@ -380,13 +408,20 @@ export function SinglePlayerGame({ onBack }: SinglePlayerGameProps) {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button className="flex-1" onClick={resetGame}>
+              <Button className="flex-1" onClick={() => {
+                resetGame();
+                if (selectedArmy) {
+                  setView('difficulty_select');
+                } else {
+                  handleBackToMenu();
+                }
+              }}>
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Jogar Novamente
               </Button>
-              <Button variant="outline" onClick={onBack}>
+              <Button variant="outline" onClick={handleBackToMenu}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
+                Menu
               </Button>
             </div>
           </CardContent>
@@ -394,6 +429,11 @@ export function SinglePlayerGame({ onBack }: SinglePlayerGameProps) {
       </div>
     );
   }
-  
-  return null;
+
+  // Fallback - loading
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+    </div>
+  );
 }
