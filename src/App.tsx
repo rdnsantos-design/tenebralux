@@ -22,6 +22,7 @@ import FieldCommanders from "./pages/FieldCommanders";
 import GameRoom from "./pages/GameRoom";
 import NotFound from "./pages/NotFound";
 import CharacterBuilder from "./pages/CharacterBuilder";
+import RPGRules from "./pages/RPGRules";
 import AuthCallback from "./pages/AuthCallback";
 
 // Tactical Battle Pages
@@ -65,6 +66,9 @@ const App = () => (
               {/* Character Builder Routes */}
               <Route path="/character-builder" element={<CharacterBuilder />} />
               <Route path="/character-builder/create" element={<CharacterBuilder />} />
+              
+              {/* RPG Rules Routes */}
+              <Route path="/rpg-rules" element={<RPGRules />} />
               
               {/* Auth Routes */}
               <Route path="/auth/callback" element={<AuthCallback />} />
