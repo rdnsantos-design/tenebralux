@@ -5,7 +5,7 @@ export * from './steps/StepConcept';
 export * from './steps/StepAttributes';
 export * from './steps/StepSkills';
 export * from './steps/StepDerived';
-export * from './steps/StepBlessings';
+export * from './steps/StepPrivileges';
 export * from './steps/StepVirtues';
 export * from './steps/StepEquipment';
 export * from './steps/StepSummary';
