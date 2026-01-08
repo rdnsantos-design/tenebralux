@@ -170,7 +170,7 @@ export function useSinglePlayerGame() {
     const playerCards: BotCard[] = army.tacticalCards.map(card => ({
       id: card.cardId,
       name: card.cardName,
-      card_type: 'tática' as const,
+      card_type: 'ofensiva' as BotCard['card_type'], // Default to ofensiva, can be improved later
       attack_bonus: 0,
       defense_bonus: 0,
       mobility_bonus: 0,
@@ -410,14 +410,20 @@ export function useSinglePlayerGame() {
   
   // Turno do bot - declarado primeiro para poder ser usado por processCombatRound
   const triggerBotTurn = useCallback(() => {
-    setState(prev => {
-      const delay = getBotDelayMs(prev.botDifficulty);
-      
-      console.log('[Bot] Iniciando turno do bot, delay:', delay);
-      console.log('[Bot] Mão do bot:', prev.botHand.length, 'cartas');
-      
-      // Usar setTimeout fora do setState
-      setTimeout(() => {
+    const delay = getBotDelayMs(state.botDifficulty);
+    
+    console.log('[Bot] Iniciando turno do bot, delay:', delay);
+    console.log('[Bot] Mão do bot:', state.botHand.length, 'cartas');
+    
+    setState(prev => ({ ...prev, isLoading: true }));
+    
+    // Limpar timeout anterior se existir
+    if (botTimerRef.current) {
+      clearTimeout(botTimerRef.current);
+    }
+    
+    // Criar novo timeout e armazenar na ref
+    botTimerRef.current = setTimeout(() => {
         setState(current => {
           const botState: BotGameState = {
             phase: current.combatPhase,
@@ -501,10 +507,7 @@ export function useSinglePlayerGame() {
           }
         });
       }, delay);
-      
-      return { ...prev, isLoading: true };
-    });
-  }, []);
+  }, [state.botDifficulty, state.botHand.length]);
   
   // Processar rodada de combate
   const processCombatRound = useCallback((actor: 'player' | 'bot', card: BotCard | null) => {
@@ -611,6 +614,7 @@ export function useSinglePlayerGame() {
   return {
     state,
     startGame,
+    startGameWithArmy,
     selectCulture,
     confirmDeck,
     playCard,
