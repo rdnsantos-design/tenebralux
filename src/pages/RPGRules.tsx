@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Gift, Swords, BookOpen, Users } from 'lucide-react';
 import { PrivilegeManager } from '@/components/rpg/PrivilegeManager';
+import { FactionManager } from '@/components/rpg/FactionManager';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
 export default function RPGRules() {
@@ -55,10 +56,7 @@ export default function RPGRules() {
           </TabsContent>
 
           <TabsContent value="factions">
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Gerenciador de Facções em desenvolvimento...</p>
-            </div>
+            <FactionManager />
           </TabsContent>
 
           <TabsContent value="equipment">
