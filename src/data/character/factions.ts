@@ -21,7 +21,7 @@ export interface FactionDefinition {
 export const AKASHIC_FACTIONS: FactionDefinition[] = [
   {
     id: 'hegemonia',
-    name: 'Hegemonia',
+    name: 'Hegemonia Humanista',
     theme: 'akashic',
     description: 'O poder militar dominante do cosmos, onde a força e a disciplina são a lei.',
     color: '#dc2626',
@@ -31,7 +31,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
   },
   {
     id: 'alianca',
-    name: 'Aliança',
+    name: 'Aliança Estelar',
     theme: 'akashic',
     description: 'Coalizão diversificada de mundos que valoriza a liberdade e a cooperação.',
     color: '#3b82f6',
@@ -41,7 +41,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
   },
   {
     id: 'pacto',
-    name: 'Pacto',
+    name: 'Pacto de Liberstadt',
     theme: 'akashic',
     description: 'Federação de sobreviventes unidos pela determinação e resiliência.',
     color: '#84cc16',
@@ -51,7 +51,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
   },
   {
     id: 'concordia',
-    name: 'Concórdia',
+    name: 'Nova Concórdia',
     theme: 'akashic',
     description: 'Civilização avançada que equilibra intelecto e força física em harmonia.',
     color: '#8b5cf6',
@@ -61,7 +61,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
   },
   {
     id: 'brunianos',
-    name: 'Brunianos',
+    name: 'República Bruniana',
     theme: 'akashic',
     description: 'Anciãos sábios guardiões do conhecimento ancestral e da tradição.',
     color: '#f59e0b',
@@ -72,7 +72,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
   },
   {
     id: 'federacao',
-    name: 'Federação',
+    name: 'Federação Solônica',
     theme: 'akashic',
     description: 'União diplomática que busca equilíbrio e entendimento entre todos os povos.',
     color: '#06b6d4',
