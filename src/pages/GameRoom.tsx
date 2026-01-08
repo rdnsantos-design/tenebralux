@@ -12,14 +12,17 @@ import { DeckbuildingPanel } from '@/components/multiplayer/DeckbuildingPanel';
 import { DeploymentScreen } from '@/components/multiplayer/DeploymentScreen';
 import { CombatScreen } from '@/components/multiplayer/CombatScreen';
 import { TestChecklist } from '@/components/multiplayer/TestChecklist';
+import { SinglePlayerGame } from '@/components/singleplayer/SinglePlayerGame';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Swords } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Swords, Bot, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePhaseGuard } from '@/hooks/usePhaseGuard';
 
 export default function GameRoom() {
   const { roomCode } = useParams<{ roomCode?: string }>();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<'menu' | 'singleplayer' | 'multiplayer'>(roomCode ? 'multiplayer' : 'menu');
   const [lastAction, setLastAction] = useState<{
     action_type: string;
     player_number: number;
@@ -206,7 +209,52 @@ export default function GameRoom() {
     );
   }
 
-  // Tela inicial
+  // Single Player Mode
+  if (mode === 'singleplayer') {
+    return <SinglePlayerGame onBack={() => setMode('menu')} />;
+  }
+
+  // Multiplayer Mode - Tela inicial
+  if (mode === 'multiplayer' && !room) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+        <Button variant="ghost" className="absolute top-4 left-4" onClick={() => setMode('menu')}>
+          ← Voltar
+        </Button>
+        
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Swords className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold">Mass Combat</h1>
+          </div>
+          <p className="text-muted-foreground">Card Game Multiplayer</p>
+        </div>
+        
+        <Tabs defaultValue={roomCode ? 'join' : 'create'} className="w-full max-w-md">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="create">Criar Sala</TabsTrigger>
+            <TabsTrigger value="join">Entrar</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="create" className="mt-4">
+            <CreateRoomForm onCreateRoom={handleCreateRoom} loading={loading} />
+          </TabsContent>
+          
+          <TabsContent value="join" className="mt-4">
+            <JoinRoomForm 
+              onJoinRoom={handleJoinRoom} 
+              initialRoomCode={roomCode || ''} 
+              loading={loading} 
+            />
+          </TabsContent>
+        </Tabs>
+        
+        {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+      </div>
+    );
+  }
+
+  // Menu inicial - escolher modo
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <div className="mb-8 text-center">
@@ -214,29 +262,29 @@ export default function GameRoom() {
           <Swords className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold">Mass Combat</h1>
         </div>
-        <p className="text-muted-foreground">Card Game Multiplayer</p>
+        <p className="text-muted-foreground">Card Game</p>
       </div>
       
-      <Tabs defaultValue={roomCode ? 'join' : 'create'} className="w-full max-w-md">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="create">Criar Sala</TabsTrigger>
-          <TabsTrigger value="join">Entrar</TabsTrigger>
-        </TabsList>
+      <div className="grid gap-4 w-full max-w-md">
+        <Button 
+          size="lg" 
+          className="h-20 text-lg"
+          onClick={() => setMode('singleplayer')}
+        >
+          <Bot className="w-6 h-6 mr-3" />
+          Single Player (vs Bot)
+        </Button>
         
-        <TabsContent value="create" className="mt-4">
-          <CreateRoomForm onCreateRoom={handleCreateRoom} loading={loading} />
-        </TabsContent>
-        
-        <TabsContent value="join" className="mt-4">
-          <JoinRoomForm 
-            onJoinRoom={handleJoinRoom} 
-            initialRoomCode={roomCode || ''} 
-            loading={loading} 
-          />
-        </TabsContent>
-      </Tabs>
-      
-      {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+        <Button 
+          size="lg" 
+          variant="outline"
+          className="h-20 text-lg"
+          onClick={() => setMode('multiplayer')}
+        >
+          <Users className="w-6 h-6 mr-3" />
+          Multiplayer
+        </Button>
+      </div>
     </div>
   );
 }
