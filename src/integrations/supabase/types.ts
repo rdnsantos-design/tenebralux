@@ -359,6 +359,42 @@ export type Database = {
         }
         Relationships: []
       }
+      galaxy_lore_sections: {
+        Row: {
+          content: string
+          created_at: string
+          faction_id: string | null
+          id: string
+          section_type: string
+          sort_order: number | null
+          sub_section: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          faction_id?: string | null
+          id?: string
+          section_type: string
+          sort_order?: number | null
+          sub_section?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          faction_id?: string | null
+          id?: string
+          section_type?: string
+          sort_order?: number | null
+          sub_section?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       game_played_cards: {
         Row: {
           card_id: string

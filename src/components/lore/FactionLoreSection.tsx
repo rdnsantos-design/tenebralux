@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   Brain, Crown, Ghost, Crosshair, Users,
   History, Palette, Building, Globe, Brush, Handshake
 } from 'lucide-react';
+import { EditableLoreContent } from './EditableLoreContent';
+import { useGalaxyLore } from '@/hooks/useGalaxyLore';
 
 interface Faction {
   id: string;
@@ -66,8 +67,13 @@ const FACTION_TABS = [
 const FactionLoreSection = () => {
   const [selectedFaction, setSelectedFaction] = useState<string>('synapsis');
   const [selectedSubTab, setSelectedSubTab] = useState<string>('historia');
+  const { isLoading, getFactionSection, updateSection } = useGalaxyLore();
 
   const currentFaction = FACTIONS.find(f => f.id === selectedFaction);
+
+  const handleSave = (id: string, content: string, title?: string) => {
+    updateSection.mutate({ id, content, title });
+  };
 
   return (
     <div className="space-y-4">
@@ -123,36 +129,29 @@ const FactionLoreSection = () => {
           })}
         </TabsList>
 
-        {FACTION_TABS.map((tab) => (
-          <TabsContent key={tab.id} value={tab.id} className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <tab.icon className="w-5 h-5 text-primary" />
-                  {tab.label} - {currentFaction?.name}
-                  <Badge variant="outline" className="ml-auto text-xs">
-                    {selectedFaction}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[50vh]">
-                  <div className="prose prose-invert max-w-none text-muted-foreground">
-                    <p className="text-lg leading-relaxed">
-                      [Insira aqui o conteúdo sobre <strong>{tab.label.toLowerCase()}</strong> da 
-                      facção <strong>{currentFaction?.name}</strong>.]
-                    </p>
-                    <p className="text-sm opacity-70 mt-4">
-                      Este é um espaço para texto livre. Você pode adicionar parágrafos, 
-                      listas, citações e qualquer outro conteúdo relevante para descrever 
-                      este aspecto da facção.
-                    </p>
+        {FACTION_TABS.map((tab) => {
+          const sectionData = getFactionSection(selectedFaction, tab.id);
+          return (
+            <TabsContent key={tab.id} value={tab.id} className="mt-4">
+              <EditableLoreContent
+                sectionId={sectionData?.id}
+                title={sectionData?.title || `${tab.label} - ${currentFaction?.name}`}
+                content={sectionData?.content}
+                icon={
+                  <div className="flex items-center gap-2">
+                    <tab.icon className="w-5 h-5 text-primary" />
+                    <Badge variant="outline" className="text-xs">
+                      {selectedFaction}
+                    </Badge>
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
+                }
+                isLoading={isLoading}
+                onSave={handleSave}
+                isSaving={updateSection.isPending}
+              />
+            </TabsContent>
+          );
+        })}
       </Tabs>
     </div>
   );
