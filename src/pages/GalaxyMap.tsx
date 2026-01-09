@@ -7,7 +7,8 @@ import { PlanetEditor } from '@/components/galaxy/PlanetEditor';
 import { useGalaxyPlanets } from '@/hooks/useGalaxyPlanets';
 import { Planet, GalaxyFilters } from '@/types/galaxy';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Upload, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, Circle } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 
 export default function GalaxyMap() {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function GalaxyMap() {
   
   const [selectedPlanet, setSelectedPlanet] = useState<Planet | null>(null);
   const [editingPlanet, setEditingPlanet] = useState<Planet | null>(null);
+  const [planetScale, setPlanetScale] = useState(1);
   const [filters, setFilters] = useState<GalaxyFilters>({
     factions: [],
     tiers: [],
@@ -85,7 +87,22 @@ export default function GalaxyMap() {
             onSelectPlanet={setSelectedPlanet}
             showLabels={filters.showLabels}
             showConnections={filters.showConnections}
+            planetScale={planetScale}
           />
+          
+          {/* Slider para tamanho dos planetas */}
+          <div className="absolute bottom-4 left-4 bg-background/80 backdrop-blur-sm border rounded-lg p-3 flex items-center gap-3 min-w-[200px]">
+            <Circle className="w-4 h-4 text-muted-foreground" />
+            <Slider
+              value={[planetScale]}
+              onValueChange={(value) => setPlanetScale(value[0])}
+              min={0.2}
+              max={2}
+              step={0.1}
+              className="flex-1"
+            />
+            <span className="text-xs text-muted-foreground w-8">{planetScale.toFixed(1)}x</span>
+          </div>
         </main>
 
         {/* Right Panel - Details */}
