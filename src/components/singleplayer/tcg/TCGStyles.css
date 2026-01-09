@@ -1,0 +1,519 @@
+/* ================================
+   TCG GAME STYLES
+   Trading Card Game Visual Design
+   ================================ */
+
+/* Game Table Background */
+.tcg-table {
+  background: radial-gradient(ellipse at center, 
+    hsl(var(--akashic-deep) / 0.8) 0%, 
+    hsl(var(--akashic-space)) 70%,
+    hsl(var(--background)) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.tcg-table::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.tcg-table::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 100%, hsl(var(--akashic-cyan) / 0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* TCG Card */
+.tcg-card {
+  position: relative;
+  border-radius: 12px;
+  background: linear-gradient(145deg, 
+    hsl(var(--card)) 0%,
+    hsl(var(--card) / 0.9) 100%);
+  border: 2px solid hsl(var(--border));
+  box-shadow: 
+    0 4px 20px hsl(var(--background) / 0.5),
+    inset 0 1px 0 hsl(var(--foreground) / 0.1);
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.tcg-card::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+.tcg-card:hover:not(.tcg-card--disabled) {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 12px 30px hsl(var(--background) / 0.6),
+    0 0 20px hsl(var(--primary) / 0.2);
+}
+
+.tcg-card--selected {
+  border-color: hsl(var(--primary));
+  box-shadow: 
+    0 4px 20px hsl(var(--background) / 0.5),
+    0 0 0 3px hsl(var(--primary) / 0.4);
+}
+
+.tcg-card--disabled {
+  opacity: 0.5;
+  filter: grayscale(0.5);
+}
+
+.tcg-card--offensive {
+  border-color: hsl(0 70% 50% / 0.7);
+  background: linear-gradient(145deg, 
+    hsl(0 40% 15%) 0%,
+    hsl(var(--card)) 100%);
+}
+
+.tcg-card--defensive {
+  border-color: hsl(210 70% 50% / 0.7);
+  background: linear-gradient(145deg, 
+    hsl(210 40% 15%) 0%,
+    hsl(var(--card)) 100%);
+}
+
+.tcg-card--movement {
+  border-color: hsl(45 70% 50% / 0.7);
+  background: linear-gradient(145deg, 
+    hsl(45 40% 15%) 0%,
+    hsl(var(--card)) 100%);
+}
+
+.tcg-card--reaction {
+  border-color: hsl(280 70% 50% / 0.7);
+  background: linear-gradient(145deg, 
+    hsl(280 40% 15%) 0%,
+    hsl(var(--card)) 100%);
+}
+
+/* Card Inner Frame */
+.tcg-card-frame {
+  position: absolute;
+  inset: 6px;
+  border: 1px solid hsl(var(--foreground) / 0.15);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.tcg-card-frame::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.3), transparent);
+}
+
+.tcg-card-frame::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.3), transparent);
+}
+
+/* HP Bar */
+.tcg-hp-bar {
+  position: relative;
+  height: 28px;
+  background: linear-gradient(to bottom, 
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted) / 0.8) 100%);
+  border-radius: 6px;
+  border: 2px solid hsl(var(--border));
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px hsl(var(--background) / 0.5);
+}
+
+.tcg-hp-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.tcg-hp-fill--player {
+  background: linear-gradient(to bottom, 
+    hsl(142 70% 45%) 0%, 
+    hsl(142 70% 35%) 50%,
+    hsl(142 70% 30%) 100%);
+  box-shadow: 
+    inset 0 2px 4px hsl(142 70% 60% / 0.5),
+    0 0 10px hsl(142 70% 45% / 0.3);
+}
+
+.tcg-hp-fill--enemy {
+  background: linear-gradient(to bottom, 
+    hsl(0 70% 50%) 0%, 
+    hsl(0 70% 40%) 50%,
+    hsl(0 70% 35%) 100%);
+  box-shadow: 
+    inset 0 2px 4px hsl(0 70% 65% / 0.5),
+    0 0 10px hsl(0 70% 50% / 0.3);
+}
+
+.tcg-hp-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  text-shadow: 0 1px 2px hsl(var(--background) / 0.8);
+  color: white;
+}
+
+/* Player Area */
+.tcg-player-area {
+  position: relative;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(to bottom,
+    hsl(var(--card) / 0.3) 0%,
+    hsl(var(--card) / 0.1) 100%);
+  border: 1px solid hsl(var(--border) / 0.5);
+  backdrop-filter: blur(8px);
+}
+
+.tcg-player-area--attacker {
+  box-shadow: 
+    inset 0 0 30px hsl(0 70% 50% / 0.1),
+    0 0 20px hsl(0 70% 50% / 0.1);
+  border-color: hsl(0 70% 50% / 0.3);
+}
+
+.tcg-player-area--defender {
+  box-shadow: 
+    inset 0 0 30px hsl(210 70% 50% / 0.1),
+    0 0 20px hsl(210 70% 50% / 0.1);
+  border-color: hsl(210 70% 50% / 0.3);
+}
+
+/* Commander Token */
+.tcg-commander {
+  position: relative;
+  width: 80px;
+  height: 100px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, 
+    hsl(var(--card)) 0%,
+    hsl(var(--muted)) 100%);
+  border: 3px solid hsl(var(--border));
+  box-shadow: 
+    0 4px 12px hsl(var(--background) / 0.5),
+    inset 0 1px 0 hsl(var(--foreground) / 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tcg-commander:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    0 8px 20px hsl(var(--background) / 0.6),
+    0 0 15px hsl(var(--primary) / 0.2);
+}
+
+.tcg-commander--selected {
+  border-color: hsl(var(--primary));
+  box-shadow: 
+    0 0 0 4px hsl(var(--primary) / 0.3),
+    0 4px 12px hsl(var(--background) / 0.5);
+}
+
+.tcg-commander--general {
+  border-color: hsl(45 70% 50%);
+  background: linear-gradient(145deg, 
+    hsl(45 40% 20%) 0%,
+    hsl(var(--card)) 100%);
+}
+
+/* Phase Indicator */
+.tcg-phase-indicator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  background: linear-gradient(145deg, 
+    hsl(var(--primary)) 0%,
+    hsl(var(--primary) / 0.8) 100%);
+  border-radius: 20px;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 1px;
+  box-shadow: 
+    0 4px 15px hsl(var(--primary) / 0.4),
+    inset 0 1px 0 hsl(var(--foreground) / 0.2);
+  color: hsl(var(--primary-foreground));
+}
+
+.tcg-phase-indicator::before,
+.tcg-phase-indicator::after {
+  content: '';
+  width: 30px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary-foreground) / 0.5), transparent);
+  margin: 0 10px;
+}
+
+/* Basic Card Token */
+.tcg-basic-card {
+  position: relative;
+  width: 56px;
+  height: 72px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, 
+    hsl(var(--card)) 0%,
+    hsl(var(--muted)) 100%);
+  border: 2px solid hsl(var(--border));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px hsl(var(--background) / 0.5);
+}
+
+.tcg-basic-card:hover:not(:disabled) {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px hsl(var(--background) / 0.5);
+}
+
+.tcg-basic-card--used {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.tcg-basic-card--heal { border-color: hsl(142 70% 45%); }
+.tcg-basic-card--attack { border-color: hsl(0 70% 50%); }
+.tcg-basic-card--defense { border-color: hsl(210 70% 50%); }
+.tcg-basic-card--initiative { border-color: hsl(45 70% 50%); }
+.tcg-basic-card--counter { border-color: hsl(280 70% 50%); }
+
+/* Stat Badge */
+.tcg-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: bold;
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+}
+
+.tcg-stat--attack {
+  background: linear-gradient(145deg, hsl(0 50% 20%) 0%, hsl(0 40% 15%) 100%);
+  border-color: hsl(0 70% 50% / 0.5);
+  color: hsl(0 70% 60%);
+}
+
+.tcg-stat--defense {
+  background: linear-gradient(145deg, hsl(210 50% 20%) 0%, hsl(210 40% 15%) 100%);
+  border-color: hsl(210 70% 50% / 0.5);
+  color: hsl(210 70% 60%);
+}
+
+.tcg-stat--mobility {
+  background: linear-gradient(145deg, hsl(45 50% 20%) 0%, hsl(45 40% 15%) 100%);
+  border-color: hsl(45 70% 50% / 0.5);
+  color: hsl(45 70% 60%);
+}
+
+/* Battle Log */
+.tcg-log {
+  background: linear-gradient(to bottom, 
+    hsl(var(--card) / 0.95) 0%,
+    hsl(var(--card) / 0.9) 100%);
+  border: 2px solid hsl(var(--border));
+  border-radius: 12px;
+  box-shadow: 
+    inset 0 2px 10px hsl(var(--background) / 0.3),
+    0 4px 15px hsl(var(--background) / 0.3);
+}
+
+.tcg-log-entry {
+  padding: 4px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid hsl(var(--border) / 0.3);
+}
+
+.tcg-log-entry:last-child {
+  border-bottom: none;
+}
+
+.tcg-log-entry--damage {
+  color: hsl(0 70% 55%);
+  font-weight: 500;
+}
+
+.tcg-log-entry--effect {
+  color: hsl(var(--primary));
+}
+
+.tcg-log-entry--phase {
+  color: hsl(45 70% 55%);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+/* Action Buttons */
+.tcg-action-btn {
+  position: relative;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.tcg-action-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, hsl(var(--foreground) / 0.1), transparent);
+  pointer-events: none;
+}
+
+.tcg-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px currentColor;
+}
+
+/* Hand Area */
+.tcg-hand {
+  display: flex;
+  justify-content: center;
+  gap: -20px;
+  perspective: 1000px;
+  padding: 16px 0;
+}
+
+.tcg-hand .tcg-card {
+  transform-origin: bottom center;
+}
+
+.tcg-hand .tcg-card:hover {
+  z-index: 10;
+}
+
+/* Decorative Elements */
+.tcg-ornament {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.tcg-ornament--tl {
+  top: 20px;
+  left: 20px;
+  border-top: 3px solid hsl(var(--foreground));
+  border-left: 3px solid hsl(var(--foreground));
+}
+
+.tcg-ornament--tr {
+  top: 20px;
+  right: 20px;
+  border-top: 3px solid hsl(var(--foreground));
+  border-right: 3px solid hsl(var(--foreground));
+}
+
+.tcg-ornament--bl {
+  bottom: 20px;
+  left: 20px;
+  border-bottom: 3px solid hsl(var(--foreground));
+  border-left: 3px solid hsl(var(--foreground));
+}
+
+.tcg-ornament--br {
+  bottom: 20px;
+  right: 20px;
+  border-bottom: 3px solid hsl(var(--foreground));
+  border-right: 3px solid hsl(var(--foreground));
+}
+
+/* Terrain Badge */
+.tcg-terrain-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(145deg, 
+    hsl(var(--card)) 0%,
+    hsl(var(--muted)) 100%);
+  border: 2px solid hsl(var(--border));
+  border-radius: 20px;
+  font-size: 13px;
+  box-shadow: 0 2px 10px hsl(var(--background) / 0.3);
+}
+
+/* Round Indicator */
+.tcg-round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(145deg, 
+    hsl(var(--primary)) 0%,
+    hsl(var(--primary) / 0.7) 100%);
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 18px;
+  color: hsl(var(--primary-foreground));
+  box-shadow: 
+    0 4px 15px hsl(var(--primary) / 0.4),
+    inset 0 2px 4px hsl(var(--foreground) / 0.2);
+}
+
+/* Animations */
+@keyframes tcg-glow {
+  0%, 100% { box-shadow: 0 0 10px currentColor; }
+  50% { box-shadow: 0 0 25px currentColor; }
+}
+
+@keyframes tcg-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.tcg-glow {
+  animation: tcg-glow 2s ease-in-out infinite;
+}
+
+.tcg-pulse {
+  animation: tcg-pulse 1s ease-in-out infinite;
+}

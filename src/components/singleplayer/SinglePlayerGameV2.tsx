@@ -1,13 +1,9 @@
 /**
- * SinglePlayerGameV2 - Componente completo com todas as fases do multiplayer
+ * SinglePlayerGameV2 - Componente completo com estética TCG
  * Fases: army_selection → difficulty_select → scenario_selection → combat → finished
- * Combat Phases: initiative_maneuver → initiative_reaction → initiative_roll → 
- *                attack_maneuver → attack_reaction → defense_maneuver → 
- *                defense_reaction → combat_roll → combat_resolution
  */
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,8 +11,8 @@ import { Slider } from '@/components/ui/slider';
 import { 
   Swords, Heart, Shield, Zap, Trophy, Bot, 
   ArrowLeft, Play, RotateCcw, Loader2, Crown,
-  Target, ChevronRight, Dice5, Check, X,
-  Mountain, Sun, Users
+  Target, Dice5, Check, X,
+  Mountain, Sun, Users, Sparkles
 } from 'lucide-react';
 import { BotDifficulty } from '@/lib/botEngine';
 import { StrategicArmy } from '@/types/combat/strategic-army';
@@ -24,44 +20,43 @@ import { useLocalArmies } from '@/hooks/useLocalArmies';
 import { SinglePlayerArmyList } from './SinglePlayerArmyList';
 import { SinglePlayerArmyBuilder } from './SinglePlayerArmyBuilder';
 import { useSinglePlayerGameV2 } from '@/hooks/useSinglePlayerGameV2';
-import { SPCard, SPCommander, SPCombatPhase, SPBasicCardsUsed, getPlayableCards } from '@/lib/singlePlayerCombatEngine';
-import { SinglePlayerBasicCards } from './SinglePlayerBasicCards';
+import { SPCard, SPCombatPhase, getPlayableCards } from '@/lib/singlePlayerCombatEngine';
 import { SinglePlayerCardDetail } from './SinglePlayerCardDetail';
+
+// TCG Components
+import './tcg/TCGStyles.css';
+import { 
+  TCGCard, 
+  TCGPlayerArea, 
+  TCGCommander, 
+  TCGBasicCards, 
+  TCGBattleLog,
+  TCGPhaseIndicator 
+} from './tcg';
 
 // ========================
 // CONFIGURAÇÕES
 // ========================
 
-const DIFFICULTY_CONFIG: Record<BotDifficulty, { label: string; color: string; description: string }> = {
+const DIFFICULTY_CONFIG: Record<BotDifficulty, { label: string; color: string; description: string; stars: number }> = {
   easy: { 
     label: 'Fácil', 
     color: 'bg-green-500', 
-    description: 'Bot faz decisões aleatórias e passa frequentemente' 
+    description: 'Bot faz decisões aleatórias',
+    stars: 1,
   },
   medium: { 
     label: 'Médio', 
     color: 'bg-yellow-500', 
-    description: 'Bot usa estratégias básicas e é mais consistente' 
+    description: 'Bot usa estratégias básicas',
+    stars: 2,
   },
   hard: { 
     label: 'Difícil', 
     color: 'bg-red-500', 
-    description: 'Bot otimiza cada jogada e raramente erra' 
+    description: 'Bot otimiza cada jogada',
+    stars: 3,
   },
-};
-
-const PHASE_LABELS: Record<SPCombatPhase, string> = {
-  'initiative_maneuver': 'Manobra de Iniciativa',
-  'initiative_reaction': 'Reação (Iniciativa)',
-  'initiative_roll': 'Rolagem de Iniciativa',
-  'initiative_post': 'Escolher Atacante/Defensor',
-  'attack_maneuver': 'Fase de Ataque',
-  'attack_reaction': 'Reação (Ataque)',
-  'defense_maneuver': 'Fase de Defesa',
-  'defense_reaction': 'Reação (Defesa)',
-  'combat_roll': 'Rolagem de Combate',
-  'combat_resolution': 'Resolução',
-  'round_end': 'Fim do Round',
 };
 
 type LocalView = 'army_list' | 'army_builder' | 'difficulty_select' | 'game';
@@ -78,7 +73,7 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
   const [selectedCommanderId, setSelectedCommanderId] = useState<string | null>(null);
   const [logisticsBid, setLogisticsBid] = useState(3);
   const [viewingCard, setViewingCard] = useState<SPCard | null>(null);
-  const [showBotDebug, setShowBotDebug] = useState(true); // Debug mode
+  const [showBotDebug, setShowBotDebug] = useState(true);
   
   const { save: saveArmy } = useLocalArmies();
   
@@ -205,57 +200,80 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
     );
   }
 
+  // ========================
+  // DIFFICULTY SELECT - TCG Style
+  // ========================
+
   if (localView === 'difficulty_select' && selectedArmy) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-        <Button variant="ghost" className="absolute top-4 left-4" onClick={() => setLocalView('army_list')}>
+      <div className="tcg-table min-h-screen flex flex-col items-center justify-center p-4">
+        {/* Decorative Corners */}
+        <div className="tcg-ornament tcg-ornament--tl" />
+        <div className="tcg-ornament tcg-ornament--tr" />
+        <div className="tcg-ornament tcg-ornament--bl" />
+        <div className="tcg-ornament tcg-ornament--br" />
+        
+        <Button 
+          variant="ghost" 
+          className="absolute top-4 left-4 text-foreground/70 hover:text-foreground" 
+          onClick={() => setLocalView('army_list')}
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar
         </Button>
         
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Bot className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold">Escolha a Dificuldade</h1>
+        <div className="text-center mb-8 relative z-10">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+            <h1 className="text-3xl font-bold tracking-tight">Escolha a Dificuldade</h1>
+            <Sparkles className="h-6 w-6 text-primary animate-pulse" />
           </div>
           <p className="text-muted-foreground">
             Jogando com: <span className="font-medium text-foreground">{selectedArmy.name}</span>
           </p>
-          <div className="flex items-center justify-center gap-3 mt-2 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Swords className="w-4 h-4 text-red-500" />
+          <div className="flex items-center justify-center gap-4 mt-3">
+            <div className="tcg-stat tcg-stat--attack">
+              <Swords className="w-4 h-4" />
               {selectedArmy.attack}
-            </span>
-            <span className="flex items-center gap-1">
-              <Shield className="w-4 h-4 text-blue-500" />
+            </div>
+            <div className="tcg-stat tcg-stat--defense">
+              <Shield className="w-4 h-4" />
               {selectedArmy.defense}
-            </span>
-            <span className="flex items-center gap-1">
-              <Zap className="w-4 h-4 text-yellow-500" />
+            </div>
+            <div className="tcg-stat tcg-stat--mobility">
+              <Zap className="w-4 h-4" />
               {selectedArmy.mobility}
-            </span>
+            </div>
           </div>
         </div>
         
-        <div className="grid gap-4 w-full max-w-md">
+        <div className="grid gap-4 w-full max-w-md relative z-10">
           {(Object.keys(DIFFICULTY_CONFIG) as BotDifficulty[]).map((diff) => {
             const config = DIFFICULTY_CONFIG[diff];
             return (
-              <Card 
+              <div 
                 key={diff}
-                className="cursor-pointer hover:border-primary transition-colors"
+                className="tcg-card p-4 cursor-pointer"
                 onClick={() => handleStartGame(diff)}
               >
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{config.label}</CardTitle>
-                    <Badge className={config.color}>{diff.toUpperCase()}</Badge>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Bot className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-lg font-bold">{config.label}</span>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{config.description}</p>
-                </CardContent>
-              </Card>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div 
+                        key={i}
+                        className={`w-3 h-3 rounded-full ${
+                          i < config.stars ? config.color : 'bg-muted'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">{config.description}</p>
+              </div>
             );
           })}
         </div>
@@ -264,7 +282,7 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
   }
 
   // ========================
-  // VIEWS: SCENARIO SELECTION
+  // SCENARIO SELECTION - TCG Style
   // ========================
 
   if (state.phase === 'scenario_selection') {
@@ -272,54 +290,62 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
     const playerWon = state.scenarioWinner === 'player';
     
     return (
-      <div className="min-h-screen flex flex-col bg-background p-4">
-        <div className="flex justify-between items-center mb-4">
+      <div className="tcg-table min-h-screen flex flex-col p-4">
+        {/* Decorative Corners */}
+        <div className="tcg-ornament tcg-ornament--tl" />
+        <div className="tcg-ornament tcg-ornament--tr" />
+        <div className="tcg-ornament tcg-ornament--bl" />
+        <div className="tcg-ornament tcg-ornament--br" />
+        
+        <div className="flex justify-between items-center mb-4 relative z-10">
           <Button variant="ghost" size="sm" onClick={handleBackToMenu}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Sair
           </Button>
-          <Badge variant="outline">Seleção de Cenário</Badge>
+          <Badge variant="outline" className="bg-background/50 backdrop-blur-sm">
+            Seleção de Cenário
+          </Badge>
         </div>
         
-        {/* HP Display */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <Card className="border-primary/50">
-            <CardContent className="py-3">
-              <div className="flex items-center justify-between">
-                <span className="font-bold">{state.playerCultureName}</span>
-                <div className="flex items-center gap-1">
-                  <Heart className="w-4 h-4 text-red-500" />
-                  <span className="font-bold">{state.playerHp}/{state.playerMaxHp}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-destructive/50">
-            <CardContent className="py-3">
-              <div className="flex items-center justify-between">
-                <span className="font-bold">{state.botName}</span>
-                <div className="flex items-center gap-1">
-                  <Heart className="w-4 h-4 text-red-500" />
-                  <span className="font-bold">{state.botHp}/{state.botMaxHp}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Player Areas */}
+        <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
+          <TCGPlayerArea
+            name={state.playerCultureName}
+            hp={state.playerHp}
+            maxHp={state.playerMaxHp}
+            attack={state.playerAttributes.attack}
+            defense={state.playerAttributes.defense}
+            mobility={state.playerAttributes.mobility}
+            isPlayer
+          />
+          <TCGPlayerArea
+            name={state.botName}
+            hp={state.botHp}
+            maxHp={state.botMaxHp}
+            attack={state.botAttributes.attack}
+            defense={state.botAttributes.defense}
+            mobility={state.botAttributes.mobility}
+            isPlayer={false}
+          />
         </div>
         
-        {!hasWinner ? (
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle>Lance de Logística</CardTitle>
-              <CardDescription>
+        {/* Logistics Bid */}
+        <div className="flex-1 flex items-center justify-center relative z-10">
+          {!hasWinner ? (
+            <div className="tcg-card p-6 w-full max-w-md">
+              <div className="tcg-card-frame" />
+              <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                <Dice5 className="w-5 h-5 text-primary" />
+                Lance de Logística
+              </h2>
+              <p className="text-sm text-muted-foreground mb-6">
                 Quem fizer o maior lance escolhe o cenário de batalha
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between">
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Seu lance</span>
-                  <span className="font-bold text-lg">{logisticsBid}</span>
+                  <div className="tcg-round w-12 h-12 text-xl">{logisticsBid}</div>
                 </div>
                 <Slider
                   value={[logisticsBid]}
@@ -327,89 +353,81 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
                   min={0}
                   max={5}
                   step={1}
+                  className="py-2"
                 />
               </div>
               
-              <Button className="w-full" onClick={() => submitLogisticsBid(logisticsBid)}>
+              <Button 
+                className="w-full mt-6 tcg-action-btn" 
+                onClick={() => submitLogisticsBid(logisticsBid)}
+              >
                 <Dice5 className="w-4 h-4 mr-2" />
                 Revelar Lances
               </Button>
-            </CardContent>
-          </Card>
-        ) : playerWon ? (
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle className="text-green-500 flex items-center gap-2">
+            </div>
+          ) : playerWon ? (
+            <div className="tcg-card p-6 w-full max-w-md">
+              <div className="tcg-card-frame" />
+              <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-green-400">
                 <Trophy className="w-5 h-5" />
                 Você venceu! Escolha o cenário
-              </CardTitle>
-              <CardDescription>
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
                 Seu lance: {state.playerLogisticsBid} vs {state.botName}: {state.botLogisticsBid}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3">
+              </p>
+              
+              <div className="space-y-3">
                 {state.scenarioOptions.map((option, i) => (
-                  <Card 
+                  <div 
                     key={i}
-                    className="cursor-pointer hover:border-primary transition-colors"
+                    className="tcg-card p-3 cursor-pointer hover:scale-[1.02] transition-transform"
                     onClick={() => selectScenario(option.terrain_id, option.season_id)}
                   >
-                    <CardContent className="py-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Mountain className="w-5 h-5 text-muted-foreground" />
-                          <span className="font-medium">{option.terrain_name}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Sun className="w-5 h-5 text-yellow-500" />
-                          <span>{option.season_name}</span>
-                        </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Mountain className="w-5 h-5 text-muted-foreground" />
+                        <span className="font-medium">{option.terrain_name}</span>
                       </div>
-                    </CardContent>
-                  </Card>
+                      <div className="flex items-center gap-2">
+                        <Sun className="w-5 h-5 text-yellow-500" />
+                        <span>{option.season_name}</span>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle className="text-destructive flex items-center gap-2">
+            </div>
+          ) : (
+            <div className="tcg-card p-6 w-full max-w-md">
+              <div className="tcg-card-frame" />
+              <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-red-400">
                 <X className="w-5 h-5" />
                 {state.botName} venceu a disputa
-              </CardTitle>
-              <CardDescription>
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
                 Seu lance: {state.playerLogisticsBid} vs {state.botName}: {state.botLogisticsBid}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-muted-foreground">
-                {state.botName} está escolhendo o cenário...
-              </span>
-            </CardContent>
-          </Card>
-        )}
+              </p>
+              
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                <span className="ml-3 text-muted-foreground">
+                  {state.botName} está escolhendo o cenário...
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
         
         {/* Battle Log */}
-        <Card className="mt-4">
-          <CardContent className="py-2">
-            <ScrollArea className="h-20">
-              {state.battleLog.slice(-5).reverse().map((log, i) => (
-                <div key={i} className="text-xs text-muted-foreground py-0.5">
-                  {log.message}
-                </div>
-              ))}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        <div className="relative z-10 mt-4">
+          <TCGBattleLog logs={state.battleLog} />
+        </div>
       </div>
     );
   }
 
   // ========================
-  // VIEWS: COMBAT
+  // COMBAT - TCG Style
   // ========================
 
   if (state.phase === 'combat') {
@@ -418,7 +436,6 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
     const canPlayCard = selectedCardIndex !== null && 
                         (combatPhase.includes('reaction') || selectedCommanderId !== null);
     
-    // Determine action button label
     let actionLabel = 'Confirmar';
     if (combatPhase === 'initiative_roll') actionLabel = 'Rolar Iniciativa';
     if (combatPhase === 'initiative_post') actionLabel = '';
@@ -426,328 +443,205 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
     if (combatPhase === 'combat_resolution') actionLabel = 'Próximo Round';
     
     return (
-      <div className="min-h-screen flex flex-col bg-background p-4">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-2">
-          <Badge variant="outline">Rodada {state.round}</Badge>
-          <Badge className={awaitingPlayer ? 'bg-green-500' : 'bg-muted'}>
-            {PHASE_LABELS[combatPhase]}
-          </Badge>
-          <Badge variant="outline" className={DIFFICULTY_CONFIG[state.botDifficulty].color}>
-            {state.botName}
-          </Badge>
-        </div>
+      <div className="tcg-table min-h-screen flex flex-col p-3 relative">
+        {/* Decorative Corners */}
+        <div className="tcg-ornament tcg-ornament--tl" />
+        <div className="tcg-ornament tcg-ornament--tr" />
+        <div className="tcg-ornament tcg-ornament--bl" />
+        <div className="tcg-ornament tcg-ornament--br" />
         
-        {/* Phase Stepper */}
-        <div className="flex items-center justify-center gap-1 mb-3 overflow-x-auto">
-          {(['initiative_maneuver', 'initiative_roll', 'attack_maneuver', 'defense_maneuver', 'combat_roll'] as SPCombatPhase[]).map((phase, i) => {
-            const isCurrent = combatPhase === phase || 
-                              (phase === 'initiative_maneuver' && combatPhase === 'initiative_reaction') ||
-                              (phase === 'attack_maneuver' && combatPhase === 'attack_reaction') ||
-                              (phase === 'defense_maneuver' && combatPhase === 'defense_reaction');
-            const isPast = ['initiative_maneuver', 'initiative_reaction', 'initiative_roll', 'initiative_post'].indexOf(combatPhase) > 
-                           ['initiative_maneuver', 'initiative_reaction', 'initiative_roll', 'initiative_post'].indexOf(phase);
-            
-            return (
-              <div 
-                key={phase}
-                className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
-                  isCurrent ? 'bg-primary text-primary-foreground' : 
-                  isPast ? 'bg-muted text-muted-foreground' : 'bg-background border'
-                }`}
-              >
-                {i + 1}
+        {/* Phase & Round Indicator */}
+        <div className="relative z-10 mb-4">
+          <TCGPhaseIndicator 
+            currentPhase={combatPhase} 
+            round={state.round} 
+          />
+          
+          {/* Terrain Badge */}
+          {state.selectedTerrainName && (
+            <div className="flex justify-center gap-3 mt-3">
+              <div className="tcg-terrain-badge">
+                <Mountain className="w-4 h-4" />
+                <span>{state.selectedTerrainName}</span>
               </div>
-            );
-          })}
+              <div className="tcg-terrain-badge">
+                <Sun className="w-4 h-4 text-yellow-500" />
+                <span>{state.selectedSeasonName}</span>
+              </div>
+            </div>
+          )}
         </div>
         
-        {/* Terrain & Season */}
-        {state.selectedTerrainName && (
-          <div className="flex justify-center gap-4 mb-2 text-sm">
-            <span className="flex items-center gap-1">
-              <Mountain className="w-4 h-4" />
-              {state.selectedTerrainName}
-            </span>
-            <span className="flex items-center gap-1">
-              <Sun className="w-4 h-4" />
-              {state.selectedSeasonName}
-            </span>
+        {/* Enemy Area */}
+        <div className="relative z-10 mb-3">
+          <TCGPlayerArea
+            name={state.botName}
+            hp={state.botHp}
+            maxHp={state.botMaxHp}
+            attack={state.botAttributes.attack}
+            defense={state.botAttributes.defense}
+            mobility={state.botAttributes.mobility}
+            isAttacker={board.current_attacker === 'bot'}
+            isDefender={board.current_defender === 'bot'}
+            isPlayer={false}
+          />
+        </div>
+        
+        {/* Battle Log */}
+        <div className="relative z-10 mb-3">
+          <TCGBattleLog logs={state.battleLog} />
+        </div>
+        
+        {/* Choose Attacker/Defender */}
+        {combatPhase === 'initiative_post' && awaitingPlayer && (
+          <div className="relative z-10 mb-3 tcg-card p-4">
+            <div className="tcg-card-frame" />
+            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+              <Target className="w-4 h-4 text-primary" />
+              Você venceu a iniciativa! Escolha sua posição:
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                variant="destructive" 
+                className="tcg-action-btn"
+                onClick={() => chooseFirstAttacker(true)}
+              >
+                <Swords className="w-4 h-4 mr-2" />
+                Atacar
+              </Button>
+              <Button 
+                variant="outline" 
+                className="tcg-action-btn"
+                onClick={() => chooseFirstAttacker(false)}
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Defender
+              </Button>
+            </div>
           </div>
         )}
         
-        {/* HP Bars */}
-        <div className="grid grid-cols-2 gap-4 mb-3">
-          <Card className={`border-2 ${board.current_attacker === 'player' ? 'border-red-500' : board.current_defender === 'player' ? 'border-blue-500' : 'border-primary/50'}`}>
-            <CardContent className="py-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-bold truncate">{selectedArmy?.name || 'Você'}</span>
-                <span className="flex items-center gap-1">
-                  <Heart className="w-3 h-3 text-red-500" />
-                  <span className="font-bold">{state.playerHp}</span>
-                </span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full mt-1">
-                <div 
-                  className="h-full bg-green-500 rounded-full transition-all"
-                  style={{ width: `${(state.playerHp / state.playerMaxHp) * 100}%` }}
-                />
-              </div>
-              <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-0.5">
-                  <Swords className="w-3 h-3 text-red-500" />
-                  {state.playerAttributes.attack}
-                </span>
-                <span className="flex items-center gap-0.5">
-                  <Shield className="w-3 h-3 text-blue-500" />
-                  {state.playerAttributes.defense}
-                </span>
-                <span className="flex items-center gap-0.5">
-                  <Zap className="w-3 h-3 text-yellow-500" />
-                  {state.playerAttributes.mobility}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className={`border-2 ${board.current_attacker === 'bot' ? 'border-red-500' : board.current_defender === 'bot' ? 'border-blue-500' : 'border-destructive/50'}`}>
-            <CardContent className="py-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-bold">{state.botName}</span>
-                <span className="flex items-center gap-1">
-                  <Heart className="w-3 h-3 text-red-500" />
-                  <span className="font-bold">{state.botHp}</span>
-                </span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full mt-1">
-                <div 
-                  className="h-full bg-red-500 rounded-full transition-all"
-                  style={{ width: `${(state.botHp / state.botMaxHp) * 100}%` }}
-                />
-              </div>
-              <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-0.5">
-                  <Swords className="w-3 h-3 text-red-500" />
-                  {state.botAttributes.attack}
-                </span>
-                <span className="flex items-center gap-0.5">
-                  <Shield className="w-3 h-3 text-blue-500" />
-                  {state.botAttributes.defense}
-                </span>
-                <span className="flex items-center gap-0.5">
-                  <Zap className="w-3 h-3 text-yellow-500" />
-                  {state.botAttributes.mobility}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Player Area */}
+        <div className="relative z-10 mb-3">
+          <TCGPlayerArea
+            name={selectedArmy?.name || 'Você'}
+            hp={state.playerHp}
+            maxHp={state.playerMaxHp}
+            attack={state.playerAttributes.attack}
+            defense={state.playerAttributes.defense}
+            mobility={state.playerAttributes.mobility}
+            isAttacker={board.current_attacker === 'player'}
+            isDefender={board.current_defender === 'player'}
+            isPlayer
+          />
         </div>
         
-        {/* Choose Attacker/Defender (initiative_post) */}
-        {combatPhase === 'initiative_post' && awaitingPlayer && (
-          <Card className="mb-3">
-            <CardHeader className="py-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Target className="w-4 h-4" />
-                Você venceu a iniciativa!
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="py-2">
-              <div className="grid grid-cols-2 gap-2">
-                <Button 
-                  variant="destructive" 
-                  className="flex-1"
-                  onClick={() => chooseFirstAttacker(true)}
-                >
-                  <Swords className="w-4 h-4 mr-2" />
-                  Atacar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => chooseFirstAttacker(false)}
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Defender
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-        
-        {/* Battle Log */}
-        <Card className="mb-3">
-          <CardContent className="py-2">
-            <ScrollArea className="h-20">
-              {state.battleLog.slice(-8).reverse().map((log, i) => (
-                <div 
-                  key={i} 
-                  className={`text-xs py-0.5 ${
-                    log.type === 'damage' ? 'text-red-500 font-medium' :
-                    log.type === 'effect' ? 'text-primary' :
-                    log.type === 'phase' ? 'text-yellow-500 font-medium' :
-                    'text-muted-foreground'
-                  }`}
-                >
-                  {log.message}
-                </div>
-              ))}
-            </ScrollArea>
-          </CardContent>
-        </Card>
-        
         {/* Commanders */}
-        <Card className="mb-3">
-          <CardHeader className="py-1.5">
-            <CardTitle className="text-xs flex items-center gap-1">
-              <Users className="w-3 h-3" />
+        <div className="relative z-10 mb-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Comandantes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="py-1.5">
-            <div className="flex gap-2">
-              {state.playerCommanders.map((cmd) => {
-                const isGeneral = cmd.is_general;
-                const isSelected = selectedCommanderId === cmd.instance_id;
-                const canSelect = !isGeneral || combatPhase.includes('reaction');
+            </span>
+          </div>
+          <div className="flex gap-3 justify-center">
+            {state.playerCommanders.map((cmd) => {
+              const canSelect = !cmd.is_general || combatPhase.includes('reaction');
+              return (
+                <TCGCommander
+                  key={cmd.instance_id}
+                  commander={cmd}
+                  isSelected={selectedCommanderId === cmd.instance_id}
+                  canSelect={canSelect}
+                  onClick={() => canSelect && setSelectedCommanderId(cmd.instance_id)}
+                />
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* Basic Cards */}
+        <div className="relative z-10 mb-3">
+          <TCGBasicCards
+            basicCardsUsed={state.playerBasicCardsUsed}
+            currentBonuses={state.playerBasicCardsBonuses}
+            combatPhase={combatPhase}
+            onUseCard={useBasicCard}
+            disabled={!awaitingPlayer || state.isLoading}
+          />
+        </div>
+        
+        {/* Player Hand */}
+        <div className="relative z-10 flex-1 min-h-0 mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Sua Mão
+              </span>
+              <Badge variant="outline" className="text-[10px]">
+                {state.playerHand.length} cartas
+              </Badge>
+              {playableCards.length > 0 && (
+                <Badge className="text-[10px] bg-primary/20 text-primary">
+                  {playableCards.length} jogáveis
+                </Badge>
+              )}
+            </div>
+          </div>
+          
+          <ScrollArea className="h-[160px]">
+            <div className="flex flex-wrap gap-2 justify-center py-2">
+              {state.playerHand.map((card, index) => {
+                const isPlayable = playableCards.some(c => c.id === card.id);
+                const isSelected = selectedCardIndex === index;
                 
                 return (
-                  <div 
-                    key={cmd.instance_id}
-                    className={`p-2 border rounded text-xs flex-1 transition-colors ${
-                      isSelected ? 'ring-2 ring-primary border-primary' : 
-                      canSelect ? 'cursor-pointer hover:border-primary/50' : 
-                      'opacity-50'
-                    }`}
-                    onClick={() => canSelect && setSelectedCommanderId(cmd.instance_id)}
-                  >
-                    <div className="font-medium flex items-center gap-1">
-                      {isGeneral && <Crown className="w-3 h-3 text-yellow-500" />}
-                      {cmd.especializacao}
-                    </div>
-                    <div className="text-muted-foreground">
-                      CMD: {cmd.cmd_free}/{cmd.comando_base}
-                    </div>
-                  </div>
+                  <TCGCard
+                    key={`${card.id}-${index}`}
+                    card={card}
+                    isSelected={isSelected}
+                    isPlayable={isPlayable}
+                    onClick={() => isPlayable && setSelectedCardIndex(index)}
+                    onDoubleClick={() => setViewingCard(card)}
+                    size="sm"
+                  />
                 );
               })}
             </div>
-          </CardContent>
-        </Card>
-        
-        {/* Basic Cards */}
-        <SinglePlayerBasicCards
-          basicCardsUsed={state.playerBasicCardsUsed}
-          currentBonuses={state.playerBasicCardsBonuses}
-          combatPhase={combatPhase}
-          onUseCard={useBasicCard}
-          disabled={!awaitingPlayer || state.isLoading}
-        />
-        
-        {/* Hand */}
-        <Card className="flex-1 min-h-0">
-          <CardHeader className="py-1.5">
-            <CardTitle className="text-xs">
-              Mão ({state.playerHand.length}) 
-              {playableCards.length > 0 && ` - ${playableCards.length} jogáveis`}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="py-1.5">
-            <ScrollArea className="h-[140px]">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {state.playerHand.map((card, index) => {
-                  const isPlayable = playableCards.some(c => c.id === card.id);
-                  const isSelected = selectedCardIndex === index;
-                  
-                  return (
-                    <div 
-                      key={`${card.id}-${index}`}
-                      className={`p-2 border rounded text-xs transition-colors cursor-pointer ${
-                        isSelected ? 'ring-2 ring-primary border-primary' : 
-                        isPlayable ? 'hover:border-primary/50' : 
-                        'opacity-40'
-                      }`}
-                      onClick={() => isPlayable && setSelectedCardIndex(index)}
-                      onDoubleClick={() => setViewingCard(card)}
-                    >
-                      <div className="font-medium truncate">{card.name}</div>
-                      <Badge 
-                        variant="outline" 
-                        className={`text-[10px] mt-1 ${
-                          card.card_type === 'ofensiva' ? 'border-red-500 text-red-500' :
-                          card.card_type === 'defensiva' ? 'border-blue-500 text-blue-500' :
-                          card.card_type === 'movimentacao' ? 'border-yellow-500 text-yellow-500' :
-                          'border-purple-500 text-purple-500'
-                        }`}
-                      >
-                        {card.card_type}
-                      </Badge>
-                      <div className="mt-1 flex gap-1 flex-wrap text-[10px]">
-                        {card.attack_bonus > 0 && (
-                          <span className="text-red-500">+{card.attack_bonus} ATQ</span>
-                        )}
-                        {card.defense_bonus > 0 && (
-                          <span className="text-blue-500">+{card.defense_bonus} DEF</span>
-                        )}
-                        {card.mobility_bonus > 0 && (
-                          <span className="text-yellow-500">+{card.mobility_bonus} MOB</span>
-                        )}
-                        {card.command_required > 0 && (
-                          <span className="text-muted-foreground">CMD:{card.command_required}</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+          </ScrollArea>
+        </div>
         
         {/* Bot Debug Panel */}
         {showBotDebug && (
-          <Card className="mb-3 border-destructive/50">
-            <CardHeader className="py-1.5">
-              <CardTitle className="text-xs flex items-center gap-1 text-destructive">
-                <Bot className="w-3 h-3" />
+          <div className="relative z-10 mb-3 tcg-card p-3 border-destructive/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Bot className="w-4 h-4 text-destructive" />
+              <span className="text-xs font-medium text-destructive">
                 [DEBUG] Mão do {state.botName} ({state.botHand.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="py-1.5">
-              <ScrollArea className="h-[100px]">
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-1">
-                  {state.botHand.map((card, index) => (
-                    <div 
-                      key={`bot-${card.id}-${index}`}
-                      className="p-1.5 border border-destructive/30 rounded text-[10px] cursor-pointer hover:border-destructive"
-                      onClick={() => setViewingCard(card)}
-                    >
-                      <div className="font-medium truncate">{card.name}</div>
-                      <Badge 
-                        variant="outline" 
-                        className={`text-[8px] ${
-                          card.card_type === 'ofensiva' ? 'border-red-500 text-red-500' :
-                          card.card_type === 'defensiva' ? 'border-blue-500 text-blue-500' :
-                          card.card_type === 'movimentacao' ? 'border-yellow-500 text-yellow-500' :
-                          'border-purple-500 text-purple-500'
-                        }`}
-                      >
-                        {card.card_type}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+              </span>
+            </div>
+            <ScrollArea className="h-[80px]">
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {state.botHand.map((card, index) => (
+                  <TCGCard
+                    key={`bot-${card.id}-${index}`}
+                    card={card}
+                    size="sm"
+                    onClick={() => setViewingCard(card)}
+                    className="scale-75 origin-top-left"
+                  />
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
         )}
         
         {/* Actions */}
-        <div className="flex gap-2 mt-3">
+        <div className="relative z-10 flex gap-2">
           {combatPhase !== 'initiative_post' && awaitingPlayer && (
             <>
               <Button 
-                className="flex-1" 
+                className="flex-1 tcg-action-btn" 
                 onClick={handlePlayCard}
                 disabled={!canPlayCard || state.isLoading}
               >
@@ -757,6 +651,7 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
               {actionLabel && (
                 <Button 
                   variant="secondary"
+                  className="tcg-action-btn"
                   onClick={handleConfirmPhase}
                   disabled={state.isLoading}
                 >
@@ -770,6 +665,7 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
               )}
               <Button 
                 variant="outline" 
+                className="tcg-action-btn"
                 onClick={passTurn}
                 disabled={state.isLoading}
               >
@@ -778,9 +674,9 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
             </>
           )}
           {!awaitingPlayer && (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Aguardando {state.botName}...
+            <div className="flex-1 flex items-center justify-center text-muted-foreground py-3">
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              <span>Aguardando {state.botName}...</span>
             </div>
           )}
         </div>
@@ -796,94 +692,96 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
   }
 
   // ========================
-  // VIEWS: FINISHED
+  // FINISHED - TCG Style
   // ========================
 
   if (state.phase === 'finished') {
     const isWinner = state.winner === 'player';
     
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${isWinner ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-              <Trophy className={`w-8 h-8 ${isWinner ? 'text-green-500' : 'text-red-500'}`} />
+      <div className="tcg-table min-h-screen flex flex-col items-center justify-center p-4">
+        {/* Decorative Corners */}
+        <div className="tcg-ornament tcg-ornament--tl" />
+        <div className="tcg-ornament tcg-ornament--tr" />
+        <div className="tcg-ornament tcg-ornament--bl" />
+        <div className="tcg-ornament tcg-ornament--br" />
+        
+        <div className="tcg-card p-8 w-full max-w-md text-center relative z-10">
+          <div className="tcg-card-frame" />
+          
+          {/* Result Icon */}
+          <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4 ${
+            isWinner ? 'bg-green-500/20' : 'bg-red-500/20'
+          }`}>
+            <Trophy className={`w-10 h-10 ${isWinner ? 'text-green-400' : 'text-red-400'}`} />
+          </div>
+          
+          {/* Title */}
+          <h1 className={`text-3xl font-bold mb-2 ${isWinner ? 'text-green-400' : 'text-red-400'}`}>
+            {isWinner ? 'Vitória!' : 'Derrota'}
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            {isWinner 
+              ? `Você derrotou ${state.botName}!`
+              : `${state.botName} venceu a batalha.`
+            }
+          </p>
+          
+          {/* Stats */}
+          <div className="flex justify-center gap-6 mb-4">
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Seu HP</div>
+              <div className="text-xl font-bold">{state.playerHp}/{state.playerMaxHp}</div>
             </div>
-            <CardTitle className="text-2xl mt-4">
-              {isWinner ? 'Vitória!' : 'Derrota'}
-            </CardTitle>
-            <CardDescription>
-              {isWinner 
-                ? `Você derrotou ${state.botName}!`
-                : `${state.botName} venceu a batalha.`
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-center gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Seu HP: </span>
-                <span className="font-bold">{state.playerHp}/{state.playerMaxHp}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">HP do Bot: </span>
-                <span className="font-bold">{state.botHp}/{state.botMaxHp}</span>
-              </div>
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">HP Inimigo</div>
+              <div className="text-xl font-bold">{state.botHp}/{state.botMaxHp}</div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Rounds jogados: {state.round}
-            </div>
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => {
+          </div>
+          
+          <div className="text-sm text-muted-foreground mb-6">
+            Rounds jogados: <span className="font-bold">{state.round}</span>
+          </div>
+          
+          {/* Actions */}
+          <div className="flex gap-3">
+            <Button 
+              className="flex-1 tcg-action-btn" 
+              onClick={() => {
                 resetGame();
                 if (selectedArmy) {
                   setLocalView('difficulty_select');
                 } else {
                   handleBackToMenu();
                 }
-              }}>
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Jogar Novamente
-              </Button>
-              <Button variant="outline" onClick={handleBackToMenu}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Menu
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              }}
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Jogar Novamente
+            </Button>
+            <Button 
+              variant="outline" 
+              className="tcg-action-btn"
+              onClick={handleBackToMenu}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Menu
+            </Button>
+          </div>
+        </div>
         
         {/* Battle Log */}
-        <Card className="w-full max-w-md mt-4">
-          <CardHeader className="py-2">
-            <CardTitle className="text-sm">Log da Batalha</CardTitle>
-          </CardHeader>
-          <CardContent className="py-2">
-            <ScrollArea className="h-40">
-              {state.battleLog.slice(-20).reverse().map((log, i) => (
-                <div 
-                  key={i} 
-                  className={`text-xs py-0.5 ${
-                    log.type === 'damage' ? 'text-red-500' :
-                    log.type === 'effect' ? 'text-primary' :
-                    log.type === 'phase' ? 'text-yellow-500 font-medium' :
-                    'text-muted-foreground'
-                  }`}
-                >
-                  {log.message}
-                </div>
-              ))}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        <div className="w-full max-w-md mt-4 relative z-10">
+          <TCGBattleLog logs={state.battleLog} maxEntries={15} />
+        </div>
       </div>
     );
   }
 
   // Fallback: Loading
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+    <div className="tcg-table min-h-screen flex items-center justify-center">
+      <Loader2 className="w-10 h-10 animate-spin text-primary" />
     </div>
   );
 }
