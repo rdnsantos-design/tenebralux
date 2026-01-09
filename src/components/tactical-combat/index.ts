@@ -6,3 +6,5 @@ export { CombatCardDisplay } from './CombatCardDisplay';
 export { BattleLog } from './BattleLog';
 export { CharacterSelector } from './CharacterSelector';
 export { EnemyConfig } from './EnemyConfig';
+export { CombatTimeline } from './CombatTimeline';
+export { HexCombatMap } from './HexCombatMap';

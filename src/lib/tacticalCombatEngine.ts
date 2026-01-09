@@ -20,6 +20,7 @@ import {
   ActionResult, 
   CombatCard,
   BattleLogEntry,
+  HexCoord,
   calculateReaction,
   calculateGuard,
   calculateEvasion,
@@ -28,6 +29,7 @@ import {
   calculatePrep
 } from '@/types/tactical-combat';
 import { getCardById } from '@/data/combat/cards';
+import { createBasicHexMap, addRandomCover, hexKey } from '@/lib/hexCombatUtils';
 
 // ============= RE-EXPORT DE FUNÇÕES DE CÁLCULO =============
 
@@ -269,21 +271,50 @@ export function getNextCombatant(state: BattleState): Combatant | null {
 /**
  * Inicializa o estado da batalha
  */
-export function initializeBattle(combatants: Combatant[]): BattleState {
+export function initializeBattle(combatants: Combatant[], withMap: boolean = true): BattleState {
   // Cada combatente começa no tick = seu Preparo (quem tem mais Preparo age primeiro)
   // Na verdade, menor preparo = mais lento para começar
   // Vamos inverter: quem tem MAIS preparo começa em tick MENOR
   const maxPrep = Math.max(...combatants.map(c => c.stats.prep));
   
-  const initializedCombatants = combatants.map(c => {
+  // Criar mapa se solicitado
+  let map = undefined;
+  if (withMap) {
+    map = createBasicHexMap(10, 8);
+    map = addRandomCover(map, 0.1);
+  }
+  
+  const initializedCombatants = combatants.map((c, index) => {
     const startTick = maxPrep - c.stats.prep; // Maior prep = menor tick inicial
+    
+    // Posicionar combatentes se houver mapa
+    let position: HexCoord | undefined;
+    if (withMap) {
+      if (c.team === 'player') {
+        // Jogadores no lado esquerdo
+        position = { q: 1, r: 2 + index };
+      } else {
+        // Inimigos no lado direito
+        const enemyIndex = combatants.filter((x, i) => i < index && x.team === 'enemy').length;
+        position = { q: 8, r: 2 + enemyIndex };
+      }
+      // Marcar hex como ocupado
+      if (map && position) {
+        const tile = map.hexes.get(hexKey(position));
+        if (tile) {
+          tile.occupantId = c.id;
+        }
+      }
+    }
+    
     return {
       ...c,
       stats: {
         ...c.stats,
         currentTick: startTick,
         currentMovement: c.stats.movement,
-        lastFatigueTick: 0
+        lastFatigueTick: 0,
+        position
       }
     };
   });
@@ -302,7 +333,8 @@ export function initializeBattle(combatants: Combatant[]): BattleState {
       message: 'Combate iniciado!',
       type: 'system'
     }],
-    round: 1
+    round: 1,
+    map
   };
 }
 

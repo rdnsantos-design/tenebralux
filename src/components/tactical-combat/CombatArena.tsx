@@ -3,15 +3,18 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Combatant, CombatCard } from '@/types/tactical-combat';
+import { Combatant, CombatCard, HexMap, HexCoord, CombatAction } from '@/types/tactical-combat';
 import { CombatantCard } from './CombatantCard';
 import { CombatCardDisplay } from './CombatCardDisplay';
 import { BattleLog } from './BattleLog';
+import { CombatTimeline } from './CombatTimeline';
+import { HexCombatMap } from './HexCombatMap';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Swords, 
   Clock, 
@@ -19,17 +22,22 @@ import {
   Trophy, 
   Skull,
   PlayCircle,
-  Target
+  Target,
+  Map,
+  ListOrdered
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CombatArenaProps {
   battleState: {
     currentTick: number;
+    maxTick?: number;
     round: number;
     phase: string;
     combatants: Combatant[];
     log: Array<{ tick: number; round: number; message: string; type: 'action' | 'damage' | 'effect' | 'system' | 'fatigue' | 'opportunity'; combatantId?: string }>;
+    pendingActions?: CombatAction[];
+    map?: HexMap;
   };
   currentCombatant: Combatant | null;
   isPlayerTurn: boolean;
@@ -44,6 +52,10 @@ interface CombatArenaProps {
   onAIAction: () => void;
   onReset: () => void;
   phase: 'setup' | 'battle' | 'victory' | 'defeat';
+  onHexClick?: (coord: HexCoord) => void;
+  onCombatantClick?: (combatant: Combatant) => void;
+  validMoveHexes?: HexCoord[];
+  validTargetHexes?: HexCoord[];
 }
 
 export function CombatArena({
@@ -60,9 +72,14 @@ export function CombatArena({
   onConfirmAction,
   onAIAction,
   onReset,
-  phase
+  phase,
+  onHexClick,
+  onCombatantClick,
+  validMoveHexes = [],
+  validTargetHexes = []
 }: CombatArenaProps) {
   const [autoPlayAI, setAutoPlayAI] = useState(true);
+  const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
 
   // Auto-executar turno da IA
   useEffect(() => {
@@ -119,6 +136,20 @@ export function CombatArena({
           </Badge>
         </div>
         <div className="flex items-center gap-2">
+          {battleState.map && (
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'cards' | 'map')}>
+              <TabsList className="h-9">
+                <TabsTrigger value="cards" className="gap-1 text-xs">
+                  <ListOrdered className="h-3.5 w-3.5" />
+                  Cards
+                </TabsTrigger>
+                <TabsTrigger value="map" className="gap-1 text-xs">
+                  <Map className="h-3.5 w-3.5" />
+                  Mapa
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
           <Button variant="outline" size="sm" onClick={onReset}>
             <RotateCcw className="h-4 w-4 mr-2" />
             Reiniciar
@@ -126,127 +157,165 @@ export function CombatArena({
         </div>
       </div>
 
-      {/* Campo de Batalha */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Inimigos */}
-        <Card>
-          <CardHeader className="py-3">
-            <CardTitle className="text-sm flex items-center gap-2 text-destructive">
-              <Skull className="h-4 w-4" />
-              Inimigos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {enemyCombatants.map((enemy) => (
-              <CombatantCard
-                key={enemy.id}
-                combatant={enemy}
-                isActive={currentCombatant?.id === enemy.id}
-                isTargetable={isPlayerTurn && selectedCard !== null && !enemy.stats.isDown}
-                isSelected={selectedTarget === enemy.id}
-                onClick={() => {
-                  if (isPlayerTurn && selectedCard && !enemy.stats.isDown) {
-                    onSelectTarget(selectedTarget === enemy.id ? null : enemy.id);
-                  }
-                }}
-              />
-            ))}
-          </CardContent>
-        </Card>
+      {/* Timeline de Combate */}
+      <CombatTimeline
+        currentTick={battleState.currentTick}
+        maxTick={battleState.maxTick}
+        combatants={battleState.combatants}
+        pendingActions={battleState.pendingActions}
+        round={battleState.round}
+      />
 
-        {/* Centro - Ação Atual */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="py-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Swords className="h-4 w-4" />
-              {isPlayerTurn ? 'Sua Vez!' : 'Turno do Inimigo...'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Combatente ativo */}
-            {currentCombatant && (
-              <div className="text-center">
-                <Badge variant={isPlayerTurn ? 'default' : 'destructive'}>
-                  {currentCombatant.name}
-                </Badge>
-              </div>
-            )}
+      {/* Mapa Hexagonal (se disponível e selecionado) */}
+      {battleState.map && viewMode === 'map' && (
+        <HexCombatMap
+          map={battleState.map}
+          combatants={battleState.combatants}
+          selectedCombatant={currentCombatant}
+          validMoveHexes={validMoveHexes}
+          validTargetHexes={validTargetHexes}
+          onHexClick={onHexClick || (() => {})}
+          onCombatantClick={onCombatantClick || (() => {})}
+          showLoS={selectedCard !== null && selectedCard.attackModifier !== 0}
+        />
+      )}
 
-            {/* Seleção de carta (só se for turno do jogador) */}
-            {isPlayerTurn && (
-              <>
-                <Separator />
-                <div>
-                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    Escolha uma Carta
-                  </h4>
-                  <ScrollArea className="h-[250px]">
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      {availableCards.map((card) => (
-                        <CombatCardDisplay
-                          key={card.id}
-                          card={card}
-                          isSelected={selectedCard?.id === card.id}
-                          onClick={() => onSelectCard(
-                            selectedCard?.id === card.id ? null : card
-                          )}
-                        />
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </div>
+      {/* Vista de Cards (padrão) */}
+      {viewMode === 'cards' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Inimigos */}
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+                <Skull className="h-4 w-4" />
+                Inimigos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {enemyCombatants.map((enemy) => (
+                <CombatantCard
+                  key={enemy.id}
+                  combatant={enemy}
+                  isActive={currentCombatant?.id === enemy.id}
+                  isTargetable={isPlayerTurn && selectedCard !== null && !enemy.stats.isDown}
+                  isSelected={selectedTarget === enemy.id}
+                  onClick={() => {
+                    if (isPlayerTurn && selectedCard && !enemy.stats.isDown) {
+                      onSelectTarget(selectedTarget === enemy.id ? null : enemy.id);
+                    }
+                  }}
+                />
+              ))}
+            </CardContent>
+          </Card>
 
-                {/* Instrução de alvo */}
-                {selectedCard && !selectedTarget && (
-                  <div className="text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Clique em um inimigo para atacar
+          {/* Centro - Ação Atual */}
+          <Card className="lg:col-span-1">
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Swords className="h-4 w-4" />
+                {isPlayerTurn ? 'Sua Vez!' : 'Turno do Inimigo...'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Combatente ativo */}
+              {currentCombatant && (
+                <div className="text-center">
+                  <Badge variant={isPlayerTurn ? 'default' : 'destructive'}>
+                    {currentCombatant.name}
+                  </Badge>
+                  {/* Info adicional de fadiga e ferimentos */}
+                  <div className="mt-2 flex justify-center gap-2 text-xs">
+                    {currentCombatant.stats.fatigue > 0 && (
+                      <Badge variant="outline" className="text-amber-600">
+                        Fadiga: {currentCombatant.stats.fatigue}
+                      </Badge>
+                    )}
+                    {currentCombatant.stats.wounds > 0 && (
+                      <Badge variant="outline" className="text-red-600">
+                        Ferimentos: {currentCombatant.stats.wounds}
+                      </Badge>
+                    )}
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Botão de confirmar */}
-                {selectedCard && selectedTarget && (
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={onConfirmAction}
-                  >
-                    <PlayCircle className="h-4 w-4 mr-2" />
-                    Executar Ação!
-                  </Button>
-                )}
-              </>
-            )}
+              {/* Seleção de carta (só se for turno do jogador) */}
+              {isPlayerTurn && (
+                <>
+                  <Separator />
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      Escolha uma Carta
+                    </h4>
+                    <ScrollArea className="h-[250px]">
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {availableCards.map((card) => (
+                          <CombatCardDisplay
+                            key={card.id}
+                            card={card}
+                            isSelected={selectedCard?.id === card.id}
+                            onClick={() => onSelectCard(
+                              selectedCard?.id === card.id ? null : card
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
 
-            {/* Indicador de IA processando */}
-            {!isPlayerTurn && phase === 'battle' && (
-              <div className="text-center py-8">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-                <p className="text-muted-foreground">Inimigo pensando...</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  {/* Instrução de alvo */}
+                  {selectedCard && !selectedTarget && (
+                    <div className="text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Clique em um inimigo para atacar
+                    </div>
+                  )}
 
-        {/* Jogadores */}
-        <Card>
-          <CardHeader className="py-3">
-            <CardTitle className="text-sm flex items-center gap-2 text-primary">
-              <Swords className="h-4 w-4" />
-              Aliados
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {playerCombatants.map((player) => (
-              <CombatantCard
-                key={player.id}
-                combatant={player}
-                isActive={currentCombatant?.id === player.id}
-              />
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+                  {/* Botão de confirmar */}
+                  {selectedCard && selectedTarget && (
+                    <Button 
+                      className="w-full" 
+                      size="lg"
+                      onClick={onConfirmAction}
+                    >
+                      <PlayCircle className="h-4 w-4 mr-2" />
+                      Executar Ação!
+                    </Button>
+                  )}
+                </>
+              )}
+
+              {/* Indicador de IA processando */}
+              {!isPlayerTurn && phase === 'battle' && (
+                <div className="text-center py-8">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+                  <p className="text-muted-foreground">Inimigo pensando...</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Jogadores */}
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm flex items-center gap-2 text-primary">
+                <Swords className="h-4 w-4" />
+                Aliados
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {playerCombatants.map((player) => (
+                <CombatantCard
+                  key={player.id}
+                  combatant={player}
+                  isActive={currentCombatant?.id === player.id}
+                />
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Log de Combate */}
       <BattleLog entries={battleState.log} maxHeight="150px" />
