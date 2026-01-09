@@ -395,6 +395,42 @@ export type Database = {
         }
         Relationships: []
       }
+      galaxy_organizations: {
+        Row: {
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          organization_type: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          organization_type: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          organization_type?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       game_played_cards: {
         Row: {
           card_id: string
