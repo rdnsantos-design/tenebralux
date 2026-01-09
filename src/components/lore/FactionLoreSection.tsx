@@ -33,6 +33,48 @@ const FACTIONS: Faction[] = [
     description: 'O império que governa com mão de ferro'
   },
   {
+    id: 'alianca-estelar',
+    name: 'Aliança Estelar',
+    icon: Users,
+    color: 'text-blue-400',
+    description: 'A coalizão das nações estelares unidas'
+  },
+  {
+    id: 'hegemonia-humanista',
+    name: 'Hegemonia Humanista',
+    icon: Crown,
+    color: 'text-orange-400',
+    description: 'O poder da humanidade acima de tudo'
+  },
+  {
+    id: 'pacto-liberstadt',
+    name: 'Pacto de Liberstadt',
+    icon: Users,
+    color: 'text-cyan-400',
+    description: 'A liga das cidades livres e independentes'
+  },
+  {
+    id: 'federacao-solonica',
+    name: 'Federação Solônica de Planetas',
+    icon: Globe,
+    color: 'text-yellow-400',
+    description: 'A federação democrática dos mundos do sol'
+  },
+  {
+    id: 'nova-concordia',
+    name: 'Nova Concórdia',
+    icon: Handshake,
+    color: 'text-emerald-400',
+    description: 'O pacto de paz e cooperação galáctica'
+  },
+  {
+    id: 'republica-bruniana',
+    name: 'República Bruniana',
+    icon: Building,
+    color: 'text-rose-400',
+    description: 'A república das tradições e do comércio'
+  },
+  {
     id: 'zonas-fantasmas',
     name: 'Zonas Fantasmas',
     icon: Ghost,
