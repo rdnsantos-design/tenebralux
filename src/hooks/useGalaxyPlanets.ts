@@ -142,38 +142,12 @@ export function useGalaxyPlanets() {
     }
   });
 
-  // Importar planetas do JSON para o banco
+  // Importar planetas do JSON para o banco via edge function
   const importPlanets = useMutation({
     mutationFn: async () => {
-      const planetsToInsert = (planetsData as any[]).map(p => ({
-        nome: p.nome,
-        x: p.x,
-        y: p.y,
-        z: p.z,
-        distancia: p.distancia,
-        regiao: p.regiao,
-        faccao: p.faccao,
-        zona: p.zona,
-        tier: p.tier,
-        d: p.D,
-        r: p.R,
-        def: p.Def,
-        slots_prod: p.slotsProd,
-        slots_com: p.slotsCom,
-        slots_soc: p.slotsSoc,
-        pcp_total: p.pcpTotal,
-        pcp_gasto: p.pcpGasto,
-        tags_positivas: p.tagsPositivas || '',
-        tags_negativas: p.tagsNegativas || '',
-        tipo: p.tipo,
-        funcao: p.funcao,
-        populacao: p.populacao,
-        descricao: p.descricao || ''
-      }));
-
-      const { error } = await supabase
-        .from('galaxy_planets')
-        .insert(planetsToInsert);
+      const { data, error } = await supabase.functions.invoke('import-galaxy-planets', {
+        body: { planets: planetsData }
+      });
       
       if (error) throw error;
     },
