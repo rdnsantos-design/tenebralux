@@ -51,6 +51,8 @@ export function convertCharacterToCombatant(
   const resistencia = skills.resistencia || 0;
   const resiliencia = skills.resiliencia || 0;
   const instinto = skills.instinto || 0;
+  const percepcao = skills.percepcao || 0;
+  const vigor = skills.vigor || 0;
   
   // Buscar arma e armadura
   let weapon: TacticalWeapon | undefined;
@@ -79,15 +81,19 @@ export function convertCharacterToCombatant(
     armor = getArmorById('no_armor');
   }
   
-  const armorGuardBonus = armor?.guardBonus || 0;
-  
   // Calcular stats de combate usando as fórmulas corretas
-  const reaction = calculateReaction(intuicao, reflexos, prontidao);
-  const guard = calculateGuard(reflexos, esquiva, armorGuardBonus);
-  const evasion = calculateEvasion(reflexos, instinto);
+  // Reação = Reflexos × 2 + Prontidão
+  const reaction = calculateReaction(reflexos, prontidao);
+  // Guarda = Reflexos + Esquiva + Instinto
+  const guard = calculateGuard(reflexos, esquiva, instinto);
+  // Evasão = Intuição × 2 + Percepção
+  const evasion = calculateEvasion(intuicao, percepcao);
+  // Vitalidade = Corpo × 2 + Resistência
   const vitality = calculateVitality(corpo, resistencia);
+  // Movimento = Corpo × 2 + Atletismo
   const movement = calculateMovement(corpo, atletismo);
-  const prep = calculatePrep(determinacao, atletismo);
+  // Preparo = Determinação + Corpo + Vigor
+  const prep = calculatePrep(determinacao, corpo, vigor);
   
   // Determinar cartas disponíveis (básicas + compradas)
   const purchasedCards: string[] = []; // TODO: carregar do personagem
@@ -110,6 +116,8 @@ export function convertCharacterToCombatant(
       prontidao,
       atletismo,
       resistencia,
+      percepcao,
+      vigor,
       resiliencia,
       instinto
     },
@@ -218,7 +226,9 @@ export function createGenericEnemy(
       atletismo: s.skill,
       resistencia: s.skill,
       resiliencia: s.skill,
-      instinto: s.skill
+      instinto: s.skill,
+      percepcao: s.skill,
+      vigor: s.skill
     }
   };
   
