@@ -150,10 +150,12 @@ function OrganizationCard({
             {org.description && (
               <p className="text-sm text-muted-foreground italic">{org.description}</p>
             )}
-            <ScrollArea className="max-h-[200px]">
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {org.content || 'Clique em editar para adicionar conteúdo.'}
-              </p>
+            <ScrollArea className="h-[200px]">
+              <div className="pr-4">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {org.content || 'Clique em editar para adicionar conteúdo.'}
+                </p>
+              </div>
             </ScrollArea>
           </div>
         )}
