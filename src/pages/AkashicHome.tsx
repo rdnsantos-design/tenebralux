@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Rocket, Users, Hexagon, Globe, Map, Route, 
   UserPlus, Gamepad2, Layers, Swords, Settings,
-  ChevronRight, Sparkles
+  ChevronRight, Sparkles, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
@@ -71,6 +71,7 @@ const gameModes: GameModeData[] = [
 ];
 
 const sharedTools = [
+  { label: 'A Galáxia', path: '/galaxy-lore', icon: BookOpen },
   { label: 'Personagens', path: '/character-builder', icon: UserPlus },
   { label: 'Exércitos', path: '/army', icon: Users },
   { label: 'Domínios', path: '/domains', icon: Map },
