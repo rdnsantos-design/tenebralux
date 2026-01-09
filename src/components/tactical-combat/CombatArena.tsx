@@ -8,7 +8,9 @@ import { CombatantCard } from './CombatantCard';
 import { CombatCardDisplay } from './CombatCardDisplay';
 import { BattleLog } from './BattleLog';
 import { CombatTimeline } from './CombatTimeline';
+import { CombatDebugPanel } from './CombatDebugPanel';
 import { HexCombatMap } from './HexCombatMap';
+import { getCardById } from '@/data/combat/cards';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -90,6 +92,13 @@ export function CombatArena({
       return () => clearTimeout(timer);
     }
   }, [isPlayerTurn, currentCombatant, phase, autoPlayAI, onAIAction]);
+
+  // Função para obter cartas de um combatente
+  const getCombatantCards = (combatant: Combatant): CombatCard[] => {
+    return combatant.stats.availableCards
+      .map(id => getCardById(id))
+      .filter((c): c is CombatCard => c !== undefined);
+  };
 
   // Tela de Vitória/Derrota
   if (phase === 'victory' || phase === 'defeat') {
@@ -390,7 +399,15 @@ export function CombatArena({
       )}
 
       {/* Log de Combate */}
-      <BattleLog entries={battleState.log} maxHeight="150px" />
+      <BattleLog entries={battleState.log} maxHeight="200px" />
+
+      {/* Painel de Debug */}
+      <CombatDebugPanel
+        combatants={battleState.combatants}
+        currentTick={battleState.currentTick}
+        round={battleState.round}
+        getAllCards={getCombatantCards}
+      />
     </div>
   );
 }
