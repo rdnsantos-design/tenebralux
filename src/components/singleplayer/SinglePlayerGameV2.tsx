@@ -454,12 +454,14 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
         <div className="relative z-10 mb-4">
           <TCGPhaseIndicator 
             currentPhase={combatPhase} 
-            round={state.round} 
+            round={state.round}
+            awaitingPlayer={awaitingPlayer}
+            botName={state.botName}
           />
           
           {/* Terrain Badge */}
           {state.selectedTerrainName && (
-            <div className="flex justify-center gap-3 mt-3">
+            <div className="flex justify-center gap-3 mt-2">
               <div className="tcg-terrain-badge">
                 <Mountain className="w-4 h-4" />
                 <span>{state.selectedTerrainName}</span>
