@@ -139,34 +139,33 @@ function PlanetSphere({
 
 // Componente para a Via Victoria (linha dourada)
 function ViaVictoria({ planets }: { planets: Planet[] }) {
-  const viaVictoriaPlanets = useMemo(() => {
-    return planets
+  const geometry = useMemo(() => {
+    const viaVictoriaPlanets = planets
       .filter(p => p.regiao.startsWith('Via Victoria'))
       .sort((a, b) => a.distancia - b.distancia);
+
+    if (viaVictoriaPlanets.length < 2) return null;
+
+    const scale = 0.1;
+    const points = viaVictoriaPlanets.map(p => 
+      new THREE.Vector3(p.x * scale, p.y * scale, p.z * scale)
+    );
+
+    const curve = new THREE.CatmullRomCurve3(points);
+    const curvePoints = curve.getPoints(100);
+    
+    const geo = new THREE.BufferGeometry().setFromPoints(curvePoints);
+    return geo;
   }, [planets]);
 
-  if (viaVictoriaPlanets.length < 2) return null;
-
-  const scale = 0.1;
-  const points = viaVictoriaPlanets.map(p => 
-    new THREE.Vector3(p.x * scale, p.y * scale, p.z * scale)
-  );
-
-  const curve = new THREE.CatmullRomCurve3(points);
-  const curvePoints = curve.getPoints(100);
+  if (!geometry) return null;
 
   return (
-    <line>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={curvePoints.length}
-          array={new Float32Array(curvePoints.flatMap(p => [p.x, p.y, p.z]))}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial color="#f39c12" opacity={0.6} transparent linewidth={2} />
-    </line>
+    <primitive object={new THREE.Line(geometry, new THREE.LineBasicMaterial({ 
+      color: '#f39c12', 
+      opacity: 0.6, 
+      transparent: true 
+    }))} />
   );
 }
 
