@@ -15,7 +15,9 @@ import {
   SPCommander,
   SPManeuver,
   SPScenarioOption,
+  SPBasicCardsUsed,
   createInitialBoard,
+  createInitialBasicCards,
   resetBoardForNewRound,
   resolveInitiativeRoll,
   resolveCombatRoll,
@@ -54,6 +56,8 @@ const createInitialState = (): SPGameState => ({
   playerAttributes: { attack: 0, defense: 0, mobility: 0 },
   playerVetBudget: 0,
   playerVetSpent: 0,
+  playerBasicCardsUsed: createInitialBasicCards(),
+  playerBasicCardsBonuses: {},
   
   botDifficulty: 'medium',
   botName: 'Bot',
@@ -67,6 +71,8 @@ const createInitialState = (): SPGameState => ({
   botHp: 10,
   botMaxHp: 10,
   botAttributes: { attack: 0, defense: 0, mobility: 0 },
+  botBasicCardsUsed: createInitialBasicCards(),
+  botBasicCardsBonuses: {},
   
   scenarioOptions: [],
   playerLogisticsBid: null,
@@ -213,14 +219,44 @@ export function useSinglePlayerGameV2() {
       
       const botGeneralId = botCommanders[0]?.instance_id || null;
       
-      // Buscar cartas para o bot (da cultura dele + neutras)
+      // Buscar cartas para o bot - garantir pelo menos uma de cada tipo
       const { data: botCardsData } = await supabase
         .from('mass_combat_tactical_cards')
         .select('*')
         .or(`culture.eq.${botCultureName},culture.is.null`)
-        .limit(15);
+        .limit(30);
       
-      const botDeck: SPCard[] = (botCardsData || []).map(c => ({
+      // Organizar cartas por tipo para garantir cobertura
+      const cardsByType: Record<string, typeof botCardsData> = {
+        ofensiva: [],
+        defensiva: [],
+        movimentacao: [],
+        reacao: [],
+      };
+      
+      (botCardsData || []).forEach(c => {
+        if (cardsByType[c.card_type]) {
+          cardsByType[c.card_type]!.push(c);
+        }
+      });
+      
+      // Garantir pelo menos 2 cartas de cada tipo
+      const guaranteedCards: typeof botCardsData = [];
+      Object.values(cardsByType).forEach(cards => {
+        if (cards && cards.length > 0) {
+          guaranteedCards.push(cards[0]);
+          if (cards.length > 1) guaranteedCards.push(cards[1]);
+        }
+      });
+      
+      // Adicionar mais cartas aleatórias
+      const remainingCards = (botCardsData || []).filter(c => 
+        !guaranteedCards.some(g => g.id === c.id)
+      ).slice(0, 8);
+      
+      const allBotCards = [...guaranteedCards, ...remainingCards];
+      
+      const botDeck: SPCard[] = allBotCards.map(c => ({
         id: c.id,
         name: c.name,
         card_type: c.card_type as SPCard['card_type'],
@@ -840,14 +876,17 @@ export function useSinglePlayerGameV2() {
     
     const result = resolveCombatRoll(attackerAttrs, attackerManeuvers, defenderAttrs, defenderManeuvers, attacker);
     
+    const attackerName = attacker === 'player' ? (state.playerCultureName || 'Você') : state.botName;
+    const defenderName = defender === 'player' ? (state.playerCultureName || 'Você') : state.botName;
+    
     addLog(`🎲 Rolagem de Combate`, 'phase');
-    addLog(`Ataque: d20(${result.attackerRoll}) + ${attackerAttrs.attack} base = ${result.attackTotal}`, 'info');
-    addLog(`Defesa: d20(${result.defenderRoll}) + ${defenderAttrs.defense} base = ${result.defenseTotal}`, 'info');
+    addLog(`${attackerName} ataca: d20(${result.attackerRoll}) + ${attackerAttrs.attack} ATQ = ${result.attackTotal}`, 'info');
+    addLog(`${defenderName} defende: d20(${result.defenderRoll}) + ${defenderAttrs.defense} DEF = ${result.defenseTotal}`, 'info');
     
     if (result.damage > 0) {
-      addLog(`💥 ${result.critical ? 'CRÍTICO! ' : ''}${result.damage} de dano!`, 'damage');
+      addLog(`💥 ${result.critical ? 'CRÍTICO! ' : ''}${attackerName} causa ${result.damage} de dano em ${defenderName}!`, 'damage');
     } else {
-      addLog('Ataque bloqueado!', 'info');
+      addLog(`${defenderName} bloqueou o ataque de ${attackerName}!`, 'info');
     }
     
     // Aplicar dano
@@ -1108,6 +1147,53 @@ export function useSinglePlayerGameV2() {
   }, [state.combatPhase, state.board.current_defender, confirmInitiativeManeuver, playReaction, confirmAttackManeuvers, confirmDefenseManeuvers, advanceToNextRound, triggerBotDefensePhase]);
   
   // ========================
+  // CARTAS BÁSICAS
+  // ========================
+  
+  const useBasicCard = useCallback((cardType: keyof SPBasicCardsUsed) => {
+    if (state.playerBasicCardsUsed[cardType]) {
+      toast.error('Esta carta básica já foi usada nesta partida');
+      return;
+    }
+    
+    // Verificar se a carta pode ser usada na fase atual
+    const allowedPhases: Record<keyof SPBasicCardsUsed, SPCombatPhase[]> = {
+      heal: ['combat_resolution'],
+      attack: ['attack_maneuver', 'attack_reaction'],
+      defense: ['defense_maneuver', 'defense_reaction'],
+      initiative: ['initiative_maneuver', 'initiative_reaction'],
+      countermaneuver: ['initiative_reaction', 'attack_reaction', 'defense_reaction'],
+    };
+    
+    if (!allowedPhases[cardType].includes(state.combatPhase)) {
+      toast.error('Esta carta não pode ser usada nesta fase');
+      return;
+    }
+    
+    const cardNames: Record<keyof SPBasicCardsUsed, string> = {
+      heal: 'Cura',
+      attack: 'Ataque',
+      defense: 'Defesa',
+      initiative: 'Iniciativa',
+      countermaneuver: 'Contra-Manobra',
+    };
+    
+    addLog(`🃏 Carta básica ativada: ${cardNames[cardType]}`, 'effect');
+    
+    setState(prev => ({
+      ...prev,
+      playerBasicCardsUsed: {
+        ...prev.playerBasicCardsUsed,
+        [cardType]: true,
+      },
+      playerBasicCardsBonuses: {
+        ...prev.playerBasicCardsBonuses,
+        [cardType]: true,
+      },
+    }));
+  }, [state.playerBasicCardsUsed, state.combatPhase, addLog]);
+  
+  // ========================
   // RESET
   // ========================
   
@@ -1139,5 +1225,6 @@ export function useSinglePlayerGameV2() {
     advanceToNextRound,
     passTurn,
     resetGame,
+    useBasicCard,
   };
 }

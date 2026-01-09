@@ -120,6 +120,22 @@ export interface SPScenarioOption {
   draw_order: number;
 }
 
+export interface SPBasicCardsUsed {
+  heal: boolean;
+  attack: boolean;
+  defense: boolean;
+  initiative: boolean;
+  countermaneuver: boolean;
+}
+
+export interface SPBasicCardsBonuses {
+  heal?: boolean;
+  attack?: boolean;
+  defense?: boolean;
+  initiative?: boolean;
+  countermaneuver?: boolean;
+}
+
 export interface SPGameState {
   phase: SPGamePhase;
   combatPhase: SPCombatPhase;
@@ -138,6 +154,8 @@ export interface SPGameState {
   playerAttributes: SPArmyAttributes;
   playerVetBudget: number;
   playerVetSpent: number;
+  playerBasicCardsUsed: SPBasicCardsUsed;
+  playerBasicCardsBonuses: SPBasicCardsBonuses;
   
   // Bot
   botDifficulty: BotDifficulty;
@@ -152,6 +170,8 @@ export interface SPGameState {
   botHp: number;
   botMaxHp: number;
   botAttributes: SPArmyAttributes;
+  botBasicCardsUsed: SPBasicCardsUsed;
+  botBasicCardsBonuses: SPBasicCardsBonuses;
   
   // Cenário
   scenarioOptions: SPScenarioOption[];
@@ -173,6 +193,16 @@ export interface SPGameState {
   isLoading: boolean;
   winner: 'player' | 'bot' | null;
   awaitingPlayer: boolean;
+}
+
+export function createInitialBasicCards(): SPBasicCardsUsed {
+  return {
+    heal: false,
+    attack: false,
+    defense: false,
+    initiative: false,
+    countermaneuver: false,
+  };
 }
 
 // ========================
