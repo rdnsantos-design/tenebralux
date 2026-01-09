@@ -110,6 +110,8 @@ export interface SPCombatBoard {
   chosen_secondary_terrain_id?: string;
   combat_result?: SPCombatResult;
   reaction_turn?: 'player' | 'bot';
+  first_combat_done: boolean; // Flag para controlar se o primeiro combate já foi resolvido
+  first_combat_result?: SPCombatResult; // Resultado do primeiro combate para histórico
 }
 
 export interface SPScenarioOption {
@@ -446,6 +448,7 @@ export function createInitialBoard(): SPCombatBoard {
       defense_maneuvers: [],
       confirmed_defense: false,
     },
+    first_combat_done: false,
   };
 }
 
@@ -482,6 +485,39 @@ export function resetBoardForNewRound(board: SPCombatBoard): SPCombatBoard {
     current_defender: undefined,
     combat_result: undefined,
     reaction_turn: undefined,
+    first_combat_done: false,
+    first_combat_result: undefined,
+  };
+}
+
+/**
+ * Resetar apenas a fase de combate para o segundo combate da rodada
+ * Mantém iniciativa e terreno, mas limpa manobras de ataque/defesa
+ */
+export function resetBoardForSecondCombat(board: SPCombatBoard): SPCombatBoard {
+  return {
+    ...board,
+    player: {
+      ...board.player,
+      attack_maneuvers: [],
+      confirmed_attack: false,
+      defense_maneuvers: [],
+      confirmed_defense: false,
+    },
+    bot: {
+      ...board.bot,
+      attack_maneuvers: [],
+      confirmed_attack: false,
+      defense_maneuvers: [],
+      confirmed_defense: false,
+    },
+    // Inverter atacante e defensor
+    current_attacker: board.current_defender,
+    current_defender: board.current_attacker,
+    // Salvar resultado do primeiro combate
+    first_combat_result: board.combat_result,
+    combat_result: undefined,
+    first_combat_done: true,
   };
 }
 

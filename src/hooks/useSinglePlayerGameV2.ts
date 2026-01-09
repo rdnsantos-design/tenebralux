@@ -19,6 +19,7 @@ import {
   createInitialBoard,
   createInitialBasicCards,
   resetBoardForNewRound,
+  resetBoardForSecondCombat,
   resolveInitiativeRoll,
   resolveCombatRoll,
   calculateBaseHp,
@@ -880,7 +881,8 @@ export function useSinglePlayerGameV2() {
     const attackerName = attacker === 'player' ? (state.playerCultureName || 'Você') : state.botName;
     const defenderName = defender === 'player' ? (state.playerCultureName || 'Você') : state.botName;
     
-    addLog(`🎲 Rolagem de Combate`, 'phase');
+    const combatNumber = state.board.first_combat_done ? '2º' : '1º';
+    addLog(`🎲 ${combatNumber} Combate - Rolagem`, 'phase');
     addLog(`${attackerName} ataca: d20(${result.attackerRoll}) + ${attackerAttrs.attack} ATQ = ${result.attackTotal}`, 'info');
     addLog(`${defenderName} defende: d20(${result.defenderRoll}) + ${defenderAttrs.defense} DEF = ${result.defenseTotal}`, 'info');
     
@@ -908,20 +910,66 @@ export function useSinglePlayerGameV2() {
       addLog(`💀 DERROTA! ${state.botName} venceu.`, 'phase');
     }
     
-    setState(prev => ({
-      ...prev,
-      playerHp: newPlayerHp,
-      botHp: newBotHp,
-      board: {
-        ...prev.board,
+    // Determinar próxima fase
+    // Se alguém morreu -> fim
+    // Se é o primeiro combate -> ir para segundo combate
+    // Se é o segundo combate -> fim do round
+    const isFirstCombat = !state.board.first_combat_done;
+    
+    if (winner) {
+      // Jogo acabou
+      setState(prev => ({
+        ...prev,
+        playerHp: newPlayerHp,
+        botHp: newBotHp,
+        board: {
+          ...prev.board,
+          combat_result: result,
+        },
+        combatPhase: 'round_end',
+        phase: 'finished',
+        winner,
+        awaitingPlayer: true,
+      }));
+    } else if (isFirstCombat) {
+      // Primeiro combate resolvido, ir para o segundo
+      addLog(`⚔️ Agora ${defender === 'player' ? 'você ataca' : state.botName + ' ataca'}!`, 'phase');
+      
+      const newBoard = resetBoardForSecondCombat({
+        ...state.board,
         combat_result: result,
-      },
-      combatPhase: winner ? 'round_end' : 'combat_resolution',
-      phase: winner ? 'finished' : prev.phase,
-      winner,
-      awaitingPlayer: true,
-    }));
-  }, [state.board, state.playerAttributes, state.botAttributes, state.playerHp, state.botHp, state.botName, addLog]);
+      });
+      
+      setState(prev => ({
+        ...prev,
+        playerHp: newPlayerHp,
+        botHp: newBotHp,
+        board: newBoard,
+        combatPhase: 'attack_maneuver',
+        awaitingPlayer: newBoard.current_attacker === 'player',
+      }));
+      
+      // Se bot é o novo atacante, ele joga
+      if (defender === 'bot') {
+        setTimeout(() => triggerBotAttackPhaseRef.current(), 0);
+      }
+    } else {
+      // Segundo combate resolvido, fim do round
+      addLog('📍 Fim do round - clique para avançar', 'phase');
+      
+      setState(prev => ({
+        ...prev,
+        playerHp: newPlayerHp,
+        botHp: newBotHp,
+        board: {
+          ...prev.board,
+          combat_result: result,
+        },
+        combatPhase: 'combat_resolution',
+        awaitingPlayer: true,
+      }));
+    }
+  }, [state.board, state.playerAttributes, state.botAttributes, state.playerHp, state.botHp, state.botName, state.playerCultureName, addLog]);
   
   const advanceToNextRound = useCallback(() => {
     addLog(`--- Rodada ${state.round + 1} ---`, 'phase');
