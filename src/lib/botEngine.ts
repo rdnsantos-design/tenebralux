@@ -362,8 +362,8 @@ export function getBotName(difficulty: BotDifficulty): string {
 export function getBotDelayMs(difficulty: BotDifficulty): number {
   // Delay para simular "pensamento" do bot
   return {
-    easy: 500 + Math.random() * 500,      // 0.5-1s
-    medium: 1000 + Math.random() * 1000,  // 1-2s
-    hard: 1500 + Math.random() * 1500,    // 1.5-3s
+    easy: 200 + Math.random() * 200,      // 0.2-0.4s
+    medium: 300 + Math.random() * 300,    // 0.3-0.6s
+    hard: 400 + Math.random() * 400,      // 0.4-0.8s
   }[difficulty];
 }
