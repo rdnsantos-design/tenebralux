@@ -5,7 +5,7 @@
 import { CombatCard } from '@/types/tactical-combat';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Zap, Crosshair, Move } from 'lucide-react';
+import { Zap, Crosshair, Move, Sword, Target, Hand, Shield, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CombatCardDisplayProps {
@@ -14,6 +14,39 @@ interface CombatCardDisplayProps {
   isDisabled?: boolean;
   onClick?: () => void;
   theme?: 'akashic' | 'tenebralux';
+}
+
+// Determina o estilo de combate da carta
+function getCombatStyle(card: CombatCard): { icon: React.ReactNode; label: string; color: string } {
+  const skillId = card.requirements?.skillId;
+  
+  // Cartas táticas com skill específica
+  if (skillId === 'tiro') {
+    return { icon: <Target className="h-3 w-3" />, label: 'Tiro', color: 'bg-blue-500/20 text-blue-700 border-blue-500/30' };
+  }
+  if (skillId === 'laminas') {
+    return { icon: <Sword className="h-3 w-3" />, label: 'Lâmina', color: 'bg-orange-500/20 text-orange-700 border-orange-500/30' };
+  }
+  if (skillId === 'luta') {
+    return { icon: <Hand className="h-3 w-3" />, label: 'Luta', color: 'bg-purple-500/20 text-purple-700 border-purple-500/30' };
+  }
+  
+  // Cartas de defesa/postura
+  if (card.defenseBonus || card.guardMultiplier || card.type === 'posture') {
+    return { icon: <Shield className="h-3 w-3" />, label: 'Defesa', color: 'bg-green-500/20 text-green-700 border-green-500/30' };
+  }
+  
+  // Cartas especiais (reload, swap, rest)
+  if (card.id === 'reload' || card.id === 'swap_weapon' || card.id === 'rest') {
+    return { icon: <RefreshCw className="h-3 w-3" />, label: 'Ação', color: 'bg-gray-500/20 text-gray-700 border-gray-500/30' };
+  }
+  
+  // Cartas básicas de ataque (universal)
+  if (card.attackModifier !== 0 || card.type === 'basic') {
+    return { icon: <Crosshair className="h-3 w-3" />, label: 'Universal', color: 'bg-muted text-muted-foreground border-border' };
+  }
+  
+  return { icon: null, label: '', color: '' };
 }
 
 export function CombatCardDisplay({
@@ -25,6 +58,7 @@ export function CombatCardDisplay({
 }: CombatCardDisplayProps) {
   const name = card.name[theme];
   const description = card.description[theme];
+  const combatStyle = getCombatStyle(card);
 
   return (
     <Card
@@ -39,17 +73,30 @@ export function CombatCardDisplay({
       )}
       onClick={isDisabled ? undefined : onClick}
     >
+      {/* Badge de estilo de combate */}
+      <div className="absolute -top-2 -right-2 z-10">
+        {combatStyle.icon && (
+          <div className={cn(
+            'flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border',
+            combatStyle.color
+          )}>
+            {combatStyle.icon}
+            <span className="hidden sm:inline">{combatStyle.label}</span>
+          </div>
+        )}
+      </div>
+
       {/* Tipo da carta */}
       <div className="absolute -top-2 left-2">
         <Badge 
           variant={card.type === 'basic' ? 'secondary' : 'default'}
           className="text-xs capitalize"
         >
-          {card.type === 'basic' ? 'Básica' : card.type === 'tactical' ? 'Tática' : 'Especial'}
+          {card.type === 'basic' ? 'Básica' : card.type === 'tactical' ? 'Tática' : card.type === 'posture' ? 'Postura' : 'Especial'}
         </Badge>
       </div>
 
-      <CardContent className="p-3 pt-4 space-y-2">
+      <CardContent className="p-3 pt-5 space-y-2">
         {/* Nome */}
         <h5 className="font-semibold text-sm text-center truncate">
           {name}
