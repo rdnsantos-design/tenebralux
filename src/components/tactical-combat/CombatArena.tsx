@@ -168,16 +168,79 @@ export function CombatArena({
 
       {/* Mapa Hexagonal (se disponível e selecionado) */}
       {battleState.map && viewMode === 'map' && (
-        <HexCombatMap
-          map={battleState.map}
-          combatants={battleState.combatants}
-          selectedCombatant={currentCombatant}
-          validMoveHexes={validMoveHexes}
-          validTargetHexes={validTargetHexes}
-          onHexClick={onHexClick || (() => {})}
-          onCombatantClick={onCombatantClick || (() => {})}
-          showLoS={selectedCard !== null && selectedCard.attackModifier !== 0}
-        />
+        <div className="space-y-4">
+          {/* Painel de Cartas no Modo Mapa */}
+          {isPlayerTurn && (
+            <Card className="border-primary/50 bg-background/95">
+              <CardContent className="py-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0">
+                    <Badge variant="default" className="text-sm">
+                      🎯 Sua Vez - {currentCombatant?.name}
+                    </Badge>
+                  </div>
+                  <Separator orientation="vertical" className="h-8" />
+                  <ScrollArea className="flex-1">
+                    <div className="flex gap-2">
+                      {availableCards.map((card) => (
+                        <CombatCardDisplay
+                          key={card.id}
+                          card={card}
+                          isSelected={selectedCard?.id === card.id}
+                          onClick={() => onSelectCard(
+                            selectedCard?.id === card.id ? null : card
+                          )}
+                          theme="akashic"
+                        />
+                      ))}
+                    </div>
+                  </ScrollArea>
+                  {selectedCard && selectedTarget && (
+                    <Button 
+                      size="sm"
+                      onClick={onConfirmAction}
+                    >
+                      <PlayCircle className="h-4 w-4 mr-1" />
+                      Atacar!
+                    </Button>
+                  )}
+                </div>
+                {selectedCard && !selectedTarget && (
+                  <div className="text-center text-sm text-muted-foreground mt-2 flex items-center justify-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Clique em um inimigo no mapa para selecionar alvo
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          
+          {!isPlayerTurn && phase === 'battle' && (
+            <Card className="border-destructive/50 bg-background/95">
+              <CardContent className="py-3 flex items-center justify-center gap-3">
+                <div className="animate-spin h-5 w-5 border-2 border-destructive border-t-transparent rounded-full" />
+                <span className="text-muted-foreground">Turno do inimigo...</span>
+              </CardContent>
+            </Card>
+          )}
+
+          <HexCombatMap
+            map={battleState.map}
+            combatants={battleState.combatants}
+            selectedCombatant={currentCombatant}
+            validMoveHexes={validMoveHexes}
+            validTargetHexes={validTargetHexes}
+            onHexClick={onHexClick || (() => {})}
+            onCombatantClick={(combatant) => {
+              // Permite selecionar inimigos como alvo ao clicar neles
+              if (isPlayerTurn && selectedCard && combatant.team === 'enemy' && !combatant.stats.isDown) {
+                onSelectTarget(selectedTarget === combatant.id ? null : combatant.id);
+              }
+              onCombatantClick?.(combatant);
+            }}
+            showLoS={selectedCard !== null && selectedCard.attackModifier !== 0}
+          />
+        </div>
       )}
 
       {/* Vista de Cards (padrão) */}
