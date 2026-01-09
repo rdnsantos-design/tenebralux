@@ -11,7 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { 
   Swords, Heart, Shield, Zap, Trophy, Bot, 
   ArrowLeft, Play, RotateCcw, Loader2, Crown,
-  Target, Dice5, Check, X,
+  Target, Dice5, Check, X, LogOut,
   Mountain, Sun, Users, Sparkles
 } from 'lucide-react';
 import { BotDifficulty } from '@/lib/botEngine';
@@ -453,6 +453,25 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
         
         {/* Phase & Round Indicator */}
         <div className="relative z-10 mb-4">
+          {/* Exit Button */}
+          <div className="absolute left-0 top-0 z-20">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (confirm('Tem certeza que deseja sair? O progresso será perdido.')) {
+                  resetGame();
+                  setLocalView('army_list');
+                  setSelectedArmy(null);
+                }
+              }}
+              className="text-muted-foreground hover:text-destructive gap-1.5"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sair</span>
+            </Button>
+          </div>
+          
           <TCGPhaseIndicator 
             currentPhase={combatPhase} 
             round={state.round}
