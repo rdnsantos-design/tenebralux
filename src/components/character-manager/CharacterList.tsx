@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SavedCharacter } from '@/types/character-storage';
 import { useCharacterStorageHybrid } from '@/hooks/useCharacterStorageHybrid';
 import { CharacterCard } from './CharacterCard';
@@ -17,6 +18,7 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
+  ArrowLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,6 +33,7 @@ export function CharacterList({
   onEdit, 
   onContinue 
 }: CharacterListProps) {
+  const navigate = useNavigate();
   const {
     filteredCharacters,
     isLoading,
@@ -138,11 +141,18 @@ export function CharacterList({
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-1">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate('/')}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <h1 className="text-2xl font-bold">Meus Personagens</h1>
             <ConnectionStatus />
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground ml-11">
             {stats.count} de {stats.maxCount} personagens ({stats.storageUsed})
           </p>
         </div>
