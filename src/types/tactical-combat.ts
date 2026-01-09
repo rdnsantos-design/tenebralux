@@ -3,12 +3,12 @@
  * Baseado em Timeline de Ticks, ações por velocidade
  * 
  * Fórmulas de Stats Derivados:
- * - Reação = Intuição + Reflexos + Prontidão
- * - Guarda = Reflexos × 2 + Esquiva + Armadura
- * - Evasão = Reflexos × 2 + Instinto
+ * - Reação = Reflexos × 2 + Prontidão
+ * - Guarda = Reflexos + Esquiva + Instinto
+ * - Evasão = Intuição × 2 + Percepção
  * - Vitalidade = Corpo × 2 + Resistência
  * - Movimento = Corpo × 2 + Atletismo
- * - Preparo = Determinação × 2 + Atletismo
+ * - Preparo = Determinação + Corpo + Vigor
  */
 
 import { ThemeId } from '@/themes/types';
@@ -115,6 +115,8 @@ export interface CombatantStats {
     prontidao: number;
     atletismo: number;
     resistencia: number;
+    percepcao: number;
+    vigor: number;
     resiliencia: number;
     instinto: number;
   };
@@ -122,11 +124,11 @@ export interface CombatantStats {
   // Stats derivados (calculados)
   vitality: number;           // Corpo × 2 + Resistência
   maxVitality: number;
-  guard: number;              // Reflexos × 2 + Esquiva + Armadura
-  evasion: number;            // Reflexos × 2 + Instinto
-  reaction: number;           // Intuição + Reflexos + Prontidão
+  guard: number;              // Reflexos + Esquiva + Instinto
+  evasion: number;            // Intuição × 2 + Percepção
+  reaction: number;           // Reflexos × 2 + Prontidão
   movement: number;           // Corpo × 2 + Atletismo
-  prep: number;               // Determinação × 2 + Atletismo
+  prep: number;               // Determinação + Corpo + Vigor
   
   // Equipamento
   weapon?: TacticalWeapon;
@@ -213,26 +215,26 @@ export interface BattleLogEntry {
 
 /**
  * Calcula a Reação do combatente
- * Fórmula: Intuição + Reflexos + Prontidão
+ * Fórmula: Reflexos × 2 + Prontidão
  */
-export function calculateReaction(intuicao: number, reflexos: number, prontidao: number): number {
-  return intuicao + reflexos + prontidao;
+export function calculateReaction(reflexos: number, prontidao: number): number {
+  return (reflexos * 2) + prontidao;
 }
 
 /**
  * Calcula a Guarda do combatente
- * Fórmula: Reflexos × 2 + Esquiva + Bônus de Armadura
+ * Fórmula: Reflexos + Esquiva + Instinto
  */
-export function calculateGuard(reflexos: number, esquiva: number, armorBonus: number = 0): number {
-  return (reflexos * 2) + esquiva + armorBonus;
+export function calculateGuard(reflexos: number, esquiva: number, instinto: number): number {
+  return reflexos + esquiva + instinto;
 }
 
 /**
  * Calcula a Evasão do combatente
- * Fórmula: Reflexos × 2 + Instinto
+ * Fórmula: Intuição × 2 + Percepção
  */
-export function calculateEvasion(reflexos: number, instinto: number): number {
-  return (reflexos * 2) + instinto;
+export function calculateEvasion(intuicao: number, percepcao: number): number {
+  return (intuicao * 2) + percepcao;
 }
 
 /**
@@ -253,8 +255,8 @@ export function calculateMovement(corpo: number, atletismo: number): number {
 
 /**
  * Calcula o Preparo do combatente (tick inicial)
- * Fórmula: Determinação × 2 + Atletismo
+ * Fórmula: Determinação + Corpo + Vigor
  */
-export function calculatePrep(determinacao: number, atletismo: number): number {
-  return (determinacao * 2) + atletismo;
+export function calculatePrep(determinacao: number, corpo: number, vigor: number): number {
+  return determinacao + corpo + vigor;
 }
