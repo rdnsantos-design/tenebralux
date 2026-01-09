@@ -74,6 +74,7 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
   const [logisticsBid, setLogisticsBid] = useState(3);
   const [viewingCard, setViewingCard] = useState<SPCard | null>(null);
   const [showBotDebug, setShowBotDebug] = useState(true);
+  const [selectedBasicCard, setSelectedBasicCard] = useState<keyof import('@/lib/singlePlayerCombatEngine').SPBasicCardsUsed | null>(null);
   
   const { save: saveArmy } = useLocalArmies();
   
@@ -568,7 +569,14 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
             basicCardsUsed={state.playerBasicCardsUsed}
             currentBonuses={state.playerBasicCardsBonuses}
             combatPhase={combatPhase}
-            onUseCard={useBasicCard}
+            selectedBasicCard={selectedBasicCard}
+            onSelectCard={setSelectedBasicCard}
+            onConfirmCard={() => {
+              if (selectedBasicCard) {
+                useBasicCard(selectedBasicCard);
+                setSelectedBasicCard(null);
+              }
+            }}
             disabled={!awaitingPlayer || state.isLoading}
           />
         </div>
