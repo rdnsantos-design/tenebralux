@@ -1,43 +1,72 @@
 /**
  * Sistema de Combate Tático Individual
  * Baseado em Timeline de Ticks, ações por velocidade
+ * 
+ * Fórmulas de Stats Derivados:
+ * - Reação = Intuição + Reflexos + Prontidão
+ * - Guarda = Reflexos × 2 + Esquiva + Armadura
+ * - Evasão = Reflexos × 2 + Instinto
+ * - Vitalidade = Corpo × 2 + Resistência
+ * - Movimento = Corpo × 2 + Atletismo
+ * - Preparo = Determinação × 2 + Atletismo
  */
 
 import { ThemeId } from '@/themes/types';
 
-// ============= ESCALAS DE DANO =============
+// ============= TIPOS DE CARTA =============
 
-export type DamageScale = {
-  divider: number; // Cada X de margem = +1 dano
-  label: string;
-};
+export type CombatCardType = 'basic' | 'tactical' | 'special';
 
-export const DAMAGE_SCALES: Record<string, DamageScale> = {
-  unarmed: { divider: 4, label: 'Desarmado' },
-  blade: { divider: 2, label: 'Lâminas' },
-  ballistic: { divider: 1, label: 'Balístico' },
-  laser: { divider: 2, label: 'Laser' },
-  explosion: { divider: 1, label: 'Explosão' }, // + área de efeito
-};
+/**
+ * Carta de Combate
+ * Contém modificadores de Velocidade, Ataque, Movimento e Efeito
+ */
+export interface CombatCard {
+  id: string;
+  name: {
+    akashic: string;
+    tenebralux: string;
+  };
+  type: CombatCardType;
+  speedModifier: number;      // Modificador de velocidade (ticks)
+  attackModifier: number;     // Modificador de ataque
+  movementModifier: number;   // Metros de movimento (geralmente negativo = custo)
+  effect?: string;            // Efeito especial
+  defenseBonus?: number;      // Bônus de defesa (para cartas de defesa)
+  requirements?: {
+    skillId?: string;
+    skillMin?: number;
+    xpCost?: number;
+  };
+  description: {
+    akashic: string;
+    tenebralux: string;
+  };
+}
 
-// ============= TIPOS DE ARMA =============
+// ============= ARMAS =============
 
-export type WeaponCategory = 'unarmed' | 'blade' | 'ballistic' | 'laser' | 'explosion';
-export type WeaponWeight = 'light' | 'medium' | 'heavy' | 'very_heavy';
+export type WeaponTier = 1 | 2 | 3;
+export type WeaponType = 'ballistic' | 'energy' | 'melee' | 'explosive';
 
+/**
+ * Arma Tática
+ * Formato: Dano, Mod Ataque, Velocidade, Efeito, Slots
+ */
 export interface TacticalWeapon {
   id: string;
   name: {
     akashic: string;
     tenebralux: string;
   };
-  category: WeaponCategory;
-  weight: WeaponWeight;
-  baseDamage: number;
-  timeModifier: number; // +0 leve, +1 média, +2 pesada, +3 muito pesada
-  range: number; // em metros (0 = corpo a corpo)
-  damageScale: number; // divisor de escala (1:X)
-  special?: string[];
+  type: WeaponType;
+  tier: WeaponTier;
+  damage: number;
+  attackModifier: number;
+  speedModifier: number;      // Velocidade da arma (somado ao tempo)
+  effect?: string;
+  slots: number;              // Slots ocupados
+  range: number;              // Alcance em metros (0 = melee)
   description: {
     akashic: string;
     tenebralux: string;
@@ -46,46 +75,25 @@ export interface TacticalWeapon {
 
 // ============= ARMADURAS =============
 
+/**
+ * Armadura Tática
+ * Formato: Guarda, Redução Dano, Penalidade Vel, Penalidade Mov
+ */
 export interface TacticalArmor {
   id: string;
   name: {
     akashic: string;
     tenebralux: string;
   };
-  absorption: number;
-  evasionPenalty: number;
-  weight: WeaponWeight;
+  tier: WeaponTier;
+  guardBonus: number;         // Bônus de Guarda
+  damageReduction: number;    // Redução de dano
+  speedPenalty: number;       // Penalidade de velocidade
+  movementPenalty: number;    // Penalidade de movimento
   description: {
     akashic: string;
     tenebralux: string;
   };
-}
-
-// ============= MANOBRAS DE COMBATE =============
-
-export type ManeuverType = 'quick' | 'strong' | 'aimed' | 'special';
-export type CombatSkill = 'luta' | 'laminas' | 'tiro';
-
-export interface CombatManeuver {
-  id: string;
-  name: {
-    akashic: string;
-    tenebralux: string;
-  };
-  skill: CombatSkill;
-  type: ManeuverType;
-  timeModifier: number; // Somado ao tempo base
-  attackModifier: number; // Bônus/penalidade no ataque
-  damageMultiplier: number; // Multiplicador de dano (1 = normal, 2 = dobrado)
-  description: {
-    akashic: string;
-    tenebralux: string;
-  };
-  requirements?: {
-    skillMin?: number;
-    xpCost?: number; // Custo para desbloquear
-  };
-  isBasic: boolean; // Manobras básicas são automáticas
 }
 
 // ============= COMBATENTE =============
@@ -97,6 +105,7 @@ export interface CombatantStats {
     reflexos: number;
     coordenacao: number;
     determinacao: number;
+    intuicao: number;
   };
   skills: {
     luta: number;
@@ -107,16 +116,17 @@ export interface CombatantStats {
     atletismo: number;
     resistencia: number;
     resiliencia: number;
+    instinto: number;
   };
   
-  // Stats derivados
-  vitality: number;
+  // Stats derivados (calculados)
+  vitality: number;           // Corpo × 2 + Resistência
   maxVitality: number;
-  guard: number;
-  evasion: number;
-  reactionBase: number;
-  movement: number;
-  prep: number;
+  guard: number;              // Reflexos × 2 + Esquiva + Armadura
+  evasion: number;            // Reflexos × 2 + Instinto
+  reaction: number;           // Intuição + Reflexos + Prontidão
+  movement: number;           // Corpo × 2 + Atletismo
+  prep: number;               // Determinação × 2 + Atletismo
   
   // Equipamento
   weapon?: TacticalWeapon;
@@ -128,19 +138,18 @@ export interface CombatantStats {
   slowness: number;
   wounds: number;
   isDown: boolean;
-  posture: CombatPosture;
+  currentMovement: number;    // Movimento restante no turno
   
-  // Manobras disponíveis
-  availableManeuvers: string[];
+  // Cartas disponíveis
+  availableCards: string[];
+  purchasedCards: string[];   // Cartas compradas com XP
 }
-
-export type CombatPosture = 'aggressive' | 'defensive' | 'balanced' | 'evasive';
 
 export interface Combatant {
   id: string;
   name: string;
   theme: ThemeId;
-  characterId?: string; // Referência ao personagem original
+  characterId?: string;       // Referência ao personagem original
   stats: CombatantStats;
   team: 'player' | 'enemy';
   portraitUrl?: string;
@@ -148,13 +157,13 @@ export interface Combatant {
 
 // ============= AÇÕES DE COMBATE =============
 
-export type ActionType = 'attack' | 'move' | 'defend' | 'use_item' | 'change_posture' | 'wait';
+export type ActionType = 'attack' | 'move' | 'defend' | 'use_item' | 'wait';
 
 export interface CombatAction {
   id: string;
   type: ActionType;
   combatantId: string;
-  maneuver?: CombatManeuver;
+  card?: CombatCard;
   targetId?: string;
   tick: number;
   resolved: boolean;
@@ -163,16 +172,17 @@ export interface CombatAction {
 
 export interface ActionResult {
   success: boolean;
-  attackRoll?: number;
-  targetGuard?: number;
-  margin?: number;
+  attackRoll?: number;        // Resultado da rolagem
+  targetDefense?: number;     // Guarda ou Evasão do alvo
+  margin?: number;            // Margem de sucesso/falha
   baseDamage?: number;
   bonusDamage?: number;
   totalDamage?: number;
-  absorbed?: number;
+  reducedDamage?: number;     // Dano após redução de armadura
   finalDamage?: number;
   isCritical?: boolean;
   isFumble?: boolean;
+  effectTriggered?: string;   // Efeito especial ativado
   message: string;
 }
 
@@ -199,28 +209,52 @@ export interface BattleLogEntry {
   combatantId?: string;
 }
 
-// ============= FUNÇÕES AUXILIARES =============
+// ============= FUNÇÕES DE CÁLCULO DE STATS =============
 
-export function getWeaponTimeModifier(weight: WeaponWeight): number {
-  switch (weight) {
-    case 'light': return 0;
-    case 'medium': return 1;
-    case 'heavy': return 2;
-    case 'very_heavy': return 3;
-    default: return 0;
-  }
+/**
+ * Calcula a Reação do combatente
+ * Fórmula: Intuição + Reflexos + Prontidão
+ */
+export function calculateReaction(intuicao: number, reflexos: number, prontidao: number): number {
+  return intuicao + reflexos + prontidao;
 }
 
-export function getPostureModifiers(posture: CombatPosture): { attack: number; defense: number; evasion: number } {
-  switch (posture) {
-    case 'aggressive':
-      return { attack: 2, defense: -2, evasion: -1 };
-    case 'defensive':
-      return { attack: -2, defense: 2, evasion: 1 };
-    case 'evasive':
-      return { attack: -1, defense: -1, evasion: 3 };
-    case 'balanced':
-    default:
-      return { attack: 0, defense: 0, evasion: 0 };
-  }
+/**
+ * Calcula a Guarda do combatente
+ * Fórmula: Reflexos × 2 + Esquiva + Bônus de Armadura
+ */
+export function calculateGuard(reflexos: number, esquiva: number, armorBonus: number = 0): number {
+  return (reflexos * 2) + esquiva + armorBonus;
+}
+
+/**
+ * Calcula a Evasão do combatente
+ * Fórmula: Reflexos × 2 + Instinto
+ */
+export function calculateEvasion(reflexos: number, instinto: number): number {
+  return (reflexos * 2) + instinto;
+}
+
+/**
+ * Calcula a Vitalidade do combatente
+ * Fórmula: Corpo × 2 + Resistência
+ */
+export function calculateVitality(corpo: number, resistencia: number): number {
+  return (corpo * 2) + resistencia;
+}
+
+/**
+ * Calcula o Movimento do combatente
+ * Fórmula: Corpo × 2 + Atletismo
+ */
+export function calculateMovement(corpo: number, atletismo: number): number {
+  return (corpo * 2) + atletismo;
+}
+
+/**
+ * Calcula o Preparo do combatente (tick inicial)
+ * Fórmula: Determinação × 2 + Atletismo
+ */
+export function calculatePrep(determinacao: number, atletismo: number): number {
+  return (determinacao * 2) + atletismo;
 }

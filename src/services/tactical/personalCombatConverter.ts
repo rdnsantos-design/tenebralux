@@ -7,18 +7,16 @@ import {
   Combatant, 
   CombatantStats, 
   TacticalWeapon, 
-  TacticalArmor 
+  TacticalArmor,
+  calculateReaction,
+  calculateGuard,
+  calculateEvasion,
+  calculateVitality,
+  calculateMovement,
+  calculatePrep
 } from '@/types/tactical-combat';
-import { 
-  calculateReactionBase, 
-  calculateGuard, 
-  calculateEvasion, 
-  calculateVitality, 
-  calculateMovement, 
-  calculatePrep 
-} from '@/lib/tacticalCombatEngine';
 import { getWeaponById, getArmorById, getAllWeapons, TACTICAL_ARMORS } from '@/data/combat/weapons';
-import { getBasicManeuversBySkill } from '@/data/combat/maneuvers';
+import { getBasicCards, getAvailableCards } from '@/data/combat/cards';
 
 export interface CharacterToCombatantOptions {
   team: 'player' | 'enemy';
@@ -41,6 +39,7 @@ export function convertCharacterToCombatant(
   const reflexos = attributes.reflexos || 1;
   const coordenacao = attributes.coordenacao || 1;
   const determinacao = attributes.determinacao || 1;
+  const intuicao = attributes.intuicao || 1;
   
   // Extrair perícias de combate
   const luta = skills.luta || 0;
@@ -51,9 +50,7 @@ export function convertCharacterToCombatant(
   const atletismo = skills.atletismo || 0;
   const resistencia = skills.resistencia || 0;
   const resiliencia = skills.resiliencia || 0;
-  
-  // Calcular stats derivados
-  const reactionBase = calculateReactionBase(reflexos, prontidao);
+  const instinto = skills.instinto || 0;
   
   // Buscar arma e armadura
   let weapon: TacticalWeapon | undefined;
@@ -82,27 +79,19 @@ export function convertCharacterToCombatant(
     armor = getArmorById('no_armor');
   }
   
-  const armorPenalty = armor?.evasionPenalty || 0;
+  const armorGuardBonus = armor?.guardBonus || 0;
   
-  // Calcular stats de combate
-  const guard = calculateGuard(reflexos, luta, laminas);
-  const evasion = calculateEvasion(reflexos, esquiva, armorPenalty);
+  // Calcular stats de combate usando as fórmulas corretas
+  const reaction = calculateReaction(intuicao, reflexos, prontidao);
+  const guard = calculateGuard(reflexos, esquiva, armorGuardBonus);
+  const evasion = calculateEvasion(reflexos, instinto);
   const vitality = calculateVitality(corpo, resistencia);
   const movement = calculateMovement(corpo, atletismo);
-  const prep = calculatePrep(reactionBase);
+  const prep = calculatePrep(determinacao, atletismo);
   
-  // Determinar manobras disponíveis
-  const availableManeuvers: string[] = [];
-  
-  if (luta > 0) {
-    getBasicManeuversBySkill('luta').forEach(m => availableManeuvers.push(m.id));
-  }
-  if (laminas > 0) {
-    getBasicManeuversBySkill('laminas').forEach(m => availableManeuvers.push(m.id));
-  }
-  if (tiro > 0) {
-    getBasicManeuversBySkill('tiro').forEach(m => availableManeuvers.push(m.id));
-  }
+  // Determinar cartas disponíveis (básicas + compradas)
+  const purchasedCards: string[] = []; // TODO: carregar do personagem
+  const availableCards = getAvailableCards(skills, purchasedCards).map(c => c.id);
   
   // Construir stats do combatente
   const stats: CombatantStats = {
@@ -110,7 +99,8 @@ export function convertCharacterToCombatant(
       corpo,
       reflexos,
       coordenacao,
-      determinacao
+      determinacao,
+      intuicao
     },
     skills: {
       luta,
@@ -120,24 +110,26 @@ export function convertCharacterToCombatant(
       prontidao,
       atletismo,
       resistencia,
-      resiliencia
+      resiliencia,
+      instinto
     },
     vitality,
     maxVitality: vitality,
     guard,
     evasion,
-    reactionBase,
+    reaction,
     movement,
     prep,
     weapon,
     armor,
-    currentTick: prep,
+    currentTick: 0,
     fatigue: 0,
     slowness: 0,
     wounds: 0,
     isDown: false,
-    posture: 'balanced',
-    availableManeuvers
+    currentMovement: movement,
+    availableCards,
+    purchasedCards
   };
   
   return {
@@ -156,15 +148,15 @@ export function convertCharacterToCombatant(
 function mapEquipmentToTacticalWeapon(equipmentId: string): TacticalWeapon | undefined {
   // Mapeamento de IDs do equipment.ts para tactical weapons
   const mapping: Record<string, string> = {
-    'knife': 'knife_tactical',
-    'sword': 'long_sword',
-    'axe': 'long_sword', // Usar espada longa como aproximação
-    'spear': 'short_sword', // Usar espada curta como aproximação
-    'pistol': 'pistol_standard',
-    'rifle': 'rifle',
-    'shotgun': 'shotgun',
-    'machinegun': 'rifle', // Usar rifle como aproximação
-    'launcher': 'rocket_launcher'
+    'knife': 'knife',
+    'sword': 'sword_long',
+    'axe': 'sword_long',
+    'spear': 'sword_short',
+    'pistol': 'pistol_ballistic_t1',
+    'rifle': 'rifle_ballistic_t1',
+    'shotgun': 'rifle_ballistic_t1',
+    'machinegun': 'rifle_ballistic_t2',
+    'launcher': 'rifle_ballistic_t2'
   };
   
   const tacticalId = mapping[equipmentId];
@@ -177,10 +169,10 @@ function mapEquipmentToTacticalWeapon(equipmentId: string): TacticalWeapon | und
 function mapEquipmentToTacticalArmor(equipmentId: string): TacticalArmor | undefined {
   // Mapeamento de IDs do equipment.ts para tactical armors
   const mapping: Record<string, string> = {
-    'clothes': 'light_vest',
-    'shield': 'light_vest',
-    'vest': 'tactical_vest',
-    'combat_armor': 'heavy_armor'
+    'clothes': 'light_armor_t1',
+    'shield': 'light_armor_t1',
+    'vest': 'medium_armor_t1',
+    'combat_armor': 'heavy_armor_t1'
   };
   
   const tacticalId = mapping[equipmentId];
@@ -196,10 +188,10 @@ export function createGenericEnemy(
   theme: 'akashic' | 'tenebralux' = 'akashic'
 ): Combatant {
   const statsByLevel = {
-    weak: { attr: 1, skill: 0, vitality: 8 },
-    normal: { attr: 2, skill: 1, vitality: 12 },
-    strong: { attr: 3, skill: 2, vitality: 16 },
-    elite: { attr: 4, skill: 3, vitality: 24 }
+    weak: { attr: 1, skill: 0, vitality: 6 },
+    normal: { attr: 2, skill: 1, vitality: 10 },
+    strong: { attr: 3, skill: 2, vitality: 14 },
+    elite: { attr: 4, skill: 3, vitality: 20 }
   };
   
   const s = statsByLevel[level];
@@ -212,10 +204,10 @@ export function createGenericEnemy(
       reflexos: s.attr,
       coordenacao: s.attr,
       determinacao: s.attr,
+      intuicao: s.attr,
       conhecimento: 1,
       raciocinio: 1,
-      carisma: 1,
-      intuicao: 1
+      carisma: 1
     },
     skills: {
       luta: s.skill,
@@ -225,11 +217,14 @@ export function createGenericEnemy(
       prontidao: s.skill,
       atletismo: s.skill,
       resistencia: s.skill,
-      resiliencia: s.skill
+      resiliencia: s.skill,
+      instinto: s.skill
     }
   };
   
   const combatant = convertCharacterToCombatant(draft, { team: 'enemy' });
+  
+  // Ajustar vitalidade pelo nível
   combatant.stats.maxVitality = s.vitality;
   combatant.stats.vitality = s.vitality;
   
