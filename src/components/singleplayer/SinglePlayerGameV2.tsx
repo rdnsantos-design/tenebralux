@@ -580,7 +580,7 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Sua Mão
               </span>
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className="text-[10px] text-foreground">
                 {state.playerHand.length} cartas
               </Badge>
               {playableCards.length > 0 && (
