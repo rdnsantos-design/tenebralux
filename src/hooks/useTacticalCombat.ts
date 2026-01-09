@@ -34,16 +34,22 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
   const [selectedCard, setSelectedCard] = useState<CombatCard | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   
-  // Combatente atual (próximo a agir)
+  // Combatente atual (próximo a agir) - é quem tem o menor currentTick
   const currentCombatant = useMemo(() => {
     if (!battleState) return null;
     return getNextCombatant(battleState);
   }, [battleState]);
   
   // Verificar se é turno do jogador
+  // Só é turno do jogador se o combatente atual for do time 'player'
+  // E se o tick do combatente for igual ao tick atual da batalha
   const isPlayerTurn = useMemo(() => {
-    return currentCombatant?.team === 'player';
-  }, [currentCombatant]);
+    if (!currentCombatant || !battleState) return false;
+    // O combatente atual é quem tem o menor tick
+    // O tick da batalha avança para o tick do combatente atual
+    return currentCombatant.team === 'player' && 
+           currentCombatant.stats.currentTick <= battleState.currentTick;
+  }, [currentCombatant, battleState]);
   
   // Combatentes do jogador e inimigos
   const playerCombatants = useMemo(() => {
@@ -96,7 +102,19 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
   
   // Executar ação do jogador
   const executePlayerAction = useCallback((cardId: string, targetId: string) => {
-    if (!battleState || !currentCombatant || currentCombatant.team !== 'player') {
+    if (!battleState || !currentCombatant) {
+      console.warn('Sem estado de batalha ou combatente atual');
+      return;
+    }
+    
+    if (currentCombatant.team !== 'player') {
+      console.warn('Não é turno do jogador! Combatente atual:', currentCombatant.name);
+      return;
+    }
+    
+    // Validar que é realmente o turno deste combatente
+    if (currentCombatant.stats.currentTick > battleState.currentTick) {
+      console.warn('Ainda não é hora de agir! Tick atual:', battleState.currentTick, 'Tick do combatente:', currentCombatant.stats.currentTick);
       return;
     }
     

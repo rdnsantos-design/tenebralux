@@ -210,22 +210,31 @@ export function CombatArena({
           </Card>
 
           {/* Centro - Ação Atual */}
-          <Card className="lg:col-span-1">
+          <Card className={cn(
+            "lg:col-span-1",
+            isPlayerTurn && "ring-2 ring-primary ring-offset-2"
+          )}>
             <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Swords className="h-4 w-4" />
-                {isPlayerTurn ? 'Sua Vez!' : 'Turno do Inimigo...'}
+                {isPlayerTurn ? '🎯 Sua Vez!' : '⏳ Turno do Inimigo...'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Combatente ativo */}
               {currentCombatant && (
-                <div className="text-center">
-                  <Badge variant={isPlayerTurn ? 'default' : 'destructive'}>
+                <div className="text-center space-y-2">
+                  <Badge variant={isPlayerTurn ? 'default' : 'destructive'} className="text-base px-4 py-1">
                     {currentCombatant.name}
                   </Badge>
+                  
+                  {/* Info de Tick */}
+                  <div className="text-xs text-muted-foreground">
+                    Tick do combatente: <strong>{currentCombatant.stats.currentTick}</strong>
+                  </div>
+                  
                   {/* Info adicional de fadiga e ferimentos */}
-                  <div className="mt-2 flex justify-center gap-2 text-xs">
+                  <div className="flex justify-center gap-2 text-xs">
                     {currentCombatant.stats.fatigue > 0 && (
                       <Badge variant="outline" className="text-amber-600">
                         Fadiga: {currentCombatant.stats.fatigue}
