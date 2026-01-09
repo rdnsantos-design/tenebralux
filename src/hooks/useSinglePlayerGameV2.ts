@@ -100,6 +100,7 @@ const createInitialState = (): SPGameState => ({
 export function useSinglePlayerGameV2() {
   const [state, setState] = useState<SPGameState>(createInitialState());
   const botTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerBotAttackPhaseRef = useRef<() => void>(() => {});
   
   // ========================
   // HELPERS
@@ -708,9 +709,9 @@ export function useSinglePlayerGameV2() {
       awaitingPlayer: attacker === 'player',
     }));
     
-    // Se bot é atacante, ele joga
+    // Se bot é atacante, ele joga (via ref para evitar dependência circular)
     if (!playerAttacks) {
-      triggerBotAttackPhase();
+      setTimeout(() => triggerBotAttackPhaseRef.current(), 0);
     }
   }, [addLog]);
   
@@ -1011,6 +1012,9 @@ export function useSinglePlayerGameV2() {
       }));
     }, delay);
   }, [state.botDifficulty, state.botHand, state.botCommanders, state.botName, addLog]);
+  
+  // Atualizar ref para evitar dependência circular
+  triggerBotAttackPhaseRef.current = triggerBotAttackPhase;
   
   const triggerBotDefensePhase = useCallback(() => {
     const delay = getBotDelayMs(state.botDifficulty);
