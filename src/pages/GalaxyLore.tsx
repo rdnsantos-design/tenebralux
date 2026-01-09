@@ -47,7 +47,18 @@ const GalaxyLore = () => {
               <h1 className="text-xl font-bold">A Galáxia</h1>
             </div>
           </div>
-          <ThemeSwitcher />
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/galaxy-map')}
+              className="gap-2"
+            >
+              <Map className="w-4 h-4" />
+              <span className="hidden sm:inline">Mapa 3D</span>
+            </Button>
+            <ThemeSwitcher />
+          </div>
         </div>
       </header>
 
