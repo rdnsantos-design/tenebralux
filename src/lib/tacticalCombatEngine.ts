@@ -282,7 +282,8 @@ export function initializeBattle(combatants: Combatant[]): BattleState {
       stats: {
         ...c.stats,
         currentTick: startTick,
-        currentMovement: c.stats.movement
+        currentMovement: c.stats.movement,
+        lastFatigueTick: 0
       }
     };
   });
@@ -290,9 +291,11 @@ export function initializeBattle(combatants: Combatant[]): BattleState {
   return {
     id: crypto.randomUUID(),
     currentTick: 0,
+    maxTick: 20,
     phase: 'combat',
     combatants: initializedCombatants,
     actionQueue: [],
+    pendingActions: [],
     log: [{
       tick: 0,
       round: 1,
@@ -337,6 +340,8 @@ export function executeAction(
     card,
     targetId,
     tick: state.currentTick,
+    executesAtTick: state.currentTick,
+    state: 'resolved',
     resolved: true,
     result
   };

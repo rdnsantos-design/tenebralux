@@ -123,8 +123,9 @@ export function convertCharacterToCombatant(
     },
     vitality,
     maxVitality: vitality,
-    guard,
     evasion,
+    maxEvasion: evasion,
+    guard,
     reaction,
     movement,
     prep,
@@ -136,8 +137,10 @@ export function convertCharacterToCombatant(
     wounds: 0,
     isDown: false,
     currentMovement: movement,
+    lastFatigueTick: 0,
     availableCards,
-    purchasedCards
+    purchasedCards,
+    activePosture: null
   };
   
   return {
