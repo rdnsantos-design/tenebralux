@@ -4,7 +4,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { CharacterDraft } from '@/types/character-builder';
-import { BattleState, Combatant, CombatManeuver } from '@/types/tactical-combat';
+import { BattleState, Combatant, CombatCard } from '@/types/tactical-combat';
 import { 
   initializeBattle, 
   executeAction, 
@@ -16,7 +16,7 @@ import {
   convertCharacterToCombatant, 
   createGenericEnemy 
 } from '@/services/tactical/personalCombatConverter';
-import { getManeuverById, getBasicManeuversBySkill } from '@/data/combat/maneuvers';
+import { getCardById, getBasicCards } from '@/data/combat/cards';
 import { ThemeId } from '@/themes/types';
 
 export type CombatPhase = 'setup' | 'battle' | 'victory' | 'defeat';
@@ -31,7 +31,7 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
   const [battleState, setBattleState] = useState<BattleState | null>(null);
   const [phase, setPhase] = useState<CombatPhase>('setup');
   const [playerCharacter, setPlayerCharacter] = useState<CharacterDraft | null>(null);
-  const [selectedManeuver, setSelectedManeuver] = useState<CombatManeuver | null>(null);
+  const [selectedCard, setSelectedCard] = useState<CombatCard | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   
   // Combatente atual (próximo a agir)
@@ -54,12 +54,12 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     return battleState?.combatants.filter(c => c.team === 'enemy') || [];
   }, [battleState]);
   
-  // Manobras disponíveis para o combatente atual
-  const availableManeuvers = useMemo(() => {
+  // Cartas disponíveis para o combatente atual
+  const availableCards = useMemo(() => {
     if (!currentCombatant) return [];
-    return currentCombatant.stats.availableManeuvers
-      .map(id => getManeuverById(id))
-      .filter((m): m is CombatManeuver => m !== undefined);
+    return currentCombatant.stats.availableCards
+      .map(id => getCardById(id))
+      .filter((c): c is CombatCard => c !== undefined);
   }, [currentCombatant]);
   
   // Iniciar combate
@@ -95,12 +95,12 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
   }, [theme]);
   
   // Executar ação do jogador
-  const executePlayerAction = useCallback((maneuverId: string, targetId: string) => {
+  const executePlayerAction = useCallback((cardId: string, targetId: string) => {
     if (!battleState || !currentCombatant || currentCombatant.team !== 'player') {
       return;
     }
     
-    let newState = executeAction(battleState, currentCombatant.id, maneuverId, targetId);
+    let newState = executeAction(battleState, currentCombatant.id, cardId, targetId);
     
     // Verificar vitória/derrota
     const result = checkVictoryCondition(newState);
@@ -112,7 +112,7 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     }
     
     setBattleState(newState);
-    setSelectedManeuver(null);
+    setSelectedCard(null);
     setSelectedTarget(null);
   }, [battleState, currentCombatant]);
   
@@ -122,11 +122,11 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
       return;
     }
     
-    // IA simples: escolhe manobra e alvo aleatoriamente
-    const maneuvers = currentCombatant.stats.availableManeuvers;
-    if (maneuvers.length === 0) return;
+    // IA simples: escolhe carta e alvo aleatoriamente
+    const cards = currentCombatant.stats.availableCards;
+    if (cards.length === 0) return;
     
-    const randomManeuver = maneuvers[Math.floor(Math.random() * maneuvers.length)];
+    const randomCardId = cards[Math.floor(Math.random() * cards.length)];
     
     // Selecionar alvo (jogador vivo)
     const targets = battleState.combatants.filter(c => c.team === 'player' && !c.stats.isDown);
@@ -134,7 +134,7 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     
     const randomTarget = targets[Math.floor(Math.random() * targets.length)];
     
-    let newState = executeAction(battleState, currentCombatant.id, randomManeuver, randomTarget.id);
+    let newState = executeAction(battleState, currentCombatant.id, randomCardId, randomTarget.id);
     
     // Verificar vitória/derrota
     const result = checkVictoryCondition(newState);
@@ -153,13 +153,13 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     setBattleState(null);
     setPhase('setup');
     setPlayerCharacter(null);
-    setSelectedManeuver(null);
+    setSelectedCard(null);
     setSelectedTarget(null);
   }, []);
   
-  // Selecionar manobra
-  const selectManeuver = useCallback((maneuver: CombatManeuver | null) => {
-    setSelectedManeuver(maneuver);
+  // Selecionar carta
+  const selectCard = useCallback((card: CombatCard | null) => {
+    setSelectedCard(card);
   }, []);
   
   // Selecionar alvo
@@ -169,10 +169,10 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
   
   // Confirmar ação
   const confirmAction = useCallback(() => {
-    if (selectedManeuver && selectedTarget) {
-      executePlayerAction(selectedManeuver.id, selectedTarget);
+    if (selectedCard && selectedTarget) {
+      executePlayerAction(selectedCard.id, selectedTarget);
     }
-  }, [selectedManeuver, selectedTarget, executePlayerAction]);
+  }, [selectedCard, selectedTarget, executePlayerAction]);
   
   return {
     // Estado
@@ -185,16 +185,16 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     enemyCombatants,
     
     // Seleção
-    selectedManeuver,
+    selectedCard,
     selectedTarget,
-    availableManeuvers,
+    availableCards,
     
     // Ações
     startBattle,
     executePlayerAction,
     executeAIAction,
     resetBattle,
-    selectManeuver,
+    selectCard,
     selectTarget,
     confirmAction
   };

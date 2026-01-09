@@ -2,16 +2,15 @@
  * Engine de Combate Tático Individual
  * 
  * Sistema de Timeline (Ticks):
- * - Velocidade Total = Base de Reação + Velocidade da Manobra + Velocidade da Arma
+ * - Velocidade Total = Reação + Velocidade da Carta + Velocidade da Arma
  * 
  * Ataque:
- * - 2d6 + Atributo + Perícia vs Guarda do Oponente
+ * - 2d6 + Coordenação/Reflexos + Perícia + Modificador da Carta vs Guarda/Evasão
  * - Crítico: 12 natural (dobra dano)
  * - Falha Crítica: 2 natural (consequência negativa)
  * 
  * Dano:
- * - Dano Base da Arma + (Margem de Sucesso ÷ Escala da Arma)
- * - Absorção reduz dano (mínimo 1 se acertou)
+ * - Dano da Arma + Margem de Sucesso - Redução de Armadura
  */
 
 import { 
@@ -19,62 +18,27 @@ import {
   Combatant, 
   CombatAction, 
   ActionResult, 
-  CombatManeuver,
+  CombatCard,
   BattleLogEntry,
-  getPostureModifiers
+  calculateReaction,
+  calculateGuard,
+  calculateEvasion,
+  calculateVitality,
+  calculateMovement,
+  calculatePrep
 } from '@/types/tactical-combat';
-import { getManeuverById } from '@/data/combat/maneuvers';
+import { getCardById } from '@/data/combat/cards';
 
-// ============= CÁLCULOS DERIVADOS =============
+// ============= RE-EXPORT DE FUNÇÕES DE CÁLCULO =============
 
-/**
- * Calcula a Base de Reação do combatente
- * Fórmula: (Reflexos + Prontidão) ÷ 2
- */
-export function calculateReactionBase(reflexos: number, prontidao: number): number {
-  return Math.floor((reflexos + prontidao) / 2);
-}
-
-/**
- * Calcula a Guarda do combatente
- * Fórmula: 7 + Reflexos + Luta (ou Lâminas se maior)
- */
-export function calculateGuard(reflexos: number, luta: number, laminas: number): number {
-  const bestMelee = Math.max(luta, laminas);
-  return 7 + reflexos + bestMelee;
-}
-
-/**
- * Calcula a Evasão do combatente
- * Fórmula: 7 + Reflexos + Esquiva - Penalidade de Armadura
- */
-export function calculateEvasion(reflexos: number, esquiva: number, armorPenalty: number = 0): number {
-  return 7 + reflexos + esquiva - armorPenalty;
-}
-
-/**
- * Calcula a Vitalidade do combatente
- * Fórmula: 10 + (Corpo × 2) + Resistência
- */
-export function calculateVitality(corpo: number, resistencia: number): number {
-  return 10 + (corpo * 2) + resistencia;
-}
-
-/**
- * Calcula o Movimento do combatente
- * Fórmula: Corpo + Atletismo
- */
-export function calculateMovement(corpo: number, atletismo: number): number {
-  return corpo + atletismo;
-}
-
-/**
- * Calcula o Preparo do combatente (ticks de setup inicial)
- * Fórmula: 10 - Base de Reação (mínimo 1)
- */
-export function calculatePrep(reactionBase: number): number {
-  return Math.max(1, 10 - reactionBase);
-}
+export { 
+  calculateReaction, 
+  calculateGuard, 
+  calculateEvasion, 
+  calculateVitality, 
+  calculateMovement, 
+  calculatePrep 
+};
 
 // ============= ROLAGEM DE DADOS =============
 
@@ -105,15 +69,16 @@ export function isFumble(dice: [number, number]): boolean {
 
 /**
  * Calcula o tick em que a ação será resolvida
- * Fórmula: Tick Atual + Base de Reação + Velocidade da Manobra + Velocidade da Arma
+ * Fórmula: Tick Atual + Velocidade da Carta + Velocidade da Arma
+ * (Menor reação = age mais rápido, mas a carta e arma adicionam tempo)
  */
 export function calculateActionTick(
   currentTick: number,
-  reactionBase: number,
-  maneuverTime: number,
-  weaponTime: number
+  cardSpeed: number,
+  weaponSpeed: number,
+  armorSpeedPenalty: number = 0
 ): number {
-  return currentTick + reactionBase + maneuverTime + weaponTime;
+  return currentTick + cardSpeed + weaponSpeed + armorSpeedPenalty;
 }
 
 // ============= RESOLUÇÃO DE ATAQUE =============
@@ -121,39 +86,32 @@ export function calculateActionTick(
 export interface AttackParams {
   attacker: Combatant;
   defender: Combatant;
-  maneuver: CombatManeuver;
+  card: CombatCard;
 }
 
 /**
  * Resolve um ataque entre dois combatentes
  */
 export function resolveAttack(params: AttackParams): ActionResult {
-  const { attacker, defender, maneuver } = params;
+  const { attacker, defender, card } = params;
   const stats = attacker.stats;
   const defenderStats = defender.stats;
   
-  // Determinar atributo e perícia baseado na skill da manobra
+  // Determinar atributo e perícia baseado no tipo de arma
   let attribute = 0;
   let skill = 0;
   
-  switch (maneuver.skill) {
-    case 'luta':
-      attribute = stats.attributes.reflexos;
-      skill = stats.skills.luta;
-      break;
-    case 'laminas':
-      attribute = stats.attributes.coordenacao;
-      skill = stats.skills.laminas;
-      break;
-    case 'tiro':
-      attribute = stats.attributes.coordenacao;
-      skill = stats.skills.tiro;
-      break;
-  }
+  const weaponType = stats.weapon?.type;
   
-  // Modificadores de postura
-  const postureModsAttacker = getPostureModifiers(stats.posture);
-  const postureModsDefender = getPostureModifiers(defenderStats.posture);
+  if (weaponType === 'melee') {
+    // Armas corpo a corpo usam Reflexos + Luta ou Lâminas
+    attribute = stats.attributes.reflexos;
+    skill = Math.max(stats.skills.luta, stats.skills.laminas);
+  } else {
+    // Armas de distância usam Coordenação + Tiro
+    attribute = stats.attributes.coordenacao;
+    skill = stats.skills.tiro;
+  }
   
   // Rolar dados
   const roll = roll2d6();
@@ -161,35 +119,25 @@ export function resolveAttack(params: AttackParams): ActionResult {
   const fumble = isFumble(roll.dice);
   
   // Calcular bônus de ataque
-  let attackBonus = attribute + skill + maneuver.attackModifier + postureModsAttacker.attack;
-  
-  // Bônus especial para Tiro com Mira: +Tiro × 2
-  if (maneuver.id === 'aimed_shot') {
-    attackBonus += stats.skills.tiro * 2;
-  }
-  
+  const weaponAttackMod = stats.weapon?.attackModifier || 0;
+  const attackBonus = attribute + skill + card.attackModifier + weaponAttackMod;
   const attackTotal = roll.total + attackBonus;
   
-  // Determinar defesa (Guarda ou Evasão baseado no tipo de ataque)
+  // Determinar defesa (Guarda para melee, Evasão para ranged)
   let targetDefense: number;
-  let defenseType: 'guard' | 'evasion';
   
-  if (maneuver.skill === 'tiro') {
-    // Ataques à distância usam Evasão
-    targetDefense = defenderStats.evasion + postureModsDefender.evasion;
-    defenseType = 'evasion';
+  if (weaponType === 'melee') {
+    targetDefense = defenderStats.guard;
   } else {
-    // Ataques corpo a corpo usam Guarda
-    targetDefense = defenderStats.guard + postureModsDefender.defense;
-    defenseType = 'guard';
+    targetDefense = defenderStats.evasion;
   }
   
-  // Verificar acerto
+  // Verificar falha crítica
   if (fumble) {
     return {
       success: false,
       attackRoll: roll.total,
-      targetGuard: targetDefense,
+      targetDefense,
       isCritical: false,
       isFumble: true,
       message: `${attacker.name} cometeu uma falha crítica!`
@@ -198,11 +146,12 @@ export function resolveAttack(params: AttackParams): ActionResult {
   
   const margin = attackTotal - targetDefense;
   
+  // Verificar acerto (crítico sempre acerta)
   if (margin < 0 && !critical) {
     return {
       success: false,
       attackRoll: attackTotal,
-      targetGuard: targetDefense,
+      targetDefense,
       margin,
       isCritical: false,
       isFumble: false,
@@ -211,37 +160,33 @@ export function resolveAttack(params: AttackParams): ActionResult {
   }
   
   // Calcular dano
-  const weapon = stats.weapon;
-  const baseDamage = weapon?.baseDamage || 2; // Dano desarmado padrão
-  const damageScale = weapon?.damageScale || 4; // Escala desarmada padrão
+  const baseDamage = stats.weapon?.damage || 1;
   
-  // Dano bônus: margem ÷ escala
-  const bonusDamage = Math.floor(Math.max(0, margin) / damageScale);
-  
-  // Multiplicador de dano da manobra
-  let totalDamage = Math.floor((baseDamage + bonusDamage) * maneuver.damageMultiplier);
+  // Dano total = dano base + margem de sucesso
+  let totalDamage = baseDamage + Math.max(0, margin);
   
   // Crítico dobra o dano
   if (critical) {
     totalDamage *= 2;
   }
   
-  // Absorção da armadura
-  const absorption = defenderStats.armor?.absorption || 0;
-  const finalDamage = Math.max(1, totalDamage - absorption); // Mínimo 1 de dano se acertou
+  // Redução de dano da armadura
+  const damageReduction = defenderStats.armor?.damageReduction || 0;
+  const finalDamage = Math.max(1, totalDamage - damageReduction);
   
   return {
     success: true,
     attackRoll: attackTotal,
-    targetGuard: targetDefense,
+    targetDefense,
     margin,
     baseDamage,
-    bonusDamage,
+    bonusDamage: Math.max(0, margin),
     totalDamage,
-    absorbed: Math.min(absorption, totalDamage - 1),
+    reducedDamage: damageReduction,
     finalDamage,
     isCritical: critical,
     isFumble: false,
+    effectTriggered: card.effect,
     message: critical 
       ? `CRÍTICO! ${attacker.name} causa ${finalDamage} de dano em ${defender.name}!`
       : `${attacker.name} acerta ${defender.name} causando ${finalDamage} de dano. (${attackTotal} vs ${targetDefense})`
@@ -325,14 +270,19 @@ export function getNextCombatant(state: BattleState): Combatant | null {
  * Inicializa o estado da batalha
  */
 export function initializeBattle(combatants: Combatant[]): BattleState {
-  // Calcular prep para cada combatente e definir tick inicial
+  // Cada combatente começa no tick = seu Preparo (quem tem mais Preparo age primeiro)
+  // Na verdade, menor preparo = mais lento para começar
+  // Vamos inverter: quem tem MAIS preparo começa em tick MENOR
+  const maxPrep = Math.max(...combatants.map(c => c.stats.prep));
+  
   const initializedCombatants = combatants.map(c => {
-    const prep = calculatePrep(c.stats.reactionBase);
+    const startTick = maxPrep - c.stats.prep; // Maior prep = menor tick inicial
     return {
       ...c,
       stats: {
         ...c.stats,
-        currentTick: prep
+        currentTick: startTick,
+        currentMovement: c.stats.movement
       }
     };
   });
@@ -361,14 +311,14 @@ export function initializeBattle(combatants: Combatant[]): BattleState {
 export function executeAction(
   state: BattleState,
   combatantId: string,
-  maneuverId: string,
+  cardId: string,
   targetId: string
 ): BattleState {
   const combatant = state.combatants.find(c => c.id === combatantId);
   const target = state.combatants.find(c => c.id === targetId);
-  const maneuver = getManeuverById(maneuverId);
+  const card = getCardById(cardId);
   
-  if (!combatant || !target || !maneuver) {
+  if (!combatant || !target || !card) {
     return state;
   }
   
@@ -376,7 +326,7 @@ export function executeAction(
   const result = resolveAttack({
     attacker: combatant,
     defender: target,
-    maneuver
+    card
   });
   
   // Criar ação
@@ -384,7 +334,7 @@ export function executeAction(
     id: crypto.randomUUID(),
     type: 'attack',
     combatantId,
-    maneuver,
+    card,
     targetId,
     tick: state.currentTick,
     resolved: true,
@@ -400,12 +350,20 @@ export function executeAction(
     const updatedAttacker = { ...newState.combatants[attackerIndex] };
     updatedAttacker.stats = { ...updatedAttacker.stats };
     
-    const weaponTime = updatedAttacker.stats.weapon?.timeModifier || 0;
+    const weaponSpeed = updatedAttacker.stats.weapon?.speedModifier || 0;
+    const armorPenalty = updatedAttacker.stats.armor?.speedPenalty || 0;
+    
     updatedAttacker.stats.currentTick = calculateActionTick(
       state.currentTick,
-      updatedAttacker.stats.reactionBase,
-      maneuver.timeModifier,
-      weaponTime
+      card.speedModifier,
+      weaponSpeed,
+      armorPenalty
+    );
+    
+    // Consumir movimento
+    updatedAttacker.stats.currentMovement = Math.max(
+      0, 
+      updatedAttacker.stats.currentMovement + card.movementModifier
     );
     
     newState.combatants[attackerIndex] = updatedAttacker;
@@ -442,8 +400,21 @@ export function advanceToNextTick(state: BattleState): BattleState {
   // Verificar mudança de rodada (a cada 10 ticks)
   const newRound = Math.floor(newTick / 10) + 1;
   
+  // Resetar movimento se mudou de rodada
+  let combatants = state.combatants;
+  if (newRound > state.round) {
+    combatants = state.combatants.map(c => ({
+      ...c,
+      stats: {
+        ...c.stats,
+        currentMovement: c.stats.movement
+      }
+    }));
+  }
+  
   return {
     ...state,
+    combatants,
     currentTick: newTick,
     round: newRound
   };

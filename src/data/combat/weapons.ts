@@ -1,272 +1,192 @@
 /**
- * Definições de Armas para Combate Tático
- * Baseado nas escalas acordadas:
- * - Desarmado: 1:4
- * - Lâminas: 1:2
- * - Balístico: 1:1
- * - Laser: 1:2
- * - Explosão: 1:1 + área
+ * Armas e Armaduras para Combate Tático
+ * 
+ * Armas: Dano, Mod Ataque, Velocidade, Efeito, Slots
+ * Armaduras: Guarda, Redução Dano, Penalidade Vel, Penalidade Mov
  */
 
 import { TacticalWeapon, TacticalArmor } from '@/types/tactical-combat';
 
-// ============= ARMAS DESARMADAS =============
+// ============= PISTOLAS =============
 
-export const UNARMED_WEAPONS: TacticalWeapon[] = [
+export const PISTOLS: TacticalWeapon[] = [
   {
-    id: 'fist',
-    name: { akashic: 'Punho', tenebralux: 'Punho' },
-    category: 'unarmed',
-    weight: 'light',
-    baseDamage: 2,
-    timeModifier: 0,
-    range: 0,
-    damageScale: 4,
+    id: 'pistol_ballistic_t1',
+    name: { akashic: 'Pistola Balística T1', tenebralux: 'Besta de Mão' },
+    type: 'ballistic',
+    tier: 1,
+    damage: 3,
+    attackModifier: 0,
+    speedModifier: 1,
+    slots: 1,
+    range: 20,
     description: {
-      akashic: 'Ataque desarmado com os punhos.',
-      tenebralux: 'Ataque desarmado com os punhos.'
+      akashic: 'Pistola semiautomática básica.',
+      tenebralux: 'Pequena besta de mão.'
     }
   },
   {
-    id: 'kick',
-    name: { akashic: 'Chute', tenebralux: 'Chute' },
-    category: 'unarmed',
-    weight: 'medium',
-    baseDamage: 3,
-    timeModifier: 1,
-    range: 0,
-    damageScale: 4,
+    id: 'pistol_ballistic_t2',
+    name: { akashic: 'Pistola Balística T2', tenebralux: 'Besta Refinada' },
+    type: 'ballistic',
+    tier: 2,
+    damage: 4,
+    attackModifier: 0,
+    speedModifier: 1,
+    slots: 1,
+    range: 25,
     description: {
-      akashic: 'Chute potente, mais lento que um soco.',
-      tenebralux: 'Chute potente, mais lento que um soco.'
+      akashic: 'Pistola militar de alto calibre.',
+      tenebralux: 'Besta de fabricação nobre.'
+    }
+  },
+  {
+    id: 'pistol_energy_t1',
+    name: { akashic: 'Pistola de Energia T1', tenebralux: 'Varinha Arcana' },
+    type: 'energy',
+    tier: 1,
+    damage: 2,
+    attackModifier: 1,
+    speedModifier: 1,
+    effect: 'Ignora 1 de escudo',
+    slots: 1,
+    range: 25,
+    description: {
+      akashic: 'Pistola de energia concentrada.',
+      tenebralux: 'Varinha que dispara raios arcanos.'
     }
   }
 ];
 
-// ============= LÂMINAS =============
+// ============= RIFLES =============
 
-export const BLADE_WEAPONS: TacticalWeapon[] = [
+export const RIFLES: TacticalWeapon[] = [
   {
-    id: 'knife_tactical',
-    name: { akashic: 'Faca Tática', tenebralux: 'Adaga' },
-    category: 'blade',
-    weight: 'light',
-    baseDamage: 3,
-    timeModifier: 0,
-    range: 0,
-    damageScale: 2,
-    special: ['Oculta', 'Arremesso'],
+    id: 'rifle_ballistic_t1',
+    name: { akashic: 'Rifle Balístico T1', tenebralux: 'Arco Longo' },
+    type: 'ballistic',
+    tier: 1,
+    damage: 5,
+    attackModifier: 0,
+    speedModifier: 2,
+    slots: 2,
+    range: 80,
     description: {
-      akashic: 'Lâmina compacta para ataques rápidos.',
-      tenebralux: 'Adaga de aço para ataques rápidos.'
+      akashic: 'Rifle de precisão padrão.',
+      tenebralux: 'Arco longo de caça.'
     }
   },
   {
-    id: 'short_sword',
-    name: { akashic: 'Lâmina Curta', tenebralux: 'Espada Curta' },
-    category: 'blade',
-    weight: 'medium',
-    baseDamage: 5,
-    timeModifier: 1,
+    id: 'rifle_energy_t1',
+    name: { akashic: 'Rifle de Energia T1', tenebralux: 'Cajado de Fogo' },
+    type: 'energy',
+    tier: 1,
+    damage: 4,
+    attackModifier: 1,
+    speedModifier: 2,
+    effect: 'Ignora 2 de escudo',
+    slots: 2,
+    range: 60,
+    description: {
+      akashic: 'Rifle de energia de médio alcance.',
+      tenebralux: 'Cajado encantado com chamas.'
+    }
+  },
+  {
+    id: 'rifle_ballistic_t2',
+    name: { akashic: 'Rifle Balístico T2', tenebralux: 'Balista de Elite' },
+    type: 'ballistic',
+    tier: 2,
+    damage: 7,
+    attackModifier: 1,
+    speedModifier: 3,
+    slots: 2,
+    range: 120,
+    description: {
+      akashic: 'Rifle de precisão avançado.',
+      tenebralux: 'Balista de precisão nobre.'
+    }
+  }
+];
+
+// ============= ARMAS CORPO A CORPO =============
+
+export const MELEE_WEAPONS: TacticalWeapon[] = [
+  {
+    id: 'fist',
+    name: { akashic: 'Desarmado', tenebralux: 'Desarmado' },
+    type: 'melee',
+    tier: 1,
+    damage: 1,
+    attackModifier: 0,
+    speedModifier: 0,
+    slots: 0,
     range: 0,
-    damageScale: 2,
+    description: {
+      akashic: 'Ataque com punhos.',
+      tenebralux: 'Ataque com punhos.'
+    }
+  },
+  {
+    id: 'knife',
+    name: { akashic: 'Faca Tática', tenebralux: 'Adaga' },
+    type: 'melee',
+    tier: 1,
+    damage: 2,
+    attackModifier: 1,
+    speedModifier: 0,
+    effect: 'Oculta',
+    slots: 1,
+    range: 0,
+    description: {
+      akashic: 'Lâmina compacta e rápida.',
+      tenebralux: 'Adaga de aço afiado.'
+    }
+  },
+  {
+    id: 'sword_short',
+    name: { akashic: 'Lâmina Curta', tenebralux: 'Espada Curta' },
+    type: 'melee',
+    tier: 1,
+    damage: 3,
+    attackModifier: 0,
+    speedModifier: 1,
+    slots: 1,
+    range: 0,
     description: {
       akashic: 'Lâmina balanceada para combate próximo.',
       tenebralux: 'Espada curta versátil.'
     }
   },
   {
-    id: 'long_sword',
+    id: 'sword_long',
     name: { akashic: 'Lâmina de Combate', tenebralux: 'Espada Longa' },
-    category: 'blade',
-    weight: 'heavy',
-    baseDamage: 7,
-    timeModifier: 2,
+    type: 'melee',
+    tier: 2,
+    damage: 4,
+    attackModifier: 0,
+    speedModifier: 2,
+    slots: 1,
     range: 0,
-    damageScale: 2,
-    special: ['Versátil'],
     description: {
       akashic: 'Arma branca padrão das forças armadas.',
-      tenebralux: 'Espada longa bem forjada.'
+      tenebralux: 'Espada longa de aço forjado.'
     }
   },
   {
     id: 'great_sword',
-    name: { akashic: 'Espadão Tático', tenebralux: 'Montante' },
-    category: 'blade',
-    weight: 'very_heavy',
-    baseDamage: 10,
-    timeModifier: 3,
+    name: { akashic: 'Espadão', tenebralux: 'Montante' },
+    type: 'melee',
+    tier: 3,
+    damage: 6,
+    attackModifier: -1,
+    speedModifier: 3,
+    effect: 'Duas mãos, Alcance',
+    slots: 2,
     range: 0,
-    damageScale: 2,
-    special: ['Duas Mãos', 'Alcance'],
     description: {
-      akashic: 'Lâmina massiva que requer duas mãos.',
-      tenebralux: 'Espadão devastador de duas mãos.'
-    }
-  }
-];
-
-// ============= ARMAS BALÍSTICAS =============
-
-export const BALLISTIC_WEAPONS: TacticalWeapon[] = [
-  {
-    id: 'pistol_light',
-    name: { akashic: 'Pistola Compacta', tenebralux: 'Besta de Bolso' },
-    category: 'ballistic',
-    weight: 'light',
-    baseDamage: 4,
-    timeModifier: 0,
-    range: 15,
-    damageScale: 1,
-    special: ['Saque Rápido'],
-    description: {
-      akashic: 'Pistola semiautomática leve.',
-      tenebralux: 'Pequena besta portátil.'
-    }
-  },
-  {
-    id: 'pistol_standard',
-    name: { akashic: 'Pistola', tenebralux: 'Besta de Mão' },
-    category: 'ballistic',
-    weight: 'medium',
-    baseDamage: 5,
-    timeModifier: 1,
-    range: 25,
-    damageScale: 1,
-    description: {
-      akashic: 'Pistola semiautomática padrão.',
-      tenebralux: 'Besta de mão confiável.'
-    }
-  },
-  {
-    id: 'rifle',
-    name: { akashic: 'Rifle', tenebralux: 'Arco Longo' },
-    category: 'ballistic',
-    weight: 'heavy',
-    baseDamage: 7,
-    timeModifier: 2,
-    range: 100,
-    damageScale: 1,
-    special: ['Precisão', 'Duas Mãos'],
-    description: {
-      akashic: 'Rifle de longo alcance.',
-      tenebralux: 'Arco longo de caça.'
-    }
-  },
-  {
-    id: 'sniper',
-    name: { akashic: 'Rifle de Precisão', tenebralux: 'Balista de Elite' },
-    category: 'ballistic',
-    weight: 'very_heavy',
-    baseDamage: 10,
-    timeModifier: 3,
-    range: 200,
-    damageScale: 1,
-    special: ['Precisão Extrema', 'Duas Mãos', 'Montagem'],
-    description: {
-      akashic: 'Rifle sniper de alta precisão.',
-      tenebralux: 'Balista de precisão para alvos distantes.'
-    }
-  },
-  {
-    id: 'shotgun',
-    name: { akashic: 'Escopeta', tenebralux: 'Besta Dispersora' },
-    category: 'ballistic',
-    weight: 'heavy',
-    baseDamage: 9,
-    timeModifier: 2,
-    range: 10,
-    damageScale: 1,
-    special: ['Dispersão', 'Duas Mãos'],
-    description: {
-      akashic: 'Escopeta de curto alcance.',
-      tenebralux: 'Besta que dispara múltiplos virotes.'
-    }
-  }
-];
-
-// ============= ARMAS LASER =============
-
-export const LASER_WEAPONS: TacticalWeapon[] = [
-  {
-    id: 'laser_pistol',
-    name: { akashic: 'Pistola Laser', tenebralux: 'Varinha Arcana' },
-    category: 'laser',
-    weight: 'light',
-    baseDamage: 4,
-    timeModifier: 0,
-    range: 30,
-    damageScale: 2,
-    special: ['Silenciosa', 'Cauteriza'],
-    description: {
-      akashic: 'Pistola de energia concentrada.',
-      tenebralux: 'Varinha que dispara raios de fogo.'
-    }
-  },
-  {
-    id: 'laser_rifle',
-    name: { akashic: 'Rifle Laser', tenebralux: 'Cajado de Fogo' },
-    category: 'laser',
-    weight: 'medium',
-    baseDamage: 6,
-    timeModifier: 1,
-    range: 80,
-    damageScale: 2,
-    special: ['Precisão', 'Cauteriza'],
-    description: {
-      akashic: 'Rifle de energia para médio alcance.',
-      tenebralux: 'Cajado que canaliza chamas arcanas.'
-    }
-  },
-  {
-    id: 'heavy_laser',
-    name: { akashic: 'Canhão Laser', tenebralux: 'Cetro de Destruição' },
-    category: 'laser',
-    weight: 'very_heavy',
-    baseDamage: 10,
-    timeModifier: 3,
-    range: 120,
-    damageScale: 2,
-    special: ['Perfurante', 'Duas Mãos', 'Recarga'],
-    description: {
-      akashic: 'Canhão de energia devastador.',
-      tenebralux: 'Cetro de poder arcano destrutivo.'
-    }
-  }
-];
-
-// ============= ARMAS EXPLOSIVAS =============
-
-export const EXPLOSIVE_WEAPONS: TacticalWeapon[] = [
-  {
-    id: 'grenade',
-    name: { akashic: 'Granada', tenebralux: 'Orbe Explosiva' },
-    category: 'explosion',
-    weight: 'light',
-    baseDamage: 8,
-    timeModifier: 0,
-    range: 20,
-    damageScale: 1,
-    special: ['Área 3m', 'Arremesso', 'Munição Limitada'],
-    description: {
-      akashic: 'Granada de fragmentação.',
-      tenebralux: 'Esfera alquímica explosiva.'
-    }
-  },
-  {
-    id: 'rocket_launcher',
-    name: { akashic: 'Lança-Foguetes', tenebralux: 'Lança-Bolas de Fogo' },
-    category: 'explosion',
-    weight: 'very_heavy',
-    baseDamage: 15,
-    timeModifier: 3,
-    range: 50,
-    damageScale: 1,
-    special: ['Área 5m', 'Duas Mãos', 'Munição Limitada'],
-    description: {
-      akashic: 'Lançador de projéteis explosivos.',
-      tenebralux: 'Tubo encantado que dispara bolas de fogo.'
+      akashic: 'Lâmina massiva de duas mãos.',
+      tenebralux: 'Espadão devastador.'
     }
   }
 ];
@@ -276,57 +196,80 @@ export const EXPLOSIVE_WEAPONS: TacticalWeapon[] = [
 export const TACTICAL_ARMORS: TacticalArmor[] = [
   {
     id: 'no_armor',
-    name: { akashic: 'Sem Armadura', tenebralux: 'Sem Armadura' },
-    absorption: 0,
-    evasionPenalty: 0,
-    weight: 'light',
+    name: { akashic: 'Nenhuma', tenebralux: 'Nenhuma' },
+    tier: 1,
+    guardBonus: 0,
+    damageReduction: 0,
+    speedPenalty: 0,
+    movementPenalty: 0,
     description: {
-      akashic: 'Sem proteção corporal.',
-      tenebralux: 'Sem proteção corporal.'
+      akashic: 'Sem proteção.',
+      tenebralux: 'Sem proteção.'
     }
   },
   {
-    id: 'light_vest',
-    name: { akashic: 'Colete Leve', tenebralux: 'Gibão de Couro' },
-    absorption: 1,
-    evasionPenalty: 0,
-    weight: 'light',
+    id: 'light_armor_t1',
+    name: { akashic: 'Armadura Leve T1', tenebralux: 'Couro Leve' },
+    tier: 1,
+    guardBonus: 1,
+    damageReduction: 0,
+    speedPenalty: 0,
+    movementPenalty: 0,
     description: {
-      akashic: 'Colete de proteção leve.',
+      akashic: 'Proteção leve que não restringe movimento.',
       tenebralux: 'Armadura de couro flexível.'
     }
   },
   {
-    id: 'tactical_vest',
-    name: { akashic: 'Colete Tático', tenebralux: 'Cota de Malha' },
-    absorption: 3,
-    evasionPenalty: 1,
-    weight: 'medium',
+    id: 'medium_armor_t1',
+    name: { akashic: 'Armadura Média T1', tenebralux: 'Cota de Malha' },
+    tier: 1,
+    guardBonus: 2,
+    damageReduction: 2,
+    speedPenalty: 1,
+    movementPenalty: 0,
     description: {
-      akashic: 'Colete balístico padrão.',
+      akashic: 'Colete tático padrão.',
       tenebralux: 'Armadura de anéis entrelaçados.'
     }
   },
   {
-    id: 'heavy_armor',
-    name: { akashic: 'Armadura Pesada', tenebralux: 'Armadura de Placas' },
-    absorption: 5,
-    evasionPenalty: 3,
-    weight: 'heavy',
+    id: 'heavy_armor_t1',
+    name: { akashic: 'Armadura Pesada T1', tenebralux: 'Armadura de Placas' },
+    tier: 1,
+    guardBonus: 3,
+    damageReduction: 3,
+    speedPenalty: 2,
+    movementPenalty: 1,
     description: {
       akashic: 'Armadura de combate completa.',
       tenebralux: 'Armadura de placas de aço.'
     }
   },
   {
-    id: 'power_armor',
-    name: { akashic: 'Armadura Potencializada', tenebralux: 'Armadura Encantada' },
-    absorption: 7,
-    evasionPenalty: 2,
-    weight: 'very_heavy',
+    id: 'medium_armor_t2',
+    name: { akashic: 'Armadura Média T2', tenebralux: 'Cota de Escamas' },
+    tier: 2,
+    guardBonus: 3,
+    damageReduction: 2,
+    speedPenalty: 1,
+    movementPenalty: 0,
     description: {
-      akashic: 'Exoesqueleto blindado motorizado.',
-      tenebralux: 'Armadura magicamente reforçada.'
+      akashic: 'Colete balístico avançado.',
+      tenebralux: 'Armadura de escamas sobrepostas.'
+    }
+  },
+  {
+    id: 'heavy_armor_t2',
+    name: { akashic: 'Armadura Pesada T2', tenebralux: 'Armadura Completa' },
+    tier: 2,
+    guardBonus: 4,
+    damageReduction: 4,
+    speedPenalty: 2,
+    movementPenalty: 2,
+    description: {
+      akashic: 'Exoesqueleto leve blindado.',
+      tenebralux: 'Armadura completa de cavaleiro.'
     }
   }
 ];
@@ -334,23 +277,21 @@ export const TACTICAL_ARMORS: TacticalArmor[] = [
 // ============= FUNÇÕES AUXILIARES =============
 
 export function getAllWeapons(): TacticalWeapon[] {
-  return [
-    ...UNARMED_WEAPONS,
-    ...BLADE_WEAPONS,
-    ...BALLISTIC_WEAPONS,
-    ...LASER_WEAPONS,
-    ...EXPLOSIVE_WEAPONS
-  ];
+  return [...PISTOLS, ...RIFLES, ...MELEE_WEAPONS];
 }
 
 export function getWeaponById(id: string): TacticalWeapon | undefined {
   return getAllWeapons().find(w => w.id === id);
 }
 
+export function getWeaponsByType(type: string): TacticalWeapon[] {
+  return getAllWeapons().filter(w => w.type === type);
+}
+
 export function getArmorById(id: string): TacticalArmor | undefined {
   return TACTICAL_ARMORS.find(a => a.id === id);
 }
 
-export function getWeaponsByCategory(category: string): TacticalWeapon[] {
-  return getAllWeapons().filter(w => w.category === category);
+export function getArmorsByTier(tier: number): TacticalArmor[] {
+  return TACTICAL_ARMORS.filter(a => a.tier === tier);
 }

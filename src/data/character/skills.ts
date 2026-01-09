@@ -31,12 +31,13 @@ export const SKILLS: SkillDefinition[] = [
   { id: 'vigor', attributeId: 'corpo', labels: { akashic: 'Vigor', tenebralux: 'Vigor' } },
   { id: 'bravura', attributeId: 'corpo', labels: { akashic: 'Bravura', tenebralux: 'Bravura' } },
   
-  // REFLEXOS (5)
+  // REFLEXOS (6)
   { id: 'esquiva', attributeId: 'reflexos', labels: { akashic: 'Esquiva', tenebralux: 'Esquiva' } },
   { id: 'pilotagem', attributeId: 'reflexos', labels: { akashic: 'Pilotagem', tenebralux: 'Condução' } },
   { id: 'luta', attributeId: 'reflexos', labels: { akashic: 'Luta', tenebralux: 'Luta' } },
   { id: 'prontidao', attributeId: 'reflexos', labels: { akashic: 'Prontidão', tenebralux: 'Prontidão' } },
   { id: 'tatica', attributeId: 'reflexos', labels: { akashic: 'Tática', tenebralux: 'Tática' } },
+  { id: 'laminas', attributeId: 'reflexos', labels: { akashic: 'Lâminas', tenebralux: 'Lâminas' } },
   
   // DETERMINAÇÃO (5)
   { id: 'resiliencia', attributeId: 'determinacao', labels: { akashic: 'Resiliência', tenebralux: 'Resiliência' } },
@@ -45,9 +46,8 @@ export const SKILLS: SkillDefinition[] = [
   { id: 'intimidacao_det', attributeId: 'determinacao', labels: { akashic: 'Intimidação', tenebralux: 'Intimidação' } },
   { id: 'superacao', attributeId: 'determinacao', labels: { akashic: 'Superação', tenebralux: 'Superação' } },
   
-  // COORDENAÇÃO (5)
+  // COORDENAÇÃO (4)
   { id: 'tiro', attributeId: 'coordenacao', labels: { akashic: 'Tiro', tenebralux: 'Arqueria' } },
-  { id: 'laminas', attributeId: 'coordenacao', labels: { akashic: 'Lâminas', tenebralux: 'Lâminas' } },
   { id: 'destreza', attributeId: 'coordenacao', labels: { akashic: 'Destreza', tenebralux: 'Destreza' } },
   { id: 'artilharia', attributeId: 'coordenacao', labels: { akashic: 'Artilharia', tenebralux: 'Cerco' } },
   { id: 'furtividade', attributeId: 'coordenacao', labels: { akashic: 'Furtividade', tenebralux: 'Furtividade' } },
