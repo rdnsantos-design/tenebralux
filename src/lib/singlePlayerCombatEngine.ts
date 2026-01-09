@@ -487,10 +487,10 @@ export function resetBoardForNewRound(board: SPCombatBoard): SPCombatBoard {
 
 /**
  * Calcular HP base por VET
- * Base: 10 HP + 1 HP por 5 VET
+ * Regra: VET / 10 (mínimo 1)
  */
 export function calculateBaseHp(vetBudget: number): number {
-  return 10 + Math.floor(vetBudget / 5);
+  return Math.max(1, Math.floor(vetBudget / 10));
 }
 
 /**
@@ -503,7 +503,7 @@ export function calculateBotHp(difficulty: BotDifficulty, playerVet: number): nu
     medium: 1.0,
     hard: 1.2,
   };
-  return Math.floor(baseHp * multipliers[difficulty]);
+  return Math.max(1, Math.floor(baseHp * multipliers[difficulty]));
 }
 
 /**
