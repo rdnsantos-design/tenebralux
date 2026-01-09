@@ -1,15 +1,17 @@
 /**
  * Seletor de Personagem para Combate
+ * Busca personagens do localStorage e/ou Supabase
  */
 
 import { useState, useEffect } from 'react';
 import { SavedCharacter } from '@/types/character-storage';
 import { getAllCharacters } from '@/services/storage/characterStorage';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { User, Swords, AlertCircle } from 'lucide-react';
+import { User, Swords, AlertCircle, Loader2 } from 'lucide-react';
 
 interface CharacterSelectorProps {
   onSelect: (character: SavedCharacter) => void;
@@ -18,10 +20,55 @@ interface CharacterSelectorProps {
 export function CharacterSelector({ onSelect }: CharacterSelectorProps) {
   const [characters, setCharacters] = useState<SavedCharacter[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loaded = getAllCharacters();
-    setCharacters(loaded);
+    async function loadCharacters() {
+      setIsLoading(true);
+      
+      // Primeiro, tenta carregar do localStorage
+      const localChars = getAllCharacters();
+      
+      // Depois, busca do Supabase
+      try {
+        const { data: cloudChars, error } = await supabase
+          .from('characters')
+          .select('*')
+          .order('updated_at', { ascending: false });
+
+        if (error) {
+          console.error('Erro ao buscar personagens da nuvem:', error);
+          setCharacters(localChars);
+        } else if (cloudChars && cloudChars.length > 0) {
+          // Converte formato do Supabase para SavedCharacter
+          const converted: SavedCharacter[] = cloudChars.map(c => ({
+            id: c.id,
+            name: c.name,
+            theme: c.theme as 'akashic' | 'tenebralux',
+            factionId: c.faction_id || '',
+            cultureId: c.culture_id,
+            createdAt: c.created_at || new Date().toISOString(),
+            updatedAt: c.updated_at || new Date().toISOString(),
+            data: c.data as any,
+          }));
+          
+          // Mescla com locais (evita duplicatas por ID)
+          const allIds = new Set(converted.map(c => c.id));
+          const uniqueLocal = localChars.filter(c => !allIds.has(c.id));
+          
+          setCharacters([...converted, ...uniqueLocal]);
+        } else {
+          setCharacters(localChars);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar personagens:', err);
+        setCharacters(localChars);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadCharacters();
   }, []);
 
   const handleConfirm = () => {
@@ -30,6 +77,15 @@ export function CharacterSelector({ onSelect }: CharacterSelectorProps) {
       onSelect(selected);
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card className="text-center p-8">
+        <Loader2 className="h-12 w-12 mx-auto text-primary animate-spin mb-4" />
+        <h3 className="text-lg font-semibold">Carregando personagens...</h3>
+      </Card>
+    );
+  }
 
   if (characters.length === 0) {
     return (
