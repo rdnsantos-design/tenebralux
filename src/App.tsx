@@ -24,6 +24,7 @@ import NotFound from "./pages/NotFound";
 import CharacterBuilder from "./pages/CharacterBuilder";
 import RPGRules from "./pages/RPGRules";
 import AuthCallback from "./pages/AuthCallback";
+import GalaxyLore from "./pages/GalaxyLore";
 
 // Tactical Battle Pages
 import TacticalHomePage from "./pages/TacticalHomePage";
@@ -72,6 +73,9 @@ const App = () => (
               
               {/* Auth Routes */}
               <Route path="/auth/callback" element={<AuthCallback />} />
+              
+              {/* Lore Routes */}
+              <Route path="/galaxy-lore" element={<GalaxyLore />} />
               
               {/* Tactical Battle Routes */}
               <Route path="/tactical" element={<TacticalHomePage />} />
