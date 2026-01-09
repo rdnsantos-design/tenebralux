@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowLeft, BookOpen, Users, Building2, Map, 
   Clock, Landmark, Sparkles 
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import FactionLoreSection from '@/components/lore/FactionLoreSection';
+import OrganizationsSection from '@/components/lore/OrganizationsSection';
 import { EditableLoreContent } from '@/components/lore/EditableLoreContent';
 import { useGalaxyLore } from '@/hooks/useGalaxyLore';
 
@@ -24,7 +24,6 @@ const GalaxyLore = () => {
   const sections = [
     { id: 'intro', label: 'Introdução', icon: BookOpen, sectionType: 'intro' },
     { id: 'historia', label: 'História', icon: Clock, sectionType: 'historia' },
-    { id: 'corporacoes', label: 'Corporações', icon: Building2, sectionType: 'corporacoes' },
     { id: 'atlas', label: 'Atlas Estelar', icon: Map, sectionType: 'atlas' },
     { id: 'timeline', label: 'Linha do Tempo', icon: Clock, sectionType: 'timeline' },
     { id: 'politica', label: 'Política Galáctica', icon: Landmark, sectionType: 'politica' },
@@ -69,6 +68,10 @@ const GalaxyLore = () => {
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Facções</span>
             </TabsTrigger>
+            <TabsTrigger value="organizacoes" className="gap-2">
+              <Building2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Organizações</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Main sections */}
@@ -93,6 +96,11 @@ const GalaxyLore = () => {
           {/* Facções */}
           <TabsContent value="faccoes" className="mt-6">
             <FactionLoreSection />
+          </TabsContent>
+
+          {/* Organizações */}
+          <TabsContent value="organizacoes" className="mt-6">
+            <OrganizationsSection />
           </TabsContent>
         </Tabs>
       </main>
