@@ -24,7 +24,8 @@ import { useLocalArmies } from '@/hooks/useLocalArmies';
 import { SinglePlayerArmyList } from './SinglePlayerArmyList';
 import { SinglePlayerArmyBuilder } from './SinglePlayerArmyBuilder';
 import { useSinglePlayerGameV2 } from '@/hooks/useSinglePlayerGameV2';
-import { SPCard, SPCommander, SPCombatPhase, getPlayableCards } from '@/lib/singlePlayerCombatEngine';
+import { SPCard, SPCommander, SPCombatPhase, SPBasicCardsUsed, getPlayableCards } from '@/lib/singlePlayerCombatEngine';
+import { SinglePlayerBasicCards } from './SinglePlayerBasicCards';
 
 // ========================
 // CONFIGURAÇÕES
@@ -96,6 +97,7 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
     advanceToNextRound,
     passTurn,
     resetGame,
+    useBasicCard,
   } = useSinglePlayerGameV2();
 
   // ========================
@@ -520,8 +522,19 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
                   style={{ width: `${(state.botHp / state.botMaxHp) * 100}%` }}
                 />
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {state.botCultureName}
+              <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-0.5">
+                  <Swords className="w-3 h-3 text-red-500" />
+                  {state.botAttributes.attack}
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <Shield className="w-3 h-3 text-blue-500" />
+                  {state.botAttributes.defense}
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <Zap className="w-3 h-3 text-yellow-500" />
+                  {state.botAttributes.mobility}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -618,6 +631,15 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Basic Cards */}
+        <SinglePlayerBasicCards
+          basicCardsUsed={state.playerBasicCardsUsed}
+          currentBonuses={state.playerBasicCardsBonuses}
+          combatPhase={combatPhase}
+          onUseCard={useBasicCard}
+          disabled={!awaitingPlayer || state.isLoading}
+        />
         
         {/* Hand */}
         <Card className="flex-1 min-h-0">
