@@ -595,15 +595,21 @@ export function botDecideAttackManeuvers(
   const playable = getPlayableCards(hand, 'attack_maneuver');
   const nonGeneralCommanders = commanders.filter(c => !c.is_general && c.cmd_free > 0);
   
+  // Se não tem cartas ofensivas ou comandantes disponíveis, retorna vazio
+  // mas o combate ainda acontece com atributos base
   if (playable.length === 0 || nonGeneralCommanders.length === 0) return [];
   
   const decisions: Array<{ cardIndex: number; commanderId: string }> = [];
+  
+  // Bot SEMPRE tenta jogar pelo menos 1 carta ofensiva se tiver
+  const minCards = 1;
   const maxCards = difficulty === 'hard' ? 3 : difficulty === 'medium' ? 2 : 1;
+  const targetCards = Math.max(minCards, maxCards);
   
   const sorted = [...playable].sort((a, b) => (b.attack_bonus || 0) - (a.attack_bonus || 0));
   const usedCommanders = new Set<string>();
   
-  for (let i = 0; i < Math.min(maxCards, sorted.length); i++) {
+  for (let i = 0; i < Math.min(targetCards, sorted.length); i++) {
     const card = sorted[i];
     const availableCmd = nonGeneralCommanders.find(c => 
       !usedCommanders.has(c.instance_id) && c.cmd_free >= (card.command_required || 0)
@@ -632,15 +638,21 @@ export function botDecideDefenseManeuvers(
   const playable = getPlayableCards(hand, 'defense_maneuver');
   const nonGeneralCommanders = commanders.filter(c => !c.is_general && c.cmd_free > 0);
   
+  // Se não tem cartas defensivas ou comandantes disponíveis, retorna vazio
+  // mas o combate ainda acontece com atributos base
   if (playable.length === 0 || nonGeneralCommanders.length === 0) return [];
   
   const decisions: Array<{ cardIndex: number; commanderId: string }> = [];
+  
+  // Bot SEMPRE tenta jogar pelo menos 1 carta defensiva se tiver
+  const minCards = 1;
   const maxCards = difficulty === 'hard' ? 3 : difficulty === 'medium' ? 2 : 1;
+  const targetCards = Math.max(minCards, maxCards);
   
   const sorted = [...playable].sort((a, b) => (b.defense_bonus || 0) - (a.defense_bonus || 0));
   const usedCommanders = new Set<string>();
   
-  for (let i = 0; i < Math.min(maxCards, sorted.length); i++) {
+  for (let i = 0; i < Math.min(targetCards, sorted.length); i++) {
     const card = sorted[i];
     const availableCmd = nonGeneralCommanders.find(c => 
       !usedCommanders.has(c.instance_id) && c.cmd_free >= (card.command_required || 0)
