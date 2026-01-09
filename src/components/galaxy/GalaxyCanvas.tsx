@@ -11,6 +11,7 @@ interface GalaxyCanvasProps {
   onSelectPlanet: (planet: Planet | null) => void;
   showLabels: boolean;
   showConnections: boolean;
+  planetScale: number;
 }
 
 // Componente para um planeta individual
@@ -19,22 +20,24 @@ function PlanetSphere({
   factionColor, 
   isSelected,
   onSelect,
-  showLabel
+  showLabel,
+  planetScale
 }: { 
   planet: Planet; 
   factionColor: string;
   isSelected: boolean;
   onSelect: () => void;
   showLabel: boolean;
+  planetScale: number;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   
-  // Tamanho baseado no Tier
+  // Tamanho baseado no Tier e escala
   const size = useMemo(() => {
     const baseSize = 0.3;
-    return baseSize + (planet.tier * 0.15);
-  }, [planet.tier]);
+    return (baseSize + (planet.tier * 0.15)) * planetScale;
+  }, [planet.tier, planetScale]);
 
   // Opacidade baseada no Tier
   const opacity = useMemo(() => {
@@ -209,7 +212,8 @@ function GalaxyScene({
   selectedPlanet,
   onSelectPlanet,
   showLabels,
-  showConnections
+  showConnections,
+  planetScale
 }: GalaxyCanvasProps) {
   const { camera } = useThree();
 
@@ -263,6 +267,7 @@ function GalaxyScene({
           isSelected={selectedPlanet?.id === planet.id}
           onSelect={() => onSelectPlanet(planet)}
           showLabel={showLabels}
+          planetScale={planetScale}
         />
       ))}
 
