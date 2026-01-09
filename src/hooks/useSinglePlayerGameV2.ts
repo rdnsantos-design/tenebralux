@@ -991,7 +991,7 @@ export function useSinglePlayerGameV2() {
       });
       
       if (maneuvers.length === 0) {
-        addLog(`${state.botName} não atacou`, 'info');
+        addLog(`${state.botName} ataca com força base (sem cartas)`, 'info');
       }
       
       setState(prev => ({
@@ -1041,7 +1041,7 @@ export function useSinglePlayerGameV2() {
       });
       
       if (maneuvers.length === 0) {
-        addLog(`${state.botName} não defendeu`, 'info');
+        addLog(`${state.botName} defende com força base (sem cartas)`, 'info');
       }
       
       setState(prev => ({
