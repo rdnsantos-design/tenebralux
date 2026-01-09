@@ -1,10 +1,12 @@
 /**
  * TCGBasicCards - Basic cards styled as small TCG tokens
+ * Com seleção + confirmação (pode deselecionar antes de confirmar)
  */
 
 import { cn } from '@/lib/utils';
-import { Heart, Sword, Shield, Zap, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { Heart, Sword, Shield, Zap, RotateCcw, CheckCircle2, Check, X } from 'lucide-react';
 import { SPBasicCardsUsed, SPCombatPhase } from '@/lib/singlePlayerCombatEngine';
+import { Button } from '@/components/ui/button';
 
 interface BasicCardDef {
   id: keyof SPBasicCardsUsed;
@@ -68,7 +70,9 @@ interface TCGBasicCardsProps {
   basicCardsUsed: SPBasicCardsUsed;
   currentBonuses: Partial<Record<keyof SPBasicCardsUsed, boolean>>;
   combatPhase: SPCombatPhase;
-  onUseCard: (cardType: keyof SPBasicCardsUsed) => void;
+  selectedBasicCard: keyof SPBasicCardsUsed | null;
+  onSelectCard: (cardType: keyof SPBasicCardsUsed | null) => void;
+  onConfirmCard: () => void;
   disabled?: boolean;
 }
 
@@ -76,7 +80,9 @@ export function TCGBasicCards({
   basicCardsUsed,
   currentBonuses,
   combatPhase,
-  onUseCard,
+  selectedBasicCard,
+  onSelectCard,
+  onConfirmCard,
   disabled,
 }: TCGBasicCardsProps) {
   const canUseCard = (card: BasicCardDef) => {
@@ -85,6 +91,18 @@ export function TCGBasicCards({
 
   const usedCount = Object.values(basicCardsUsed).filter(Boolean).length;
   const totalCards = BASIC_CARDS.length;
+
+  const handleCardClick = (cardId: keyof SPBasicCardsUsed) => {
+    if (selectedBasicCard === cardId) {
+      // Deselecionar se clicar na mesma carta
+      onSelectCard(null);
+    } else {
+      // Selecionar nova carta
+      onSelectCard(cardId);
+    }
+  };
+
+  const selectedCardInfo = BASIC_CARDS.find(c => c.id === selectedBasicCard);
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -101,6 +119,7 @@ export function TCGBasicCards({
         {BASIC_CARDS.map((card) => {
           const isUsed = basicCardsUsed[card.id];
           const isActiveThisRound = currentBonuses[card.id];
+          const isSelected = selectedBasicCard === card.id;
           const canUse = canUseCard(card);
           const isDisabled = disabled || isUsed || !canUse;
 
@@ -112,10 +131,11 @@ export function TCGBasicCards({
                 card.bgClass,
                 isUsed && 'tcg-basic-card--used',
                 isActiveThisRound && 'tcg-glow ring-2 ring-primary',
+                isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110',
                 !isDisabled && 'hover:scale-110'
               )}
               disabled={isDisabled}
-              onClick={() => onUseCard(card.id)}
+              onClick={() => handleCardClick(card.id)}
               title={`${card.effect}\n(${card.allowedPhases.join(', ')})`}
             >
               {isUsed ? (
@@ -137,6 +157,30 @@ export function TCGBasicCards({
           );
         })}
       </div>
+
+      {/* Confirmation buttons when a card is selected */}
+      {selectedBasicCard && selectedCardInfo && (
+        <div className="flex gap-2 mt-1 items-center">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2 text-xs"
+            onClick={() => onSelectCard(null)}
+          >
+            <X className="w-3 h-3 mr-1" />
+            Cancelar
+          </Button>
+          <Button
+            size="sm"
+            variant="default"
+            className="h-7 px-3 text-xs"
+            onClick={onConfirmCard}
+          >
+            <Check className="w-3 h-3 mr-1" />
+            Usar {selectedCardInfo.name}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

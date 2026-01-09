@@ -1,13 +1,15 @@
 /**
  * SinglePlayerBasicCards - Cartas básicas para o modo single player
  * Cada carta pode ser usada apenas 1x por partida
+ * Agora com seleção + confirmação (pode deselecionar antes de confirmar)
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Sword, Shield, Zap, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { Heart, Sword, Shield, Zap, RotateCcw, CheckCircle2, Check, X } from 'lucide-react';
 import { SPBasicCardsUsed, SPCombatPhase } from '@/lib/singlePlayerCombatEngine';
+import { cn } from '@/lib/utils';
 
 interface BasicCardDef {
   id: keyof SPBasicCardsUsed;
@@ -65,7 +67,9 @@ interface SinglePlayerBasicCardsProps {
   basicCardsUsed: SPBasicCardsUsed;
   currentBonuses: Partial<Record<keyof SPBasicCardsUsed, boolean>>;
   combatPhase: SPCombatPhase;
-  onUseCard: (cardType: keyof SPBasicCardsUsed) => void;
+  selectedBasicCard: keyof SPBasicCardsUsed | null;
+  onSelectCard: (cardType: keyof SPBasicCardsUsed | null) => void;
+  onConfirmCard: () => void;
   disabled?: boolean;
 }
 
@@ -73,7 +77,9 @@ export function SinglePlayerBasicCards({
   basicCardsUsed,
   currentBonuses,
   combatPhase,
-  onUseCard,
+  selectedBasicCard,
+  onSelectCard,
+  onConfirmCard,
   disabled,
 }: SinglePlayerBasicCardsProps) {
   const canUseCard = (card: BasicCardDef) => {
@@ -86,6 +92,16 @@ export function SinglePlayerBasicCards({
   
   const usedCount = Object.values(basicCardsUsed).filter(Boolean).length;
   const totalCards = BASIC_CARDS.length;
+
+  const handleCardClick = (cardId: keyof SPBasicCardsUsed) => {
+    if (selectedBasicCard === cardId) {
+      // Deselecionar se clicar na mesma carta
+      onSelectCard(null);
+    } else {
+      // Selecionar nova carta
+      onSelectCard(cardId);
+    }
+  };
   
   return (
     <Card>
@@ -102,18 +118,22 @@ export function SinglePlayerBasicCards({
           {BASIC_CARDS.map((card) => {
             const isUsed = basicCardsUsed[card.id];
             const isActiveThisRound = currentBonuses[card.id];
+            const isSelected = selectedBasicCard === card.id;
             const canUse = canUseCard(card);
             
             return (
               <Button
                 key={card.id}
-                variant={isActiveThisRound ? 'default' : isUsed ? 'ghost' : 'outline'}
+                variant={isActiveThisRound ? 'default' : isSelected ? 'secondary' : isUsed ? 'ghost' : 'outline'}
                 size="sm"
-                className={`h-auto py-1.5 px-1 flex flex-col items-center gap-0.5 ${
-                  isUsed ? 'opacity-50' : !canUse ? 'opacity-30' : ''
-                }`}
+                className={cn(
+                  'h-auto py-1.5 px-1 flex flex-col items-center gap-0.5 transition-all',
+                  isUsed && 'opacity-50',
+                  !canUse && !isUsed && 'opacity-30',
+                  isSelected && 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+                )}
                 disabled={disabled || isUsed || !canUse}
-                onClick={() => onUseCard(card.id)}
+                onClick={() => handleCardClick(card.id)}
                 title={`${card.effect} (${card.allowedPhases.map(p => {
                   const labels: Record<string, string> = {
                     'initiative_maneuver': 'Iniciativa',
@@ -139,7 +159,32 @@ export function SinglePlayerBasicCards({
             );
           })}
         </div>
-        {!hasAnyUsableCard && (
+
+        {/* Botões de confirmação quando uma carta está selecionada */}
+        {selectedBasicCard && (
+          <div className="flex gap-2 mt-2 justify-center">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-3 text-xs"
+              onClick={() => onSelectCard(null)}
+            >
+              <X className="w-3 h-3 mr-1" />
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              variant="default"
+              className="h-7 px-3 text-xs"
+              onClick={onConfirmCard}
+            >
+              <Check className="w-3 h-3 mr-1" />
+              Confirmar {BASIC_CARDS.find(c => c.id === selectedBasicCard)?.name}
+            </Button>
+          </div>
+        )}
+
+        {!hasAnyUsableCard && !selectedBasicCard && (
           <p className="text-[10px] text-muted-foreground text-center mt-1">
             Nenhuma carta básica disponível nesta fase
           </p>
