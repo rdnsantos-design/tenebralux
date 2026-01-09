@@ -26,6 +26,7 @@ import { SinglePlayerArmyBuilder } from './SinglePlayerArmyBuilder';
 import { useSinglePlayerGameV2 } from '@/hooks/useSinglePlayerGameV2';
 import { SPCard, SPCommander, SPCombatPhase, SPBasicCardsUsed, getPlayableCards } from '@/lib/singlePlayerCombatEngine';
 import { SinglePlayerBasicCards } from './SinglePlayerBasicCards';
+import { SinglePlayerCardDetail } from './SinglePlayerCardDetail';
 
 // ========================
 // CONFIGURAÇÕES
@@ -76,6 +77,8 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [selectedCommanderId, setSelectedCommanderId] = useState<string | null>(null);
   const [logisticsBid, setLogisticsBid] = useState(3);
+  const [viewingCard, setViewingCard] = useState<SPCard | null>(null);
+  const [showBotDebug, setShowBotDebug] = useState(true); // Debug mode
   
   const { save: saveArmy } = useLocalArmies();
   
@@ -659,12 +662,13 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
                   return (
                     <div 
                       key={`${card.id}-${index}`}
-                      className={`p-2 border rounded text-xs transition-colors ${
+                      className={`p-2 border rounded text-xs transition-colors cursor-pointer ${
                         isSelected ? 'ring-2 ring-primary border-primary' : 
-                        isPlayable ? 'cursor-pointer hover:border-primary/50' : 
+                        isPlayable ? 'hover:border-primary/50' : 
                         'opacity-40'
                       }`}
                       onClick={() => isPlayable && setSelectedCardIndex(index)}
+                      onDoubleClick={() => setViewingCard(card)}
                     >
                       <div className="font-medium truncate">{card.name}</div>
                       <Badge 
@@ -699,6 +703,44 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
             </ScrollArea>
           </CardContent>
         </Card>
+        
+        {/* Bot Debug Panel */}
+        {showBotDebug && (
+          <Card className="mb-3 border-destructive/50">
+            <CardHeader className="py-1.5">
+              <CardTitle className="text-xs flex items-center gap-1 text-destructive">
+                <Bot className="w-3 h-3" />
+                [DEBUG] Mão do {state.botName} ({state.botHand.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-1.5">
+              <ScrollArea className="h-[100px]">
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-1">
+                  {state.botHand.map((card, index) => (
+                    <div 
+                      key={`bot-${card.id}-${index}`}
+                      className="p-1.5 border border-destructive/30 rounded text-[10px] cursor-pointer hover:border-destructive"
+                      onClick={() => setViewingCard(card)}
+                    >
+                      <div className="font-medium truncate">{card.name}</div>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-[8px] ${
+                          card.card_type === 'ofensiva' ? 'border-red-500 text-red-500' :
+                          card.card_type === 'defensiva' ? 'border-blue-500 text-blue-500' :
+                          card.card_type === 'movimentacao' ? 'border-yellow-500 text-yellow-500' :
+                          'border-purple-500 text-purple-500'
+                        }`}
+                      >
+                        {card.card_type}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
         
         {/* Actions */}
         <div className="flex gap-2 mt-3">
@@ -742,6 +784,13 @@ export function SinglePlayerGameV2({ onBack }: SinglePlayerGameV2Props) {
             </div>
           )}
         </div>
+        
+        {/* Card Detail Modal */}
+        <SinglePlayerCardDetail 
+          card={viewingCard} 
+          open={viewingCard !== null} 
+          onClose={() => setViewingCard(null)} 
+        />
       </div>
     );
   }
