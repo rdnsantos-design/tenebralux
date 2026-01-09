@@ -29,7 +29,7 @@ interface CombatArenaProps {
     round: number;
     phase: string;
     combatants: Combatant[];
-    log: Array<{ tick: number; round: number; message: string; type: 'action' | 'damage' | 'effect' | 'system'; combatantId?: string }>;
+    log: Array<{ tick: number; round: number; message: string; type: 'action' | 'damage' | 'effect' | 'system' | 'fatigue' | 'opportunity'; combatantId?: string }>;
   };
   currentCombatant: Combatant | null;
   isPlayerTurn: boolean;

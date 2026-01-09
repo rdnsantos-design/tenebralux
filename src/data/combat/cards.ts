@@ -209,6 +209,10 @@ export const MELEE_TACTICAL_CARDS: CombatCard[] = [
   }
 ];
 
+// ============= IMPORTAR POSTURAS E AÇÕES ESPECIAIS =============
+
+import { POSTURE_CARDS, REST_CARD, RELOAD_CARD, SWAP_WEAPON_CARD, getPostureCards, getSpecialActionCards } from './postures';
+
 // ============= FUNÇÕES AUXILIARES =============
 
 export function getAllCards(): CombatCard[] {
@@ -216,7 +220,11 @@ export function getAllCards(): CombatCard[] {
     ...BASIC_CARDS,
     ...BLADE_TACTICAL_CARDS,
     ...RANGED_TACTICAL_CARDS,
-    ...MELEE_TACTICAL_CARDS
+    ...MELEE_TACTICAL_CARDS,
+    ...POSTURE_CARDS,
+    REST_CARD,
+    RELOAD_CARD,
+    SWAP_WEAPON_CARD
   ];
 }
 
@@ -225,7 +233,7 @@ export function getCardById(id: string): CombatCard | undefined {
 }
 
 export function getBasicCards(): CombatCard[] {
-  return BASIC_CARDS;
+  return [...BASIC_CARDS, REST_CARD, RELOAD_CARD, SWAP_WEAPON_CARD];
 }
 
 export function getTacticalCards(): CombatCard[] {
@@ -245,7 +253,10 @@ export function getAvailableCards(
   purchasedCardIds: string[]
 ): CombatCard[] {
   // Cartas básicas sempre disponíveis
-  const available = [...BASIC_CARDS];
+  const available = [...BASIC_CARDS, REST_CARD, RELOAD_CARD, SWAP_WEAPON_CARD];
+  
+  // Posturas sempre disponíveis
+  available.push(...POSTURE_CARDS);
   
   // Cartas táticas compradas
   for (const cardId of purchasedCardIds) {
@@ -265,3 +276,6 @@ export function getAvailableCards(
   
   return available;
 }
+
+// Re-exportar para conveniência
+export { getPostureCards, getSpecialActionCards };

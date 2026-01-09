@@ -15,7 +15,7 @@ import { ThemeId } from '@/themes/types';
 
 // ============= TIPOS DE CARTA =============
 
-export type CombatCardType = 'basic' | 'tactical' | 'special';
+export type CombatCardType = 'basic' | 'tactical' | 'special' | 'posture' | 'reaction';
 
 /**
  * Carta de Combate
@@ -33,6 +33,9 @@ export interface CombatCard {
   movementModifier: number;   // Metros de movimento (geralmente negativo = custo)
   effect?: string;            // Efeito especial
   defenseBonus?: number;      // Bônus de defesa (para cartas de defesa)
+  guardMultiplier?: number;   // Multiplicador de guarda (para posturas)
+  allowMultipleTargets?: boolean;
+  maxTargets?: number;
   requirements?: {
     skillId?: string;
     skillMin?: number;
@@ -66,7 +69,7 @@ export interface TacticalWeapon {
   speedModifier: number;      // Velocidade da arma (somado ao tempo)
   effect?: string;
   slots: number;              // Slots ocupados
-  range: number;              // Alcance em metros (0 = melee)
+  range: number;              // Alcance em hexes (0 = melee adjacente, 2 = lança)
   description: {
     akashic: string;
     tenebralux: string;
@@ -94,6 +97,40 @@ export interface TacticalArmor {
     akashic: string;
     tenebralux: string;
   };
+}
+
+// ============= COBERTURA =============
+
+export type CoverType = 'none' | 'light' | 'partial' | 'heavy' | 'total';
+
+export const COVER_MODIFIERS: Record<CoverType, number> = {
+  none: 0,
+  light: 1,      // Vegetação, fumaça
+  partial: 2,    // Meia parede, veículo
+  heavy: 3,      // Trincheira, janela
+  total: 999     // Parede completa - LoS bloqueada
+};
+
+// ============= HEX E POSIÇÃO =============
+
+export interface HexCoord {
+  q: number;
+  r: number;
+}
+
+export interface HexTile {
+  coord: HexCoord;
+  terrain: 'normal' | 'difficult' | 'water' | 'impassable';
+  elevation: number;
+  cover: CoverType;
+  blocked: boolean;
+  occupantId: string | null;
+}
+
+export interface HexMap {
+  width: number;
+  height: number;
+  hexes: Map<string, HexTile>;
 }
 
 // ============= COMBATENTE =============
@@ -124,11 +161,12 @@ export interface CombatantStats {
   // Stats derivados (calculados)
   vitality: number;           // Corpo × 2 + Resistência
   maxVitality: number;
+  evasion: number;            // Intuição × 2 + Percepção (absorve dano)
+  maxEvasion: number;
   guard: number;              // Reflexos + Esquiva + Instinto
-  evasion: number;            // Intuição × 2 + Percepção
   reaction: number;           // Reflexos × 2 + Prontidão
   movement: number;           // Corpo × 2 + Atletismo
-  prep: number;               // Determinação + Corpo + Vigor
+  prep: number;               // Determinação + Corpo + Vigor (intervalo fadiga)
   
   // Equipamento
   weapon?: TacticalWeapon;
@@ -137,14 +175,20 @@ export interface CombatantStats {
   // Estado em combate
   currentTick: number;
   fatigue: number;
-  slowness: number;
-  wounds: number;
+  slowness: number;           // Lentidão (+tick por ação quando evasão < 0)
+  wounds: number;             // Ferimentos (-1 em todos atributos por ponto)
   isDown: boolean;
   currentMovement: number;    // Movimento restante no turno
+  lastFatigueTick: number;    // Último tick que sofreu fadiga
   
-  // Cartas disponíveis
+  // Cartas e posturas
   availableCards: string[];
   purchasedCards: string[];   // Cartas compradas com XP
+  activePosture: string | null; // ID da postura ativa
+  
+  // Posição no mapa
+  position?: HexCoord;
+  facing?: number;            // Direção (0-5 para hexágono)
 }
 
 export interface Combatant {
@@ -155,19 +199,65 @@ export interface Combatant {
   stats: CombatantStats;
   team: 'player' | 'enemy';
   portraitUrl?: string;
+  
+  // IA comportamento (para inimigos)
+  behavior?: EnemyBehavior;
+}
+
+// ============= COMPORTAMENTO DE IA =============
+
+export type AggressionLevel = 'passive' | 'balanced' | 'aggressive';
+export type TargetPriority = 'nearest' | 'weakest' | 'strongest' | 'random';
+export type EnemyTier = 'minion' | 'standard' | 'elite' | 'boss';
+
+export interface EnemyBehavior {
+  aggression: AggressionLevel;
+  targetPriority: TargetPriority;
+  fleeThreshold: number;      // % HP para fugir (0 = nunca)
+  preferredRange: 'melee' | 'ranged' | 'any';
+  usesPostures: boolean;
+  usesCover: boolean;
+}
+
+export interface EnemyTemplate {
+  id: string;
+  name: {
+    akashic: string;
+    tenebralux: string;
+  };
+  tier: EnemyTier;
+  stats: {
+    reaction: number;
+    guard: number;
+    evasion: number;
+    vitality: number;
+    movement: number;
+    prep: number;
+  };
+  weapon: {
+    name: string;
+    damage: number;
+    speed: number;
+    range: number;
+  };
+  behavior: EnemyBehavior;
 }
 
 // ============= AÇÕES DE COMBATE =============
 
-export type ActionType = 'attack' | 'move' | 'defend' | 'use_item' | 'wait';
+export type ActionType = 'attack' | 'move' | 'defend' | 'rest' | 'posture' | 'reload' | 'swap_weapon' | 'opportunity';
 
 export interface CombatAction {
   id: string;
   type: ActionType;
   combatantId: string;
   card?: CombatCard;
-  targetId?: string;
+  targetIds?: string[];       // Suporte a múltiplos alvos
+  targetId?: string;          // Mantido para compatibilidade
   tick: number;
+  executesAtTick: number;
+  plannedMovement?: HexCoord[];
+  state: 'preparing' | 'executing' | 'resolved' | 'cancelled';
   resolved: boolean;
   result?: ActionResult;
 }
@@ -182,9 +272,13 @@ export interface ActionResult {
   totalDamage?: number;
   reducedDamage?: number;     // Dano após redução de armadura
   finalDamage?: number;
+  evasionAbsorbed?: number;   // Dano absorvido pela evasão
+  vitalityDamage?: number;    // Dano que foi para vitalidade
   isCritical?: boolean;
   isFumble?: boolean;
   effectTriggered?: string;   // Efeito especial ativado
+  coverBonus?: number;        // Bônus de cobertura aplicado
+  distanceModifier?: number;  // Modificador de distância
   message: string;
 }
 
@@ -195,20 +289,24 @@ export type BattlePhase = 'setup' | 'initiative' | 'combat' | 'victory' | 'defea
 export interface BattleState {
   id: string;
   currentTick: number;
+  maxTick: number;            // 20 - loop
   phase: BattlePhase;
   combatants: Combatant[];
   actionQueue: CombatAction[];
+  pendingActions: CombatAction[];  // Ações em preparação
   log: BattleLogEntry[];
   round: number;
   winner?: 'player' | 'enemy' | 'draw';
+  map?: HexMap;
 }
 
 export interface BattleLogEntry {
   tick: number;
   round: number;
   message: string;
-  type: 'action' | 'damage' | 'effect' | 'system';
+  type: 'action' | 'damage' | 'effect' | 'system' | 'fatigue' | 'opportunity';
   combatantId?: string;
+  details?: Record<string, unknown>;
 }
 
 // ============= FUNÇÕES DE CÁLCULO DE STATS =============
@@ -254,9 +352,48 @@ export function calculateMovement(corpo: number, atletismo: number): number {
 }
 
 /**
- * Calcula o Preparo do combatente (tick inicial)
+ * Calcula o Preparo do combatente (intervalo de fadiga)
  * Fórmula: Determinação + Corpo + Vigor
  */
 export function calculatePrep(determinacao: number, corpo: number, vigor: number): number {
   return determinacao + corpo + vigor;
+}
+
+/**
+ * Calcula modificador de distância para armas de fogo
+ */
+export function getDistanceModifier(distance: number): number {
+  if (distance <= 2) return 1;    // Queima-roupa
+  if (distance <= 5) return 0;    // Curta
+  if (distance <= 10) return -2;  // Média
+  if (distance <= 20) return -4;  // Longa
+  return -6;                       // Extrema
+}
+
+/**
+ * Calcula penalidade por múltiplos alvos
+ */
+export function getMultiTargetPenalty(targetCount: number): number {
+  return (targetCount - 1) * -2;
+}
+
+/**
+ * Calcula guarda efetiva considerando postura e ferimentos
+ */
+export function getEffectiveGuard(
+  baseGuard: number,
+  armorBonus: number,
+  wounds: number,
+  postureMultiplier: number = 1,
+  coverBonus: number = 0
+): number {
+  const woundPenalty = wounds; // -1 por ferimento
+  return Math.max(0, Math.floor((baseGuard - woundPenalty) * postureMultiplier) + armorBonus + coverBonus);
+}
+
+/**
+ * Calcula atributo efetivo considerando ferimentos
+ */
+export function getEffectiveAttribute(baseValue: number, wounds: number): number {
+  return Math.max(1, baseValue - wounds);
 }
