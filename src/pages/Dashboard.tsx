@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Map, Route, Crown, Hexagon, Layers, Gamepad2, UserPlus } from "lucide-react";
+import { Users, Map, Route, Crown, Hexagon, Layers, Gamepad2, UserPlus, Swords } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/themes";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -47,6 +47,14 @@ const Dashboard = () => {
           >
             <Hexagon className="w-6 h-6 mr-3" />
             ⚔️ Batalha Tática Online
+          </Button>
+          <Button 
+            size="lg" 
+            className="text-lg px-8 py-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            onClick={() => navigate('/combat-test')}
+          >
+            <Swords className="w-6 h-6 mr-3" />
+            🎯 Combate RPG (Teste)
           </Button>
         </div>
 
