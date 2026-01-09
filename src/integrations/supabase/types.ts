@@ -359,6 +359,39 @@ export type Database = {
         }
         Relationships: []
       }
+      galaxy_factions: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          percent: number
+          planets_count: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id: string
+          name: string
+          percent?: number
+          planets_count?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          percent?: number
+          planets_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       galaxy_lore_sections: {
         Row: {
           content: string
@@ -428,6 +461,93 @@ export type Database = {
           organization_type?: string
           sort_order?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      galaxy_planets: {
+        Row: {
+          created_at: string
+          d: number
+          def: number
+          descricao: string | null
+          distancia: number
+          faccao: string
+          funcao: string
+          id: number
+          nome: string
+          pcp_gasto: number
+          pcp_total: number
+          populacao: number
+          r: number
+          regiao: string
+          slots_com: number
+          slots_prod: number
+          slots_soc: number
+          tags_negativas: string | null
+          tags_positivas: string | null
+          tier: number
+          tipo: string
+          updated_at: string
+          x: number
+          y: number
+          z: number
+          zona: string
+        }
+        Insert: {
+          created_at?: string
+          d?: number
+          def?: number
+          descricao?: string | null
+          distancia?: number
+          faccao: string
+          funcao?: string
+          id?: number
+          nome: string
+          pcp_gasto?: number
+          pcp_total?: number
+          populacao?: number
+          r?: number
+          regiao: string
+          slots_com?: number
+          slots_prod?: number
+          slots_soc?: number
+          tags_negativas?: string | null
+          tags_positivas?: string | null
+          tier?: number
+          tipo?: string
+          updated_at?: string
+          x?: number
+          y?: number
+          z?: number
+          zona?: string
+        }
+        Update: {
+          created_at?: string
+          d?: number
+          def?: number
+          descricao?: string | null
+          distancia?: number
+          faccao?: string
+          funcao?: string
+          id?: number
+          nome?: string
+          pcp_gasto?: number
+          pcp_total?: number
+          populacao?: number
+          r?: number
+          regiao?: string
+          slots_com?: number
+          slots_prod?: number
+          slots_soc?: number
+          tags_negativas?: string | null
+          tags_positivas?: string | null
+          tier?: number
+          tipo?: string
+          updated_at?: string
+          x?: number
+          y?: number
+          z?: number
+          zona?: string
         }
         Relationships: []
       }
