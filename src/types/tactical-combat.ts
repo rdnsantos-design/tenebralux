@@ -181,6 +181,11 @@ export interface CombatantStats {
   currentMovement: number;    // Movimento restante no turno
   lastFatigueTick: number;    // Último tick que sofreu fadiga
   
+  // Sistema de escolha simultânea
+  pendingCardChoice: boolean; // Se precisa escolher card
+  chosenCardId?: string;      // Card escolhido para este turno
+  chosenTargetId?: string;    // Alvo escolhido para este turno
+  
   // Cartas e posturas
   availableCards: string[];
   purchasedCards: string[];   // Cartas compradas com XP
@@ -284,7 +289,7 @@ export interface ActionResult {
 
 // ============= ESTADO DA BATALHA =============
 
-export type BattlePhase = 'setup' | 'initiative' | 'combat' | 'victory' | 'defeat';
+export type BattlePhase = 'setup' | 'choosing' | 'initiative' | 'combat' | 'victory' | 'defeat';
 
 export interface BattleState {
   id: string;

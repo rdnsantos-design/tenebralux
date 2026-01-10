@@ -35,14 +35,16 @@ interface CombatArenaProps {
     currentTick: number;
     maxTick?: number;
     round: number;
-    phase: string;
+    phase: string; // 'choosing' | 'combat' | 'victory' | 'defeat'
     combatants: Combatant[];
     log: Array<{ tick: number; round: number; message: string; type: 'action' | 'damage' | 'effect' | 'system' | 'fatigue' | 'opportunity'; combatantId?: string }>;
     pendingActions?: CombatAction[];
     map?: HexMap;
   };
   currentCombatant: Combatant | null;
+  playerCombatantToChoose?: Combatant | null; // Combatente que precisa escolher card
   isPlayerTurn: boolean;
+  playerNeedsToChoose?: boolean; // Se está na fase de escolha
   playerCombatants: Combatant[];
   enemyCombatants: Combatant[];
   availableCards: CombatCard[];
@@ -63,7 +65,9 @@ interface CombatArenaProps {
 export function CombatArena({
   battleState,
   currentCombatant,
+  playerCombatantToChoose,
   isPlayerTurn,
+  playerNeedsToChoose = false,
   playerCombatants,
   enemyCombatants,
   availableCards,
@@ -82,6 +86,12 @@ export function CombatArena({
 }: CombatArenaProps) {
   const [autoPlayAI, setAutoPlayAI] = useState(true);
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
+
+  // O combatente relevante para exibir é quem precisa escolher (choosing) ou quem vai agir (combat)
+  const activeCombatant = playerCombatantToChoose || currentCombatant;
+  
+  // Determinar se estamos na fase de escolha
+  const isChoosingPhase = battleState.phase === 'choosing';
 
   // Auto-executar turno da IA
   useEffect(() => {
@@ -143,6 +153,11 @@ export function CombatArena({
           <Badge variant="secondary" className="text-lg px-4 py-2">
             Rodada: {battleState.round}
           </Badge>
+          {isChoosingPhase && (
+            <Badge variant="default" className="text-lg px-4 py-2 bg-amber-600">
+              ⚔️ Fase de Escolha
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {battleState.map && (
@@ -185,7 +200,7 @@ export function CombatArena({
                 <div className="flex items-center gap-4">
                   <div className="flex-shrink-0">
                     <Badge variant="default" className="text-sm">
-                      🎯 Sua Vez - {currentCombatant?.name}
+                      {isChoosingPhase ? '⚔️ Escolha sua Carta' : '🎯 Sua Vez'} - {activeCombatant?.name}
                     </Badge>
                   </div>
                   <Separator orientation="vertical" className="h-8" />
@@ -210,7 +225,7 @@ export function CombatArena({
                       onClick={onConfirmAction}
                     >
                       <PlayCircle className="h-4 w-4 mr-1" />
-                      Atacar!
+                      {isChoosingPhase ? 'Confirmar!' : 'Atacar!'}
                     </Button>
                   )}
                 </div>
@@ -224,11 +239,20 @@ export function CombatArena({
             </Card>
           )}
           
-          {!isPlayerTurn && phase === 'battle' && (
+          {!isPlayerTurn && phase === 'battle' && !isChoosingPhase && (
             <Card className="border-destructive/50 bg-background/95">
               <CardContent className="py-3 flex items-center justify-center gap-3">
                 <div className="animate-spin h-5 w-5 border-2 border-destructive border-t-transparent rounded-full" />
                 <span className="text-muted-foreground">Turno do inimigo...</span>
+              </CardContent>
+            </Card>
+          )}
+          
+          {!isPlayerTurn && isChoosingPhase && (
+            <Card className="border-amber-500/50 bg-background/95">
+              <CardContent className="py-3 flex items-center justify-center gap-3">
+                <div className="animate-spin h-5 w-5 border-2 border-amber-500 border-t-transparent rounded-full" />
+                <span className="text-muted-foreground">Inimigos escolhendo cartas...</span>
               </CardContent>
             </Card>
           )}
@@ -289,32 +313,42 @@ export function CombatArena({
             <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Swords className="h-4 w-4" />
-                {isPlayerTurn ? '🎯 Sua Vez!' : '⏳ Turno do Inimigo...'}
+                {isChoosingPhase 
+                  ? (isPlayerTurn ? '⚔️ Escolha sua Carta!' : '⏳ Aguardando...')
+                  : (isPlayerTurn ? '🎯 Sua Vez!' : '⏳ Turno do Inimigo...')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Combatente ativo */}
-              {currentCombatant && (
+              {activeCombatant && (
                 <div className="text-center space-y-2">
                   <Badge variant={isPlayerTurn ? 'default' : 'destructive'} className="text-base px-4 py-1">
-                    {currentCombatant.name}
+                    {activeCombatant.name}
                   </Badge>
                   
-                  {/* Info de Tick */}
+                  {/* Info de Tick e Escolha */}
                   <div className="text-xs text-muted-foreground">
-                    Tick do combatente: <strong>{currentCombatant.stats.currentTick}</strong>
+                    {isChoosingPhase ? (
+                      activeCombatant.stats.chosenCardId ? (
+                        <span className="text-green-600">✓ Card escolhido - Tick de ação: <strong>{activeCombatant.stats.currentTick}</strong></span>
+                      ) : (
+                        <span className="text-amber-600">Aguardando escolha...</span>
+                      )
+                    ) : (
+                      <>Tick do combatente: <strong>{activeCombatant.stats.currentTick}</strong></>
+                    )}
                   </div>
                   
                   {/* Info adicional de fadiga e ferimentos */}
                   <div className="flex justify-center gap-2 text-xs">
-                    {currentCombatant.stats.fatigue > 0 && (
+                    {activeCombatant.stats.fatigue > 0 && (
                       <Badge variant="outline" className="text-amber-600">
-                        Fadiga: {currentCombatant.stats.fatigue}
+                        Fadiga: {activeCombatant.stats.fatigue}
                       </Badge>
                     )}
-                    {currentCombatant.stats.wounds > 0 && (
+                    {activeCombatant.stats.wounds > 0 && (
                       <Badge variant="outline" className="text-red-600">
-                        Ferimentos: {currentCombatant.stats.wounds}
+                        Ferimentos: {activeCombatant.stats.wounds}
                       </Badge>
                     )}
                   </div>
@@ -327,7 +361,7 @@ export function CombatArena({
                   <Separator />
                   <div>
                     <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                      Escolha uma Carta
+                      {isChoosingPhase ? 'Escolha uma Carta (define quando você age)' : 'Escolha uma Carta'}
                     </h4>
                     <ScrollArea className="h-[250px]">
                       <div className="flex flex-wrap gap-2 justify-center">
@@ -349,7 +383,9 @@ export function CombatArena({
                   {selectedCard && !selectedTarget && (
                     <div className="text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
                       <Target className="h-4 w-4" />
-                      Clique em um inimigo para atacar
+                      {isChoosingPhase 
+                        ? 'Clique em um inimigo para selecionar alvo'
+                        : 'Clique em um inimigo para atacar'}
                     </div>
                   )}
 
@@ -361,17 +397,37 @@ export function CombatArena({
                       onClick={onConfirmAction}
                     >
                       <PlayCircle className="h-4 w-4 mr-2" />
-                      Executar Ação!
+                      {isChoosingPhase ? 'Confirmar Escolha!' : 'Executar Ação!'}
                     </Button>
+                  )}
+                  
+                  {/* Mostrar velocidade da carta selecionada */}
+                  {selectedCard && isChoosingPhase && (
+                    <div className="text-center text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                      <span>Velocidade da carta: <strong>{selectedCard.speedModifier}</strong></span>
+                      {activeCombatant?.stats.weapon && (
+                        <span> + Arma: <strong>{activeCombatant.stats.weapon.speedModifier}</strong></span>
+                      )}
+                      <span> = Tick de ação: <strong>
+                        {selectedCard.speedModifier + (activeCombatant?.stats.weapon?.speedModifier || 0) + (activeCombatant?.stats.armor?.speedPenalty || 0)}
+                      </strong></span>
+                    </div>
                   )}
                 </>
               )}
 
               {/* Indicador de IA processando */}
-              {!isPlayerTurn && phase === 'battle' && (
+              {!isPlayerTurn && phase === 'battle' && !isChoosingPhase && (
                 <div className="text-center py-8">
                   <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
                   <p className="text-muted-foreground">Inimigo pensando...</p>
+                </div>
+              )}
+              
+              {!isPlayerTurn && isChoosingPhase && (
+                <div className="text-center py-8">
+                  <div className="animate-spin h-8 w-8 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4" />
+                  <p className="text-muted-foreground">Inimigos escolhendo cartas...</p>
                 </div>
               )}
             </CardContent>
