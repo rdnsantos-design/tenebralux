@@ -36,7 +36,6 @@ import MyTacticalMatchesPage from "./pages/MyTacticalMatchesPage";
 import TacticalBattleTestPage from "./pages/TacticalBattleTestPage";
 import TacticalBattlePage from "./pages/TacticalBattlePage";
 import TacticalCombatTest from "./pages/TacticalCombatTest";
-import SinglePlayerMassCombatPage from "./pages/SinglePlayerMassCombatPage";
 
 const queryClient = new QueryClient();
 
@@ -93,9 +92,6 @@ const App = () => (
               
               {/* RPG Combat Test Route */}
               <Route path="/combat-test" element={<TacticalCombatTest />} />
-              
-              {/* Single Player Mass Combat */}
-              <Route path="/singleplayer-mass-combat" element={<SinglePlayerMassCombatPage />} />
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
