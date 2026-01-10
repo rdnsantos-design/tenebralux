@@ -29,6 +29,7 @@ import GalaxyMap from "./pages/GalaxyMap";
 
 // Tactical Battle Pages
 import TacticalHomePage from "./pages/TacticalHomePage";
+import SinglePlayerTacticalPage from "./pages/SinglePlayerTacticalPage";
 import CreateTacticalMatchPage from "./pages/CreateTacticalMatchPage";
 import JoinTacticalMatchPage from "./pages/JoinTacticalMatchPage";
 import TacticalLobbyPage from "./pages/TacticalLobbyPage";
@@ -83,6 +84,7 @@ const App = () => (
               
               {/* Tactical Battle Routes */}
               <Route path="/tactical" element={<TacticalHomePage />} />
+              <Route path="/tactical/singleplayer" element={<SinglePlayerTacticalPage />} />
               <Route path="/tactical/create" element={<CreateTacticalMatchPage />} />
               <Route path="/tactical/join" element={<JoinTacticalMatchPage />} />
               <Route path="/tactical/lobby/:matchId" element={<TacticalLobbyPage />} />
