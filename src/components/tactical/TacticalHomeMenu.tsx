@@ -1,12 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Plus, LogIn, ListOrdered, Swords, Map } from 'lucide-react';
+import { ArrowLeft, Plus, LogIn, ListOrdered, Swords, Map, Bot } from 'lucide-react';
 
 export function TacticalHomeMenu() {
   const navigate = useNavigate();
 
   const menuItems = [
+    {
+      title: 'Jogar Solo',
+      description: 'Jogue contra o bot em batalhas táticas',
+      icon: Bot,
+      path: '/tactical/singleplayer',
+      color: 'text-orange-500',
+    },
     {
       title: 'Criar Partida',
       description: 'Crie uma nova sala e convide um oponente',
