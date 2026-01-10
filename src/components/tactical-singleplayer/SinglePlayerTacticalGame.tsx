@@ -318,11 +318,14 @@ export function SinglePlayerTacticalGame({
       } else if (action.type === 'attack' && action.unitId && action.targetUnitId) {
         newState = executeAttack(newState, action.unitId, action.targetUnitId);
         addLog(newState, 'combat', action.reason || 'Bot atacou');
+      } else if (action.type === 'pass') {
+        // Se o bot decidiu "passar", avançamos a fase para evitar ficar preso pensando.
+        newState = advancePhase(newState);
+        addLog(newState, 'system', action.reason || 'Bot passou');
       } else if (action.type === 'end_phase') {
         newState = advancePhase(newState);
         addLog(newState, 'system', `Bot encerrou a fase`);
       }
-      
       // Verificar vitória
       newState = checkVictory(newState);
       
