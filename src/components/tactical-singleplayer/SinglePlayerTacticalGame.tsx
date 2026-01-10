@@ -314,10 +314,10 @@ export function SinglePlayerTacticalGame({
       
       if (action.type === 'move' && action.unitId && action.targetHex) {
         newState = executeMove(newState, action.unitId, action.targetHex);
-        addLog(newState, 'movement', action.reason);
+        addLog(newState, 'movement', action.reason || 'Bot moveu unidade');
       } else if (action.type === 'attack' && action.unitId && action.targetUnitId) {
         newState = executeAttack(newState, action.unitId, action.targetUnitId);
-        addLog(newState, 'combat', action.reason);
+        addLog(newState, 'combat', action.reason || 'Bot atacou');
       } else if (action.type === 'end_phase') {
         newState = advancePhase(newState);
         addLog(newState, 'system', `Bot encerrou a fase`);
