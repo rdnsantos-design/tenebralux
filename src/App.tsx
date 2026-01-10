@@ -94,6 +94,9 @@ const App = () => (
               {/* RPG Combat Test Route */}
               <Route path="/combat-test" element={<TacticalCombatTest />} />
               
+              {/* Single Player Mass Combat */}
+              <Route path="/singleplayer-mass-combat" element={<SinglePlayerMassCombatPage />} />
+              
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
