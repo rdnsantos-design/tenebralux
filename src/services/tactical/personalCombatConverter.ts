@@ -138,6 +138,9 @@ export function convertCharacterToCombatant(
     isDown: false,
     currentMovement: movement,
     lastFatigueTick: 0,
+    pendingCardChoice: true,  // Começa precisando escolher card
+    chosenCardId: undefined,
+    chosenTargetId: undefined,
     availableCards,
     purchasedCards,
     activePosture: null

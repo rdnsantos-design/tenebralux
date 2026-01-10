@@ -91,7 +91,9 @@ export function SinglePlayerCombat() {
       <CombatArena
         battleState={combat.battleState}
         currentCombatant={combat.currentCombatant}
+        playerCombatantToChoose={combat.playerCombatantToChoose}
         isPlayerTurn={combat.isPlayerTurn}
+        playerNeedsToChoose={combat.playerNeedsToChoose}
         playerCombatants={combat.playerCombatants}
         enemyCombatants={combat.enemyCombatants}
         availableCards={combat.availableCards}

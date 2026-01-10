@@ -1,14 +1,21 @@
 /**
  * Hook para gerenciar combate tático individual
+ * 
+ * Sistema de Ticks com Escolha Simultânea:
+ * 1. Fase 'choosing': Todos escolhem cards simultaneamente
+ * 2. O tick de ação = velocidade do card + velocidade da arma
+ * 3. Fase 'combat': Ações são resolvidas na ordem dos ticks
+ * 4. Após agir, combatente volta para escolher novo card
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { CharacterDraft } from '@/types/character-builder';
 import { BattleState, Combatant, CombatCard } from '@/types/tactical-combat';
 import { 
   initializeBattle, 
-  executeAction, 
-  advanceToNextTick, 
+  chooseCard,
+  aiChooseCard,
+  resolveNextAction,
   getNextCombatant,
   checkVictoryCondition
 } from '@/lib/tacticalCombatEngine';
@@ -16,7 +23,7 @@ import {
   convertCharacterToCombatant, 
   createGenericEnemy 
 } from '@/services/tactical/personalCombatConverter';
-import { getCardById, getBasicCards } from '@/data/combat/cards';
+import { getCardById } from '@/data/combat/cards';
 import { ThemeId } from '@/themes/types';
 
 export type CombatPhase = 'setup' | 'battle' | 'victory' | 'defeat';
@@ -34,22 +41,44 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
   const [selectedCard, setSelectedCard] = useState<CombatCard | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   
-  // Combatente atual (próximo a agir) - é quem tem o menor currentTick
+  // Verificar se jogador precisa escolher card
+  const playerNeedsToChoose = useMemo(() => {
+    if (!battleState || battleState.phase !== 'choosing') return false;
+    return battleState.combatants.some(
+      c => c.team === 'player' && c.stats.pendingCardChoice && !c.stats.isDown
+    );
+  }, [battleState]);
+  
+  // Combatente do jogador que precisa escolher
+  const playerCombatantToChoose = useMemo(() => {
+    if (!battleState || battleState.phase !== 'choosing') return null;
+    return battleState.combatants.find(
+      c => c.team === 'player' && c.stats.pendingCardChoice && !c.stats.isDown
+    ) || null;
+  }, [battleState]);
+  
+  // Próximo combatente a agir (na fase de combate)
   const currentCombatant = useMemo(() => {
     if (!battleState) return null;
     return getNextCombatant(battleState);
   }, [battleState]);
   
-  // Verificar se é turno do jogador
-  // Só é turno do jogador se o combatente atual for do time 'player'
-  // E se o tick do combatente for igual ao tick atual da batalha
+  // É turno do jogador escolher ou agir
   const isPlayerTurn = useMemo(() => {
-    if (!currentCombatant || !battleState) return false;
-    // O combatente atual é quem tem o menor tick
-    // O tick da batalha avança para o tick do combatente atual
-    return currentCombatant.team === 'player' && 
-           currentCombatant.stats.currentTick <= battleState.currentTick;
-  }, [currentCombatant, battleState]);
+    if (!battleState) return false;
+    
+    // Na fase de escolha, verifica se jogador precisa escolher
+    if (battleState.phase === 'choosing') {
+      return playerNeedsToChoose;
+    }
+    
+    // Na fase de combate, verifica se próximo a agir é jogador
+    if (battleState.phase === 'combat' && currentCombatant) {
+      return currentCombatant.team === 'player';
+    }
+    
+    return false;
+  }, [battleState, playerNeedsToChoose, currentCombatant]);
   
   // Combatentes do jogador e inimigos
   const playerCombatants = useMemo(() => {
@@ -60,13 +89,14 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     return battleState?.combatants.filter(c => c.team === 'enemy') || [];
   }, [battleState]);
   
-  // Cartas disponíveis para o combatente atual
+  // Cartas disponíveis para o combatente que precisa escolher
   const availableCards = useMemo(() => {
-    if (!currentCombatant) return [];
-    return currentCombatant.stats.availableCards
+    const combatant = playerCombatantToChoose || currentCombatant;
+    if (!combatant) return [];
+    return combatant.stats.availableCards
       .map(id => getCardById(id))
       .filter((c): c is CombatCard => c !== undefined);
-  }, [currentCombatant]);
+  }, [playerCombatantToChoose, currentCombatant]);
   
   // Iniciar combate
   const startBattle = useCallback((
@@ -90,81 +120,78 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
       enemies.push(enemy);
     }
     
-    // Inicializar batalha
+    // Inicializar batalha (começa na fase 'choosing')
     const battle = initializeBattle([playerCombatant, ...enemies]);
     setBattleState(battle);
     setPhase('battle');
-    
-    // Avançar para o primeiro tick
-    const advanced = advanceToNextTick(battle);
-    setBattleState(advanced);
   }, [theme]);
   
-  // Executar ação do jogador
-  const executePlayerAction = useCallback((cardId: string, targetId: string) => {
-    if (!battleState || !currentCombatant) {
-      console.warn('Sem estado de batalha ou combatente atual');
+  // Escolher card (fase de escolha)
+  const choosePlayerCard = useCallback((cardId: string, targetId: string) => {
+    if (!battleState || !playerCombatantToChoose) {
+      console.warn('Sem estado ou combatente para escolher');
       return;
     }
     
-    if (currentCombatant.team !== 'player') {
-      console.warn('Não é turno do jogador! Combatente atual:', currentCombatant.name);
-      return;
-    }
-    
-    // Validar que é realmente o turno deste combatente
-    if (currentCombatant.stats.currentTick > battleState.currentTick) {
-      console.warn('Ainda não é hora de agir! Tick atual:', battleState.currentTick, 'Tick do combatente:', currentCombatant.stats.currentTick);
-      return;
-    }
-    
-    let newState = executeAction(battleState, currentCombatant.id, cardId, targetId);
-    
-    // Verificar vitória/derrota
-    const result = checkVictoryCondition(newState);
-    if (result) {
-      setPhase(result === 'player' ? 'victory' : 'defeat');
-    } else {
-      // Avançar para o próximo tick
-      newState = advanceToNextTick(newState);
-    }
-    
+    const newState = chooseCard(battleState, playerCombatantToChoose.id, cardId, targetId);
     setBattleState(newState);
     setSelectedCard(null);
     setSelectedTarget(null);
-  }, [battleState, currentCombatant]);
+  }, [battleState, playerCombatantToChoose]);
   
-  // Executar ação da IA
-  const executeAIAction = useCallback(() => {
-    if (!battleState || !currentCombatant || currentCombatant.team !== 'enemy') {
+  // IA escolhe cards automaticamente
+  useEffect(() => {
+    if (!battleState || battleState.phase !== 'choosing') return;
+    
+    // Verificar se há inimigos que precisam escolher
+    const enemiesNeedChoice = battleState.combatants.filter(
+      c => c.team === 'enemy' && c.stats.pendingCardChoice && !c.stats.isDown
+    );
+    
+    if (enemiesNeedChoice.length === 0) return;
+    
+    // Delay pequeno para parecer que IA está "pensando"
+    const timer = setTimeout(() => {
+      let newState = battleState;
+      for (const enemy of enemiesNeedChoice) {
+        newState = aiChooseCard(newState, enemy.id);
+      }
+      setBattleState(newState);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [battleState]);
+  
+  // Resolver ações na fase de combate
+  useEffect(() => {
+    if (!battleState || battleState.phase !== 'combat') return;
+    
+    // Verificar vitória/derrota
+    const result = checkVictoryCondition(battleState);
+    if (result) {
+      setPhase(result === 'player' ? 'victory' : 'defeat');
       return;
     }
     
-    // IA simples: escolhe carta e alvo aleatoriamente
-    const cards = currentCombatant.stats.availableCards;
-    if (cards.length === 0) return;
+    const next = getNextCombatant(battleState);
+    if (!next) return;
     
-    const randomCardId = cards[Math.floor(Math.random() * cards.length)];
-    
-    // Selecionar alvo (jogador vivo)
-    const targets = battleState.combatants.filter(c => c.team === 'player' && !c.stats.isDown);
-    if (targets.length === 0) return;
-    
-    const randomTarget = targets[Math.floor(Math.random() * targets.length)];
-    
-    let newState = executeAction(battleState, currentCombatant.id, randomCardId, randomTarget.id);
-    
-    // Verificar vitória/derrota
-    const result = checkVictoryCondition(newState);
-    if (result) {
-      setPhase(result === 'player' ? 'victory' : 'defeat');
-    } else {
-      // Avançar para o próximo tick
-      newState = advanceToNextTick(newState);
+    // Se próximo é inimigo, resolver automaticamente
+    if (next.team === 'enemy' && next.stats.chosenCardId && next.stats.chosenTargetId) {
+      const timer = setTimeout(() => {
+        const newState = resolveNextAction(battleState);
+        setBattleState(newState);
+      }, 800);
+      
+      return () => clearTimeout(timer);
     }
     
-    setBattleState(newState);
-  }, [battleState, currentCombatant]);
+    // Se é jogador e tem escolha, resolver
+    if (next.team === 'player' && next.stats.chosenCardId && next.stats.chosenTargetId) {
+      const newState = resolveNextAction(battleState);
+      setBattleState(newState);
+    }
+  }, [battleState]);
   
   // Reiniciar combate
   const resetBattle = useCallback(() => {
@@ -185,12 +212,22 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     setSelectedTarget(targetId);
   }, []);
   
-  // Confirmar ação
+  // Confirmar ação (escolher card)
   const confirmAction = useCallback(() => {
     if (selectedCard && selectedTarget) {
-      executePlayerAction(selectedCard.id, selectedTarget);
+      choosePlayerCard(selectedCard.id, selectedTarget);
     }
-  }, [selectedCard, selectedTarget, executePlayerAction]);
+  }, [selectedCard, selectedTarget, choosePlayerCard]);
+  
+  // Executar ação do jogador (legado - mantido para compatibilidade)
+  const executePlayerAction = useCallback((cardId: string, targetId: string) => {
+    choosePlayerCard(cardId, targetId);
+  }, [choosePlayerCard]);
+  
+  // Executar ação da IA (legado - agora automático)
+  const executeAIAction = useCallback(() => {
+    // Agora é automático via useEffect
+  }, []);
   
   return {
     // Estado
@@ -201,6 +238,8 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     isPlayerTurn,
     playerCombatants,
     enemyCombatants,
+    playerNeedsToChoose,
+    playerCombatantToChoose,
     
     // Seleção
     selectedCard,
@@ -209,6 +248,7 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     
     // Ações
     startBattle,
+    choosePlayerCard,
     executePlayerAction,
     executeAIAction,
     resetBattle,

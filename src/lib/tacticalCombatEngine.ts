@@ -270,13 +270,14 @@ export function getNextCombatant(state: BattleState): Combatant | null {
 
 /**
  * Inicializa o estado da batalha
+ * 
+ * Sistema de Ticks:
+ * - Tick 0: Todos escolhem suas cartas simultaneamente (fase de escolha)
+ * - O tick de ação = velocidade da carta + velocidade da arma
+ * - Quem tiver menor tick de ação age primeiro
+ * - Preparo NÃO afeta iniciativa - serve para fadiga (dano na evasão a cada X ticks)
  */
 export function initializeBattle(combatants: Combatant[], withMap: boolean = true): BattleState {
-  // Cada combatente começa no tick = seu Preparo (quem tem mais Preparo age primeiro)
-  // Na verdade, menor preparo = mais lento para começar
-  // Vamos inverter: quem tem MAIS preparo começa em tick MENOR
-  const maxPrep = Math.max(...combatants.map(c => c.stats.prep));
-  
   // Criar mapa se solicitado
   let map = undefined;
   if (withMap) {
@@ -284,9 +285,8 @@ export function initializeBattle(combatants: Combatant[], withMap: boolean = tru
     map = addRandomCover(map, 0.1);
   }
   
+  // TODOS começam no tick 0 - a escolha do card define quando agirão
   const initializedCombatants = combatants.map((c, index) => {
-    const startTick = maxPrep - c.stats.prep; // Maior prep = menor tick inicial
-    
     // Posicionar combatentes se houver mapa
     let position: HexCoord | undefined;
     if (withMap) {
@@ -311,10 +311,12 @@ export function initializeBattle(combatants: Combatant[], withMap: boolean = tru
       ...c,
       stats: {
         ...c.stats,
-        currentTick: startTick,
+        currentTick: 0, // Todos começam no tick 0
         currentMovement: c.stats.movement,
         lastFatigueTick: 0,
-        position
+        position,
+        // Estado de escolha pendente - precisa escolher card
+        pendingCardChoice: true
       }
     };
   });
@@ -322,15 +324,15 @@ export function initializeBattle(combatants: Combatant[], withMap: boolean = tru
   return {
     id: crypto.randomUUID(),
     currentTick: 0,
-    maxTick: 20,
-    phase: 'combat',
+    maxTick: 100,
+    phase: 'choosing', // Nova fase: escolha simultânea de cards
     combatants: initializedCombatants,
     actionQueue: [],
     pendingActions: [],
     log: [{
       tick: 0,
       round: 1,
-      message: 'Combate iniciado!',
+      message: 'Combate iniciado! Escolha suas cartas.',
       type: 'system'
     }],
     round: 1,
@@ -338,10 +340,186 @@ export function initializeBattle(combatants: Combatant[], withMap: boolean = tru
   };
 }
 
-// ============= EXECUTAR AÇÃO =============
+// ============= ESCOLHER CARD (FASE DE ESCOLHA) =============
 
 /**
- * Executa uma ação de combate
+ * Registra a escolha de card de um combatente
+ * Na fase de escolha, todos escolhem simultaneamente
+ * O tick de ação = velocidade do card + velocidade da arma
+ */
+export function chooseCard(
+  state: BattleState,
+  combatantId: string,
+  cardId: string,
+  targetId: string
+): BattleState {
+  const combatantIndex = state.combatants.findIndex(c => c.id === combatantId);
+  if (combatantIndex < 0) return state;
+  
+  const combatant = state.combatants[combatantIndex];
+  const card = getCardById(cardId);
+  if (!card) return state;
+  
+  const weaponSpeed = combatant.stats.weapon?.speedModifier || 0;
+  const armorPenalty = combatant.stats.armor?.speedPenalty || 0;
+  
+  // Calcular tick de ação baseado na velocidade do card + arma
+  const actionTick = calculateActionTick(0, card.speedModifier, weaponSpeed, armorPenalty);
+  
+  // Atualizar combatente com a escolha
+  const updatedCombatant = {
+    ...combatant,
+    stats: {
+      ...combatant.stats,
+      currentTick: actionTick,
+      pendingCardChoice: false,
+      chosenCardId: cardId,
+      chosenTargetId: targetId
+    }
+  };
+  
+  const newCombatants = [...state.combatants];
+  newCombatants[combatantIndex] = updatedCombatant;
+  
+  // Verificar se todos escolheram
+  const allChosen = newCombatants.every(c => !c.stats.pendingCardChoice || c.stats.isDown);
+  
+  let newState: BattleState = {
+    ...state,
+    combatants: newCombatants
+  };
+  
+  // Se todos escolheram, mudar para fase de combate
+  if (allChosen) {
+    newState.phase = 'combat';
+    newState.log = [...newState.log, {
+      tick: 0,
+      round: state.round,
+      message: 'Todos escolheram! Resolvendo ações...',
+      type: 'system'
+    }];
+  }
+  
+  return newState;
+}
+
+/**
+ * IA escolhe card automaticamente
+ */
+export function aiChooseCard(state: BattleState, combatantId: string): BattleState {
+  const combatant = state.combatants.find(c => c.id === combatantId);
+  if (!combatant || !combatant.stats.pendingCardChoice) return state;
+  
+  // IA simples: escolhe carta aleatória
+  const cards = combatant.stats.availableCards;
+  if (cards.length === 0) return state;
+  
+  const randomCardId = cards[Math.floor(Math.random() * cards.length)];
+  
+  // Selecionar alvo (jogador vivo)
+  const targets = state.combatants.filter(c => c.team === 'player' && !c.stats.isDown);
+  if (targets.length === 0) return state;
+  
+  const randomTarget = targets[Math.floor(Math.random() * targets.length)];
+  
+  return chooseCard(state, combatantId, randomCardId, randomTarget.id);
+}
+
+// ============= EXECUTAR AÇÃO (FASE DE COMBATE) =============
+
+/**
+ * Resolve a próxima ação na timeline
+ * Chamado quando é hora de um combatente agir (seu tick chegou)
+ */
+export function resolveNextAction(state: BattleState): BattleState {
+  // Encontrar o combatente com menor tick (próximo a agir)
+  const next = getNextCombatant(state);
+  if (!next) return state;
+  
+  const cardId = next.stats.chosenCardId;
+  const targetId = next.stats.chosenTargetId;
+  
+  if (!cardId || !targetId) {
+    console.warn('Combatente sem card/alvo escolhido:', next.name);
+    return state;
+  }
+  
+  const target = state.combatants.find(c => c.id === targetId);
+  const card = getCardById(cardId);
+  
+  if (!target || !card) return state;
+  
+  // Resolver ataque
+  const result = resolveAttack({
+    attacker: next,
+    defender: target,
+    card
+  });
+  
+  // Criar ação
+  const action: CombatAction = {
+    id: crypto.randomUUID(),
+    type: 'attack',
+    combatantId: next.id,
+    card,
+    targetId,
+    tick: next.stats.currentTick,
+    executesAtTick: next.stats.currentTick,
+    state: 'resolved',
+    resolved: true,
+    result
+  };
+  
+  // Aplicar resultado
+  let newState = applyActionResult(state, action, result);
+  
+  // Atualizar tick atual da batalha
+  newState.currentTick = next.stats.currentTick;
+  
+  // Marcar que este combatente precisa escolher novo card
+  const attackerIndex = newState.combatants.findIndex(c => c.id === next.id);
+  if (attackerIndex >= 0) {
+    const updatedAttacker = { ...newState.combatants[attackerIndex] };
+    updatedAttacker.stats = {
+      ...updatedAttacker.stats,
+      pendingCardChoice: true,
+      chosenCardId: undefined,
+      chosenTargetId: undefined,
+      // Aplicar movimento
+      currentMovement: Math.max(0, updatedAttacker.stats.currentMovement + card.movementModifier)
+    };
+    newState.combatants[attackerIndex] = updatedAttacker;
+  }
+  
+  // Adicionar ação à fila
+  newState.actionQueue = [...newState.actionQueue, action];
+  
+  // Verificar vitória
+  const victory = checkVictoryCondition(newState);
+  if (victory) {
+    newState.phase = victory === 'player' ? 'victory' : 'defeat';
+    newState.winner = victory;
+    newState.log = [...newState.log, {
+      tick: newState.currentTick,
+      round: newState.round,
+      message: victory === 'player' ? 'Vitória!' : victory === 'enemy' ? 'Derrota!' : 'Empate!',
+      type: 'system'
+    }];
+  } else {
+    // Voltar para fase de escolha se alguém precisa escolher
+    const needsChoice = newState.combatants.some(c => c.stats.pendingCardChoice && !c.stats.isDown);
+    if (needsChoice) {
+      newState.phase = 'choosing';
+    }
+  }
+  
+  return newState;
+}
+
+// ============= EXECUTAR AÇÃO (LEGADO - MANTER COMPATIBILIDADE) =============
+
+/**
+ * Executa uma ação de combate (modo legado)
  */
 export function executeAction(
   state: BattleState,
