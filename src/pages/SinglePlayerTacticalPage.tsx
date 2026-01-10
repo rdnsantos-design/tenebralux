@@ -29,8 +29,8 @@ export default function SinglePlayerTacticalPage() {
     setPageState('playing');
   };
 
-  const handleBackToSetup = () => {
-    setPageState('setup');
+  const handleExitToHome = () => {
+    navigate('/tactical');
   };
 
   if (pageState === 'playing') {
@@ -39,7 +39,7 @@ export default function SinglePlayerTacticalPage() {
         playerName={playerName}
         botName={botName}
         difficulty={difficulty}
-        onExit={handleBackToSetup}
+        onExit={handleExitToHome}
       />
     );
   }
