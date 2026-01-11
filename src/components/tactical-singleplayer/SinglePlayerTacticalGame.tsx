@@ -314,28 +314,38 @@ export function SinglePlayerTacticalGame({
     const delay = getBotThinkingDelay(difficulty);
 
     botTimeoutRef.current = setTimeout(() => {
-      const action = decideBotAction(gameState, 'player2', difficulty);
+      try {
+        const action = decideBotAction(gameState, 'player2', difficulty);
 
-      let newState = { ...gameState };
+        let newState = { ...gameState };
 
-      if (action.type === 'move' && action.unitId && action.targetHex) {
-        newState = executeMove(newState, action.unitId, action.targetHex);
-        addLog(newState, 'movement', action.reason || 'Bot moveu unidade');
-      } else if (action.type === 'attack' && action.unitId && action.targetUnitId) {
-        newState = executeAttack(newState, action.unitId, action.targetUnitId);
-        addLog(newState, 'combat', action.reason || 'Bot atacou');
-      } else if (action.type === 'pass') {
-        // Se o bot decidiu "passar", avançamos a fase para evitar ficar preso pensando.
-        newState = advancePhase(newState);
-        addLog(newState, 'system', action.reason || 'Bot passou');
-      } else if (action.type === 'end_phase') {
-        newState = advancePhase(newState);
-        addLog(newState, 'system', `Bot encerrou a fase`);
+        if (action.type === 'move' && action.unitId && action.targetHex) {
+          newState = executeMove(newState, action.unitId, action.targetHex);
+          addLog(newState, 'movement', action.reason || 'Bot moveu unidade');
+        } else if (action.type === 'attack' && action.unitId && action.targetUnitId) {
+          newState = executeAttack(newState, action.unitId, action.targetUnitId);
+          addLog(newState, 'combat', action.reason || 'Bot atacou');
+        } else if (action.type === 'pass') {
+          // Se o bot decidiu "passar", avançamos a fase para evitar ficar preso pensando.
+          newState = advancePhase(newState);
+          addLog(newState, 'system', action.reason || 'Bot passou');
+        } else if (action.type === 'end_phase') {
+          newState = advancePhase(newState);
+          addLog(newState, 'system', `Bot encerrou a fase`);
+        }
+
+        // Verificar vitória
+        newState = checkVictory(newState);
+
+        setGameState(newState);
+      } catch (err) {
+        console.error('Erro ao executar turno do bot:', err);
+        toast.error('Ocorreu um erro ao executar o turno do bot.');
+        setIsBotThinking(false);
+        botTimeoutRef.current = null;
+        return;
       }
-      // Verificar vitória
-      newState = checkVictory(newState);
 
-      setGameState(newState);
       setIsBotThinking(false);
       botTimeoutRef.current = null;
     }, delay);
@@ -786,33 +796,36 @@ function executeAttack(state: TacticalGameState, attackerId: string, targetId: s
 function advancePhase(state: TacticalGameState): TacticalGameState {
   const phases: GamePhase[] = ['movement', 'shooting', 'melee', 'reorganization'];
   const currentIndex = phases.indexOf(state.phase);
-  
+
   let newPhase: GamePhase;
   let newTurn = state.turn;
   let newActivePlayer = state.activePlayer;
-  
-  if (currentIndex === phases.length - 1 || currentIndex === -1) {
-    // Fim do turno
+
+  const isEndOfTurn = currentIndex === phases.length - 1 || currentIndex === -1;
+
+  if (isEndOfTurn) {
+    // Fim do turno do jogador atual → alterna jogador e (se era o bot) incrementa o turno
     newPhase = 'movement';
-    
+
     if (state.activePlayer === 'player2') {
       newTurn = state.turn + 1;
     }
-    
+
     newActivePlayer = state.activePlayer === 'player1' ? 'player2' : 'player1';
   } else {
+    // Próxima fase do MESMO jogador
     newPhase = phases[currentIndex + 1];
-    newActivePlayer = state.activePlayer === 'player1' ? 'player2' : 'player1';
+    newActivePlayer = state.activePlayer;
   }
-  
-  // Reset hasActed para novo turno
+
+  // Reset de ações no início de cada fase para o jogador ativo
   const newUnits = { ...state.units };
-  if (newPhase === 'movement' && newActivePlayer === 'player1' && newTurn > state.turn) {
-    for (const id of Object.keys(newUnits)) {
+  for (const id of Object.keys(newUnits)) {
+    if (newUnits[id].owner === newActivePlayer) {
       newUnits[id] = { ...newUnits[id], hasActedThisTurn: false };
     }
   }
-  
+
   return {
     ...state,
     phase: newPhase,
