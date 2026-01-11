@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HexGrid } from '@/components/tactical/HexGrid';
+import { UnitStatCards } from './UnitStatCards';
 import { 
   TacticalGameState, 
   BattleUnit, 
@@ -25,7 +27,7 @@ import {
   getBotThinkingDelay 
 } from '@/lib/tacticalHexBotEngine';
 import { hexKey, getNeighbors, hexDistance, generateMapHexes, isValidHex } from '@/lib/hexUtils';
-import { ArrowLeft, Bot, User, Clock, Target, Loader2, SkipForward } from 'lucide-react';
+import { ArrowLeft, Bot, User, Clock, Target, Loader2, SkipForward, Scroll, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SinglePlayerTacticalGameProps {
@@ -523,78 +525,88 @@ export function SinglePlayerTacticalGame({
           )}
         </div>
         
-        {/* Sidebar */}
-        <div className="w-72 flex-shrink-0 border-l bg-card/50 flex flex-col overflow-hidden">
-          <ScrollArea className="flex-1">
-            <div className="p-3 space-y-3">
-              {/* Selected Unit */}
-              {selectedUnit ? (
-                <Card>
-                  <CardHeader className="py-2 px-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Target className="w-4 h-4" />
-                      {selectedUnit.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 text-sm space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>ATQ: {selectedUnit.currentAttack}</div>
-                      <div>DEF: {selectedUnit.currentDefense}</div>
-                      <div>MOV: {selectedUnit.currentMovement}</div>
-                      <div>MRL: {selectedUnit.currentMorale}</div>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <div className="flex justify-between">
-                        <span>HP:</span>
-                        <span>{selectedUnit.currentHealth}/{selectedUnit.maxHealth}</span>
+        {/* Sidebar with Tabs */}
+        <div className="w-80 flex-shrink-0 border-l bg-card/50 flex flex-col overflow-hidden">
+          <Tabs defaultValue="units" className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="mx-2 mt-2 grid grid-cols-2">
+              <TabsTrigger value="units" className="text-xs gap-1">
+                <Users className="w-3 h-3" />
+                Unidades
+              </TabsTrigger>
+              <TabsTrigger value="log" className="text-xs gap-1">
+                <Scroll className="w-3 h-3" />
+                Log
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* Units Tab */}
+            <TabsContent value="units" className="flex-1 overflow-hidden m-0">
+              <ScrollArea className="h-full">
+                <div className="p-3">
+                  <UnitStatCards units={gameState.units} />
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            
+            {/* Log Tab */}
+            <TabsContent value="log" className="flex-1 overflow-hidden m-0">
+              <ScrollArea className="h-full">
+                <div className="p-3 space-y-3">
+                  {/* Selected Unit Quick View */}
+                  {selectedUnit && (
+                    <Card className="border-primary/50">
+                      <CardHeader className="py-2 px-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Target className="w-4 h-4" />
+                          {selectedUnit.name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-3 text-sm space-y-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>ATQ: {selectedUnit.currentAttack}</div>
+                          <div>DEF: {selectedUnit.currentDefense}</div>
+                          <div>HP: {selectedUnit.currentHealth}/{selectedUnit.maxHealth}</div>
+                          <div>Pressão: {selectedUnit.currentPressure}/{selectedUnit.maxPressure}</div>
+                        </div>
+                        {selectedUnit.hasActedThisTurn && (
+                          <Badge variant="secondary" className="w-full justify-center text-xs">
+                            Já agiu este turno
+                          </Badge>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {/* Battle Log */}
+                  <Card>
+                    <CardHeader className="py-2 px-3">
+                      <CardTitle className="text-sm">Log de Batalha (Rolagens)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-2">
+                      <div className="space-y-1 max-h-[50vh] overflow-auto">
+                        {[...gameState.battleLog].reverse().slice(0, 50).map((entry) => (
+                          <div 
+                            key={entry.id} 
+                            className={`text-xs p-1.5 rounded font-mono ${
+                              entry.type === 'system' 
+                                ? 'bg-muted text-muted-foreground' 
+                                : entry.type === 'combat'
+                                ? 'bg-red-500/10 text-red-400'
+                                : entry.type === 'rout'
+                                ? 'bg-yellow-500/10 text-yellow-500'
+                                : 'bg-blue-500/10 text-blue-400'
+                            }`}
+                          >
+                            <span className="opacity-50 text-[10px]">[T{entry.turn}]</span> {entry.message}
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex justify-between">
-                        <span>Pressão:</span>
-                        <span>{selectedUnit.currentPressure}/{selectedUnit.maxPressure}</span>
-                      </div>
-                    </div>
-                    {selectedUnit.hasActedThisTurn && (
-                      <Badge variant="secondary" className="w-full justify-center">
-                        Já agiu este turno
-                      </Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardContent className="p-4 text-center text-muted-foreground">
-                    <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Selecione uma unidade</p>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* Battle Log */}
-              <Card>
-                <CardHeader className="py-2 px-3">
-                  <CardTitle className="text-sm">Log de Batalha</CardTitle>
-                </CardHeader>
-                <CardContent className="p-2 max-h-64 overflow-auto">
-                  <div className="space-y-1">
-                    {[...gameState.battleLog].reverse().slice(0, 20).map((entry) => (
-                      <div 
-                        key={entry.id} 
-                        className={`text-xs p-1.5 rounded ${
-                          entry.type === 'system' 
-                            ? 'bg-muted text-muted-foreground' 
-                            : entry.type === 'combat'
-                            ? 'bg-red-500/10 text-red-400'
-                            : 'bg-blue-500/10 text-blue-400'
-                        }`}
-                      >
-                        <span className="opacity-50">[T{entry.turn}]</span> {entry.message}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
@@ -720,25 +732,68 @@ function executeAttack(state: TacticalGameState, attackerId: string, targetId: s
   
   if (!attacker || !target) return state;
   
-  // Combate simplificado
-  const attackRoll = Math.floor(Math.random() * 6) + 1 + attacker.currentAttack;
-  const defenseRoll = Math.floor(Math.random() * 6) + 1 + target.currentDefense;
+  // === ROLAGENS DE COMBATE ===
+  // Dado de ataque (1d6)
+  const attackDie = Math.floor(Math.random() * 6) + 1;
+  // Dado de defesa (1d6)
+  const defenseDie = Math.floor(Math.random() * 6) + 1;
+  
+  // Modificadores
+  const attackMod = attacker.currentAttack;
+  const defenseMod = target.currentDefense;
+  
+  // Totais
+  const attackTotal = attackDie + attackMod;
+  const defenseTotal = defenseDie + defenseMod;
+  
+  // Margem
+  const margin = attackTotal - defenseTotal;
   
   const newUnits = { ...state.units };
   const logs: BattleLogEntry[] = [];
   
+  // Log detalhado da rolagem
+  logs.push({
+    id: crypto.randomUUID(),
+    turn: state.turn,
+    phase: state.phase,
+    timestamp: Date.now(),
+    type: 'combat',
+    message: `⚔️ ${attacker.name} ataca ${target.name}`,
+    details: { attackerId, targetId }
+  });
+  
+  logs.push({
+    id: crypto.randomUUID(),
+    turn: state.turn,
+    phase: state.phase,
+    timestamp: Date.now(),
+    type: 'combat',
+    message: `🎲 ATQ: [${attackDie}] + ${attackMod} = ${attackTotal} | DEF: [${defenseDie}] + ${defenseMod} = ${defenseTotal}`,
+    details: { attackDie, attackMod, attackTotal, defenseDie, defenseMod, defenseTotal, margin }
+  });
+  
   let damage = 0;
   let pressure = 0;
   
-  if (attackRoll > defenseRoll) {
-    damage = Math.max(1, Math.floor((attackRoll - defenseRoll) / 2));
+  if (margin > 0) {
+    // Cálculo de dano: margem / 2 (mínimo 1)
+    damage = Math.max(1, Math.floor(margin / 2));
     pressure = 1;
     
-    newUnits[targetId] = {
-      ...target,
-      currentHealth: Math.max(0, target.currentHealth - damage),
-      currentPressure: target.currentPressure + pressure,
-    };
+    // Log do resultado
+    logs.push({
+      id: crypto.randomUUID(),
+      turn: state.turn,
+      phase: state.phase,
+      timestamp: Date.now(),
+      type: 'combat',
+      message: `✅ ACERTO! Margem: +${margin} → Dano: ${damage}, Pressão: +${pressure}`,
+      details: { success: true, margin, damage, pressure }
+    });
+    
+    const newHealth = Math.max(0, target.currentHealth - damage);
+    const newPressure = target.currentPressure + pressure;
     
     logs.push({
       id: crypto.randomUUID(),
@@ -746,8 +801,15 @@ function executeAttack(state: TacticalGameState, attackerId: string, targetId: s
       phase: state.phase,
       timestamp: Date.now(),
       type: 'combat',
-      message: `${attacker.name} acerta ${target.name}! ${damage} dano, +${pressure} pressão`,
+      message: `💔 ${target.name}: HP ${target.currentHealth} → ${newHealth} | Pressão ${target.currentPressure} → ${newPressure}`,
+      details: { targetId, oldHealth: target.currentHealth, newHealth, oldPressure: target.currentPressure, newPressure }
     });
+    
+    newUnits[targetId] = {
+      ...target,
+      currentHealth: newHealth,
+      currentPressure: newPressure,
+    };
     
     // Verificar rout
     if (newUnits[targetId].currentPressure >= newUnits[targetId].maxPressure) {
@@ -758,7 +820,7 @@ function executeAttack(state: TacticalGameState, attackerId: string, targetId: s
         phase: state.phase,
         timestamp: Date.now(),
         type: 'rout',
-        message: `${target.name} ENTRA EM ROTA!`,
+        message: `🏳️ ${target.name} ENTRA EM ROTA! (Pressão ${newPressure}/${target.maxPressure})`,
       });
     }
     
@@ -770,7 +832,7 @@ function executeAttack(state: TacticalGameState, attackerId: string, targetId: s
         phase: state.phase,
         timestamp: Date.now(),
         type: 'combat',
-        message: `${target.name} foi DESTRUÍDA!`,
+        message: `💀 ${target.name} foi DESTRUÍDA!`,
       });
     }
   } else {
@@ -780,7 +842,8 @@ function executeAttack(state: TacticalGameState, attackerId: string, targetId: s
       phase: state.phase,
       timestamp: Date.now(),
       type: 'combat',
-      message: `${attacker.name} ataca ${target.name} mas é bloqueado!`,
+      message: `❌ BLOQUEADO! Margem: ${margin} (ATQ ${attackTotal} vs DEF ${defenseTotal})`,
+      details: { success: false, margin }
     });
   }
   
