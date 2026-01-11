@@ -20,6 +20,7 @@ interface HexGridProps {
   selectedHexKey?: string;
   validMoves?: HexCoord[];
   validTargets?: string[];
+  shootingRangeHexes?: HexCoord[];
   selectedAttacker?: BattleUnit;
   hoveredTarget?: BattleUnit;
   showFacingArcs?: boolean;
@@ -42,6 +43,7 @@ export function HexGrid({
   selectedHexKey,
   validMoves = [],
   validTargets = [],
+  shootingRangeHexes = [],
   selectedAttacker,
   hoveredTarget,
   showFacingArcs = false,
@@ -60,6 +62,11 @@ export function HexGrid({
   const validMoveKeys = useMemo(
     () => new Set(validMoves.map(c => hexKey(c))),
     [validMoves]
+  );
+
+  const shootingRangeKeys = useMemo(
+    () => new Set(shootingRangeHexes.map(c => hexKey(c))),
+    [shootingRangeHexes]
   );
 
   const allHexCoords = useMemo(() => generateMapHexes(), []);
@@ -104,6 +111,7 @@ export function HexGrid({
     
     const isSelected = selectedHexKey === key;
     const isValidMove = validMoveKeys.has(key);
+    const isShootingRange = shootingRangeKeys.has(key);
     const isHovered = hoveredHex === key;
     const isValidTarget = hexData.unitId && validTargets.includes(hexData.unitId);
 
@@ -112,6 +120,11 @@ export function HexGrid({
     let strokeWidth = 1;
     let opacity = 1;
 
+    // Shooting range (cor tênue laranja/âmbar, diferente do azul de movimento)
+    if (isShootingRange && !isValidMove) {
+      fill = '#f59e0b';
+      opacity = 0.35;
+    }
     if (isValidMove) {
       fill = '#4a90d9';
       opacity = 0.6;
