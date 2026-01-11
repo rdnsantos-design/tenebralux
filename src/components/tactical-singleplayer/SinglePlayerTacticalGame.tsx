@@ -303,15 +303,21 @@ export function SinglePlayerTacticalGame({
   // Executar ação do bot
   const executeBotTurn = useCallback(async () => {
     if (gameState.isFinished) return;
-    
+
+    // Garantir que não existe timeout pendente
+    if (botTimeoutRef.current) {
+      clearTimeout(botTimeoutRef.current);
+      botTimeoutRef.current = null;
+    }
+
     setIsBotThinking(true);
     const delay = getBotThinkingDelay(difficulty);
-    
+
     botTimeoutRef.current = setTimeout(() => {
       const action = decideBotAction(gameState, 'player2', difficulty);
-      
+
       let newState = { ...gameState };
-      
+
       if (action.type === 'move' && action.unitId && action.targetHex) {
         newState = executeMove(newState, action.unitId, action.targetHex);
         addLog(newState, 'movement', action.reason || 'Bot moveu unidade');
@@ -328,9 +334,10 @@ export function SinglePlayerTacticalGame({
       }
       // Verificar vitória
       newState = checkVictory(newState);
-      
+
       setGameState(newState);
       setIsBotThinking(false);
+      botTimeoutRef.current = null;
     }, delay);
   }, [gameState, difficulty]);
 
@@ -339,13 +346,16 @@ export function SinglePlayerTacticalGame({
     if (!isPlayerTurn && !isBotThinking && !gameState.isFinished) {
       executeBotTurn();
     }
-    
+  }, [isPlayerTurn, isBotThinking, gameState.isFinished, executeBotTurn]);
+
+  // Limpar timeout apenas ao desmontar o componente
+  useEffect(() => {
     return () => {
       if (botTimeoutRef.current) {
         clearTimeout(botTimeoutRef.current);
       }
     };
-  }, [isPlayerTurn, isBotThinking, gameState.isFinished, executeBotTurn]);
+  }, []);
 
   // Handlers de ação do jogador
   const handleHexClick = (coord: HexCoord) => {
