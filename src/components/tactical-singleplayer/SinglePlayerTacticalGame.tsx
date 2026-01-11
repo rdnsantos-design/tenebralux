@@ -302,6 +302,31 @@ export function SinglePlayerTacticalGame({
     return [];
   }, [gameState, selectedUnitId, isPlayerTurn]);
 
+  // Calcular hexes de alcance de tiro (para sombreado visual)
+  const shootingRangeHexes = useMemo((): HexCoord[] => {
+    if (!selectedUnitId || !isPlayerTurn) return [];
+    
+    const unit = gameState.units[selectedUnitId];
+    if (!unit || unit.owner !== 'player1') return [];
+    
+    // Só mostra alcance se a unidade tem ataque à distância
+    if (unit.currentRanged <= 0) return [];
+    
+    const range = 6; // Alcance de tiro
+    const hexesInRange: HexCoord[] = [];
+    
+    // Pegar todos os hexes dentro do alcance
+    for (const [key, hexData] of Object.entries(gameState.hexes)) {
+      const dist = hexDistance(unit.position, hexData.coord);
+      // Alcance de tiro: entre 2 e 6 (não adjacente, não muito longe)
+      if (dist >= 2 && dist <= range) {
+        hexesInRange.push(hexData.coord);
+      }
+    }
+    
+    return hexesInRange;
+  }, [gameState, selectedUnitId, isPlayerTurn]);
+
   // Executar ação do bot
   const executeBotTurn = useCallback(async () => {
     if (gameState.isFinished) return;
@@ -493,6 +518,7 @@ export function SinglePlayerTacticalGame({
             selectedHexKey={selectedUnit ? hexKey(selectedUnit.position) : undefined}
             validMoves={validMoves}
             validTargets={validTargets}
+            shootingRangeHexes={shootingRangeHexes}
             onHexClick={handleHexClick}
           />
           
