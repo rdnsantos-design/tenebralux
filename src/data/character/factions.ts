@@ -1,10 +1,5 @@
 import { ThemeId } from '@/themes/types';
 
-export interface FactionSkillBonus {
-  points: number;      // Quantidade de níveis de perícia
-  skillCount: number;  // Quantas perícias podem receber esses pontos
-}
-
 export interface FactionDefinition {
   id: string;
   name: string;
@@ -14,7 +9,7 @@ export interface FactionDefinition {
   icon: string;
   virtue?: string | 'choice';  // Virtude inicial ou 'choice' para livre escolha
   attributeBonuses?: string[]; // Atributos que recebem bônus
-  freeSkills?: FactionSkillBonus;
+  freeSkillPoints?: number;    // Pontos livres de perícia na criação
 }
 
 // Facções do tema Akashic (Sci-Fi) - Baseado na planilha oficial
@@ -27,7 +22,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
     color: '#dc2626',
     icon: 'Shield',
     virtue: 'coragem',
-    freeSkills: { points: 5, skillCount: 1 },
+    freeSkillPoints: 5,
   },
   {
     id: 'alianca',
@@ -37,7 +32,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
     color: '#3b82f6',
     icon: 'Users',
     virtue: 'choice',
-    freeSkills: { points: 4, skillCount: 2 },
+    freeSkillPoints: 4,
   },
   {
     id: 'pacto',
@@ -47,7 +42,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
     color: '#84cc16',
     icon: 'Handshake',
     virtue: 'perseveranca',
-    freeSkills: { points: 5, skillCount: 3 },
+    freeSkillPoints: 5,
   },
   {
     id: 'concordia',
@@ -57,7 +52,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
     color: '#8b5cf6',
     icon: 'Scale',
     attributeBonuses: ['raciocinio', 'corpo'],
-    freeSkills: { points: 6, skillCount: 4 },
+    freeSkillPoints: 6,
   },
   {
     id: 'brunianos',
@@ -68,7 +63,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
     icon: 'BookOpen',
     virtue: 'sabedoria',
     attributeBonuses: ['corpo'],
-    freeSkills: { points: 3, skillCount: 5 },
+    freeSkillPoints: 3,
   },
   {
     id: 'federacao',
@@ -78,31 +73,7 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
     color: '#06b6d4',
     icon: 'Globe',
     virtue: 'harmonia',
-    freeSkills: { points: 5, skillCount: 6 },
-  },
-  {
-    id: 'corporacoes',
-    name: 'Corporações',
-    theme: 'akashic',
-    description: 'Mega-corporações que controlam o comércio e a tecnologia interestelar.',
-    color: '#f97316',
-    icon: 'Building2',
-  },
-  {
-    id: 'astra',
-    name: 'Astra',
-    theme: 'akashic',
-    description: 'Exploradores dos confins do espaço, pioneiros do desconhecido.',
-    color: '#a855f7',
-    icon: 'Rocket',
-  },
-  {
-    id: 'piratas',
-    name: 'Piratas',
-    theme: 'akashic',
-    description: 'Fora-da-lei espaciais que vivem à margem da sociedade galáctica.',
-    color: '#64748b',
-    icon: 'Skull',
+    freeSkillPoints: 5,
   },
   {
     id: 'star-knights',
@@ -111,6 +82,36 @@ export const AKASHIC_FACTIONS: FactionDefinition[] = [
     description: 'Ordem de guerreiros cósmicos guardiões da justiça interestelar.',
     color: '#eab308',
     icon: 'Sword',
+    virtue: 'coragem',
+    attributeBonuses: ['coordenacao'],
+    freeSkillPoints: 3,
+  },
+  {
+    id: 'corporacoes',
+    name: 'Corporações',
+    theme: 'akashic',
+    description: 'Mega-corporações que controlam o comércio e a tecnologia interestelar.',
+    color: '#f97316',
+    icon: 'Building2',
+    freeSkillPoints: 4,
+  },
+  {
+    id: 'astra',
+    name: 'Astra',
+    theme: 'akashic',
+    description: 'Exploradores dos confins do espaço, pioneiros do desconhecido.',
+    color: '#a855f7',
+    icon: 'Rocket',
+    freeSkillPoints: 4,
+  },
+  {
+    id: 'piratas',
+    name: 'Piratas',
+    theme: 'akashic',
+    description: 'Fora-da-lei espaciais que vivem à margem da sociedade galáctica.',
+    color: '#64748b',
+    icon: 'Skull',
+    freeSkillPoints: 4,
   },
 ];
 
@@ -181,7 +182,7 @@ export function getFactionAttributeBonuses(factionId: string): string[] {
   return faction?.attributeBonuses ?? [];
 }
 
-export function getFactionFreeSkills(factionId: string): FactionSkillBonus | undefined {
+export function getFactionFreeSkillPoints(factionId: string): number {
   const faction = getFactionById(factionId);
-  return faction?.freeSkills;
+  return faction?.freeSkillPoints ?? 4; // Default to 4 if not specified
 }

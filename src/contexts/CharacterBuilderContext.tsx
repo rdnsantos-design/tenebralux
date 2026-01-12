@@ -4,6 +4,7 @@ import { Character, CharacterAttributes, calculateDerivedStats, calculateRegency
 import { useTheme } from '@/themes';
 import { getSkillsByAttribute } from '@/data/character/skills';
 import { getStartingVirtue } from '@/data/character/virtues';
+import { getFactionFreeSkillPoints } from '@/data/character/factions';
 import { useCharacterStorageHybrid } from '@/hooks/useCharacterStorageHybrid';
 
 interface CharacterBuilderContextType {
@@ -55,7 +56,7 @@ const DEFAULT_ATTRIBUTES: CharacterAttributes = {
 
 const TOTAL_ATTRIBUTE_POINTS = 25;
 const BASE_ATTRIBUTE_POINTS = 8; // 8 atributos x 1 ponto mínimo
-const FREE_SKILL_POINTS = 6; // Pontos livres para distribuir em perícias
+const DEFAULT_FREE_SKILL_POINTS = 4; // Valor padrão de pontos livres (usado se facção não definir)
 
 export function CharacterBuilderProvider({ children }: { children: React.ReactNode }) {
   const { activeTheme } = useTheme();
@@ -195,12 +196,13 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
           });
         }
         
-        // Validar pontos livres
+        // Validar pontos livres (varia por facção)
+        const freeSkillPointsForFaction = getFactionFreeSkillPoints(draft.factionId || '');
         const usedFreePoints = getUsedFreeSkillPoints();
-        if (usedFreePoints !== FREE_SKILL_POINTS) {
+        if (usedFreePoints !== freeSkillPointsForFaction) {
           errors.push({
             field: 'freeSkillPoints',
-            message: `Distribua todos os ${FREE_SKILL_POINTS} pontos livres (atual: ${usedFreePoints})`
+            message: `Distribua todos os ${freeSkillPointsForFaction} pontos livres (atual: ${usedFreePoints})`
           });
         }
         break;
