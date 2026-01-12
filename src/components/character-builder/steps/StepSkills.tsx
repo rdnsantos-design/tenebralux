@@ -40,6 +40,7 @@ import { SkillSpecialization } from '@/types/character-builder';
 // Configurações do sistema de perícias
 const MAX_SKILL_LEVEL = 6; // Nível máximo absoluto de perícia
 const MAX_SKILL_FROM_ATTRIBUTES = 3; // Máximo que pontos de atributo podem elevar
+const MAX_FREE_POINTS_PER_SKILL = 1; // Máximo de pontos livres por perícia
 const MAX_SKILL_CREATION = 4; // Máximo na criação de personagem (com pontos livres)
 const MIN_SKILL_VALUE = 0;
 
@@ -190,6 +191,8 @@ export function StepSkills() {
     const effectiveLevel = getEffectiveSkillLevel(skillId);
 
     // Verificações
+    // Pontos livres podem elevar até MAX_SKILL_CREATION, mas máximo de 1 ponto livre por perícia
+    if (currentFromFree >= MAX_FREE_POINTS_PER_SKILL) return; // Máximo de pontos livres por perícia
     if (effectiveLevel >= MAX_SKILL_CREATION) return; // Máximo na criação
     if (getRemainingFreePoints() <= 0) return; // Sem pontos livres
 
@@ -572,9 +575,9 @@ export function StepSkills() {
                 className="h-2"
               />
               <div className="flex items-center justify-between mt-2">
-                <p className="text-sm text-muted-foreground">
-                  Pode elevar qualquer perícia até o nível 4.
-                </p>
+              <p className="text-sm text-muted-foreground">
+                Adicione até 1 ponto livre por perícia para elevá-la ao nível 4.
+              </p>
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -605,7 +608,8 @@ export function StepSkills() {
                       effectiveLevel={skill.effectiveLevel}
                       maxLevelDisplay={MAX_SKILL_CREATION}
                       virtueColor={virtue?.color || '#888'}
-                      canIncrease={getRemainingFreePoints() > 0 && skill.effectiveLevel < MAX_SKILL_CREATION}
+                      // Pontos livres: pode adicionar se nível < 4 e ainda não usou ponto livre nessa perícia
+                      canIncrease={getRemainingFreePoints() > 0 && skill.effectiveLevel < MAX_SKILL_CREATION && skill.fromFree < MAX_FREE_POINTS_PER_SKILL}
                       onIncrease={() => handleFreeSkillIncrease(skill.id)}
                       onDecrease={() => handleFreeSkillDecrease(skill.id)}
                       mode="free"
@@ -630,8 +634,8 @@ export function StepSkills() {
                 Podem elevar perícias até o nível <strong>3</strong>.
               </p>
               <p>
-                <strong>Pontos Livres ({factionFreePoints}):</strong> Podem elevar qualquer perícia 
-                até o nível <strong>4</strong> (máximo na criação).
+                <strong>Pontos Livres ({factionFreePoints}):</strong> Adicione até <strong>1</strong> ponto 
+                por perícia para elevá-la ao nível <strong>4</strong> (máximo na criação).
               </p>
               <p>
                 <Sparkles className="w-3 h-3 inline mr-1" />
