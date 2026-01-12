@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   VIRTUES,
-  FACTION_STARTING_VIRTUES,
   getVirtueById,
   getVirtueByAttribute,
   getStartingVirtue,
 } from '@/data/character/virtues';
+import { getFactionVirtue } from '@/data/character/factions';
 
 describe('Data - Virtues', () => {
   describe('VIRTUES constant', () => {
@@ -81,25 +81,35 @@ describe('Data - Virtues', () => {
     });
   });
 
-  describe('FACTION_STARTING_VIRTUES', () => {
-    it('should have mappings for akashic factions', () => {
-      expect(FACTION_STARTING_VIRTUES.confederacao).toBe('harmonia');
-      expect(FACTION_STARTING_VIRTUES.corporacoes).toBe('perseveranca');
-      expect(FACTION_STARTING_VIRTUES.tecnocracia).toBe('sabedoria');
-      expect(FACTION_STARTING_VIRTUES.fronteira).toBe('coragem');
-      expect(FACTION_STARTING_VIRTUES.sindicato).toBe('perseveranca');
+  describe('getFactionVirtue (from factions.ts)', () => {
+    it('should return correct virtues for akashic factions with defined virtues', () => {
+      expect(getFactionVirtue('hegemonia')).toBe('coragem');
+      expect(getFactionVirtue('pacto')).toBe('perseveranca');
+      expect(getFactionVirtue('brunianos')).toBe('sabedoria');
+      expect(getFactionVirtue('federacao')).toBe('harmonia');
+      expect(getFactionVirtue('star-knights')).toBe('coragem');
     });
 
-    it('should have mappings for tenebralux factions', () => {
-      expect(FACTION_STARTING_VIRTUES.anuire).toBe('coragem');
-      expect(FACTION_STARTING_VIRTUES.khinasi).toBe('sabedoria');
-      expect(FACTION_STARTING_VIRTUES.rjurik).toBe('coragem');
-      expect(FACTION_STARTING_VIRTUES.brecht).toBe('perseveranca');
-      expect(FACTION_STARTING_VIRTUES.vos).toBe('coragem');
+    it('should return choice for alianca (free choice)', () => {
+      expect(getFactionVirtue('alianca')).toBe('choice');
     });
 
-    it('should have choice for none', () => {
-      expect(FACTION_STARTING_VIRTUES.none).toBe('choice');
+    it('should return undefined for factions without virtue bonus', () => {
+      expect(getFactionVirtue('concordia')).toBeUndefined();
+      expect(getFactionVirtue('corporacoes')).toBeUndefined();
+      expect(getFactionVirtue('astra')).toBeUndefined();
+      expect(getFactionVirtue('piratas')).toBeUndefined();
+    });
+
+    it('should return correct virtues for tenebralux factions', () => {
+      expect(getFactionVirtue('anuire')).toBe('coragem');
+      expect(getFactionVirtue('khinasi')).toBe('sabedoria');
+      expect(getFactionVirtue('rjurik')).toBe('harmonia');
+      expect(getFactionVirtue('vos')).toBe('perseveranca');
+    });
+
+    it('should return choice for brecht (free choice)', () => {
+      expect(getFactionVirtue('brecht')).toBe('choice');
     });
   });
 
@@ -173,10 +183,20 @@ describe('Data - Virtues', () => {
   });
 
   describe('getStartingVirtue', () => {
-    it('should return virtue for valid faction', () => {
-      expect(getStartingVirtue('anuire')).toBe('coragem');
-      expect(getStartingVirtue('khinasi')).toBe('sabedoria');
-      expect(getStartingVirtue('tecnocracia')).toBe('sabedoria');
+    it('should return virtue for faction with defined virtue', () => {
+      expect(getStartingVirtue('hegemonia')).toBe('coragem');
+      expect(getStartingVirtue('brunianos')).toBe('sabedoria');
+      expect(getStartingVirtue('pacto')).toBe('perseveranca');
+    });
+
+    it('should return choice for faction with free choice', () => {
+      expect(getStartingVirtue('alianca')).toBe('choice');
+      expect(getStartingVirtue('brecht')).toBe('choice');
+    });
+
+    it('should return choice for faction without virtue (attribute bonuses only)', () => {
+      expect(getStartingVirtue('concordia')).toBe('choice');
+      expect(getStartingVirtue('corporacoes')).toBe('choice');
     });
 
     it('should return choice for undefined faction', () => {
@@ -185,10 +205,6 @@ describe('Data - Virtues', () => {
 
     it('should return choice for invalid faction', () => {
       expect(getStartingVirtue('invalid')).toBe('choice');
-    });
-
-    it('should return choice for none faction', () => {
-      expect(getStartingVirtue('none')).toBe('choice');
     });
   });
 

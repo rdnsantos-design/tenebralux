@@ -311,23 +311,7 @@ export const VIRTUES: VirtueDefinition[] = [
   },
 ];
 
-// Mapeamento de facção/cultura para virtude inicial
-export const FACTION_STARTING_VIRTUES: Record<string, string | 'choice'> = {
-  // Akashic - Facções
-  'confederacao': 'harmonia',
-  'corporacoes': 'perseveranca',
-  'tecnocracia': 'sabedoria',
-  'fronteira': 'coragem',
-  'sindicato': 'perseveranca',
-  // Tenebra - Facções
-  'anuire': 'coragem',
-  'khinasi': 'sabedoria',
-  'rjurik': 'coragem',
-  'brecht': 'perseveranca',
-  'vos': 'coragem',
-  // Se nenhuma facção, escolha livre
-  'none': 'choice',
-};
+import { getFactionVirtue } from './factions';
 
 export function getVirtueById(id: string): VirtueDefinition | undefined {
   return VIRTUES.find(v => v.id === id);
@@ -337,7 +321,24 @@ export function getVirtueByAttribute(attributeId: string): VirtueDefinition | un
   return VIRTUES.find(v => v.attributes.includes(attributeId));
 }
 
+/**
+ * Retorna a virtude inicial baseada na facção.
+ * - Se a facção define uma virtude, retorna essa virtude
+ * - Se a facção define 'choice', retorna 'choice' (livre escolha)
+ * - Se a facção não define virtude (ex: Nova Concórdia), retorna 'choice'
+ * - Se não há facção, retorna 'choice'
+ */
 export function getStartingVirtue(factionId?: string): string | 'choice' {
   if (!factionId) return 'choice';
-  return FACTION_STARTING_VIRTUES[factionId] || 'choice';
+  
+  const virtue = getFactionVirtue(factionId);
+  
+  // Se a facção não define virtude (undefined), permite escolha livre
+  // Se define 'choice', também permite escolha livre
+  // Senão, retorna a virtude definida
+  if (virtue === undefined || virtue === 'choice') {
+    return 'choice';
+  }
+  
+  return virtue;
 }

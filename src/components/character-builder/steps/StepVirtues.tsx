@@ -128,7 +128,7 @@ export function StepVirtues() {
               ) : (
                 <p>
                   Sua facção define <strong>{getVirtueById(startingVirtueId)?.name}</strong> como 
-                  virtude inicial. Você começa no nível 1 nessa virtude.
+                  virtude inicial (Nível 1). Você começa no nível 1 nessa virtude.
                 </p>
               )}
               <p className="mt-1">
