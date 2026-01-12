@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ATTRIBUTES } from '@/data/character/attributes';
 import { SKILLS, getSkillsByAttribute, getSkillLabel } from '@/data/character/skills';
 import { getVirtueByAttribute } from '@/data/character/virtues';
+import { getFactionFreeSkillPoints } from '@/data/character/factions';
 import { CharacterAttributes } from '@/core/types';
 import { Minus, Plus, RotateCcw, Check, AlertCircle, Sparkles, Loader2, Star } from 'lucide-react';
 import * as Icons from 'lucide-react';
@@ -40,7 +41,6 @@ import { SkillSpecialization } from '@/types/character-builder';
 const MAX_SKILL_LEVEL = 6; // Nível máximo absoluto de perícia
 const MAX_SKILL_FROM_ATTRIBUTES = 3; // Máximo que pontos de atributo podem elevar
 const MAX_SKILL_CREATION = 4; // Máximo na criação de personagem (com pontos livres)
-const FREE_SKILL_POINTS = 6; // Pontos livres para distribuir
 const MIN_SKILL_VALUE = 0;
 
 export function StepSkills() {
@@ -68,6 +68,9 @@ export function StepSkills() {
   const freeSkillPoints = draft.freeSkillPoints || {}; // Pontos livres
   const skillSpecializations: Record<string, SkillSpecialization> = draft.skillSpecializations || {};
 
+  // Pontos livres disponíveis baseado na facção
+  const factionFreePoints = getFactionFreeSkillPoints(draft.factionId || '');
+
   // ===== CÁLCULOS DE PONTOS DE ATRIBUTO =====
   
   // Pontos de atributo usados por atributo
@@ -94,9 +97,9 @@ export function StepSkills() {
     return Object.values(freeSkillPoints).reduce((sum, val) => sum + (val || 0), 0);
   };
 
-  // Pontos livres restantes
+  // Pontos livres restantes (baseado na facção)
   const getRemainingFreePoints = (): number => {
-    return FREE_SKILL_POINTS - getUsedFreePoints();
+    return factionFreePoints - getUsedFreePoints();
   };
 
   // ===== NÍVEL EFETIVO =====
@@ -561,11 +564,11 @@ export function StepSkills() {
                   "text-lg font-bold",
                   allFreePointsDistributed ? "text-green-500" : "text-amber-500"
                 )}>
-                  {getUsedFreePoints()} / {FREE_SKILL_POINTS} pontos
+                  {getUsedFreePoints()} / {factionFreePoints} pontos
                 </span>
               </div>
               <Progress 
-                value={(getUsedFreePoints() / FREE_SKILL_POINTS) * 100} 
+                value={(getUsedFreePoints() / factionFreePoints) * 100} 
                 className="h-2"
               />
               <div className="flex items-center justify-between mt-2">
@@ -627,7 +630,7 @@ export function StepSkills() {
                 Podem elevar perícias até o nível <strong>3</strong>.
               </p>
               <p>
-                <strong>Pontos Livres ({FREE_SKILL_POINTS}):</strong> Podem elevar qualquer perícia 
+                <strong>Pontos Livres ({factionFreePoints}):</strong> Podem elevar qualquer perícia 
                 até o nível <strong>4</strong> (máximo na criação).
               </p>
               <p>

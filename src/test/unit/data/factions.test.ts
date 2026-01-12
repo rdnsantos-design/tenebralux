@@ -6,7 +6,7 @@ import {
   getFactionById,
   getFactionVirtue,
   getFactionAttributeBonuses,
-  getFactionFreeSkills,
+  getFactionFreeSkillPoints,
 } from '@/data/character/factions';
 
 describe('Data - Factions', () => {
@@ -130,23 +130,18 @@ describe('Data - Factions', () => {
     });
   });
 
-  describe('getFactionFreeSkills', () => {
-    it('should return free skills for faction with skills', () => {
+  describe('getFactionFreeSkillPoints', () => {
+    it('should return free skill points for faction with skills', () => {
       const hegemonia = AKASHIC_FACTIONS.find(f => f.id === 'hegemonia');
-      if (hegemonia?.freeSkills) {
-        const result = getFactionFreeSkills('hegemonia');
-        expect(result).toBeDefined();
-        expect(result?.points).toBe(5);
-        expect(result?.skillCount).toBe(1);
+      if (hegemonia?.freeSkillPoints) {
+        const result = getFactionFreeSkillPoints('hegemonia');
+        expect(result).toBe(5);
       }
     });
 
-    it('should return undefined for faction without free skills', () => {
-      const corporacoes = AKASHIC_FACTIONS.find(f => f.id === 'corporacoes');
-      if (!corporacoes?.freeSkills) {
-        const result = getFactionFreeSkills('corporacoes');
-        expect(result).toBeUndefined();
-      }
+    it('should return default value for faction without free skill points', () => {
+      const result = getFactionFreeSkillPoints('invalid-faction');
+      expect(result).toBe(4); // default value
     });
   });
 });

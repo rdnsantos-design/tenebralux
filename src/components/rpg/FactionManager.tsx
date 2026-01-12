@@ -68,7 +68,6 @@ import {
   AKASHIC_FACTIONS,
   TENEBRA_FACTIONS,
   FactionDefinition,
-  FactionSkillBonus
 } from '@/data/character/factions';
 import { VIRTUES } from '@/data/character/virtues';
 import { ATTRIBUTES } from '@/data/character/attributes';
@@ -104,8 +103,7 @@ interface FactionFormData {
   icon: string;
   virtue: string;
   attributeBonuses: string[];
-  freeSkillsPoints: number;
-  freeSkillsCount: number;
+  freeSkillPoints: number;
 }
 
 const EMPTY_FORM: FactionFormData = {
@@ -116,8 +114,7 @@ const EMPTY_FORM: FactionFormData = {
   icon: 'Shield',
   virtue: '',
   attributeBonuses: [],
-  freeSkillsPoints: 0,
-  freeSkillsCount: 0,
+  freeSkillPoints: 4,
 };
 
 export function FactionManager() {
@@ -149,8 +146,7 @@ export function FactionManager() {
       icon: faction.icon,
       virtue: faction.virtue || '',
       attributeBonuses: faction.attributeBonuses || [],
-      freeSkillsPoints: faction.freeSkills?.points || 0,
-      freeSkillsCount: faction.freeSkills?.skillCount || 0,
+      freeSkillPoints: faction.freeSkillPoints || 4,
     });
     setIsDialogOpen(true);
   };
@@ -171,9 +167,7 @@ export function FactionManager() {
       icon: formData.icon,
       virtue: formData.virtue || undefined,
       attributeBonuses: formData.attributeBonuses.length > 0 ? formData.attributeBonuses : undefined,
-      freeSkills: formData.freeSkillsPoints > 0 || formData.freeSkillsCount > 0
-        ? { points: formData.freeSkillsPoints, skillCount: formData.freeSkillsCount }
-        : undefined,
+      freeSkillPoints: formData.freeSkillPoints > 0 ? formData.freeSkillPoints : undefined,
     };
 
     setTimeout(() => {
@@ -378,43 +372,25 @@ export function FactionManager() {
 
                 {/* Perícias Livres */}
                 <div className="space-y-2">
-                  <Label>Perícias Livres</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="skillPoints" className="text-xs text-muted-foreground">
-                        Níveis de Perícia
-                      </Label>
-                      <Input
-                        id="skillPoints"
-                        type="number"
-                        min="0"
-                        max="10"
-                        value={formData.freeSkillsPoints}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          freeSkillsPoints: parseInt(e.target.value) || 0 
-                        }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="skillCount" className="text-xs text-muted-foreground">
-                        Quantidade de Perícias
-                      </Label>
-                      <Input
-                        id="skillCount"
-                        type="number"
-                        min="0"
-                        max="10"
-                        value={formData.freeSkillsCount}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          freeSkillsCount: parseInt(e.target.value) || 0 
-                        }))}
-                      />
-                    </div>
+                  <Label>Pontos Livres de Perícia</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="skillPoints" className="text-xs text-muted-foreground">
+                      Quantidade de pontos
+                    </Label>
+                    <Input
+                      id="skillPoints"
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={formData.freeSkillPoints}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        freeSkillPoints: parseInt(e.target.value) || 0 
+                      }))}
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Ex: 5 níveis em 1 perícia, ou 4 níveis divididos em 2 perícias.
+                    Pontos livres para distribuir em qualquer perícia na criação.
                   </p>
                 </div>
               </div>
@@ -621,9 +597,9 @@ function FactionCard({ faction, onEdit, onDelete }: FactionCardProps) {
               ).join(', ')}
             </Badge>
           )}
-          {faction.freeSkills && (
+          {faction.freeSkillPoints && (
             <Badge variant="outline" className="text-xs">
-              {faction.freeSkills.points} níveis em {faction.freeSkills.skillCount} perícia{faction.freeSkills.skillCount !== 1 ? 's' : ''}
+              {faction.freeSkillPoints} pontos livres
             </Badge>
           )}
         </div>
