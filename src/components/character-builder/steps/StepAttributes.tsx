@@ -1,14 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useCharacterBuilder } from '@/contexts/CharacterBuilderContext';
 import { useTheme } from '@/themes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ATTRIBUTES, getAttributesByVirtue } from '@/data/character/attributes';
+import { ATTRIBUTES, getAttributesByVirtue, getAttributeById } from '@/data/character/attributes';
 import { VIRTUES } from '@/data/character/virtues';
+import { getFactionById, getFactionAttributeBonuses } from '@/data/character/factions';
 import { CharacterAttributes } from '@/core/types';
-import { Minus, Plus, RotateCcw, Info } from 'lucide-react';
+import { Minus, Plus, RotateCcw, Info, Gift } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import {
   Tooltip,
@@ -26,6 +28,14 @@ export function StepAttributes() {
   const { activeTheme } = useTheme();
   const validation = getStepValidation(2);
 
+  // Bônus de atributos da facção
+  const factionBonuses = useMemo(() => {
+    if (!draft.factionId) return [];
+    return getFactionAttributeBonuses(draft.factionId);
+  }, [draft.factionId]);
+
+  const faction = draft.factionId ? getFactionById(draft.factionId) : null;
+
   const attributes = draft.attributes || {
     conhecimento: 1,
     raciocinio: 1,
@@ -36,6 +46,36 @@ export function StepAttributes() {
     carisma: 1,
     intuicao: 1,
   };
+
+  // Aplicar bônus de facção automaticamente quando a facção muda
+  useEffect(() => {
+    if (factionBonuses.length > 0) {
+      const currentAttrs = draft.attributes || {
+        conhecimento: 1,
+        raciocinio: 1,
+        corpo: 1,
+        reflexos: 1,
+        determinacao: 1,
+        coordenacao: 1,
+        carisma: 1,
+        intuicao: 1,
+      };
+      
+      // Verifica se os bônus já foram aplicados (valor > 1 nos atributos com bônus)
+      const bonusesAlreadyApplied = factionBonuses.every(
+        attrId => (currentAttrs[attrId as keyof CharacterAttributes] || 1) > 1
+      );
+      
+      if (!bonusesAlreadyApplied) {
+        const newAttrs = { ...currentAttrs };
+        factionBonuses.forEach(attrId => {
+          const currentVal = newAttrs[attrId as keyof CharacterAttributes] || 1;
+          newAttrs[attrId as keyof CharacterAttributes] = Math.min(currentVal + 1, MAX_VALUE);
+        });
+        updateDraft({ attributes: newAttrs });
+      }
+    }
+  }, [draft.factionId, factionBonuses]);
 
   const usedPoints = useMemo(() => {
     return Object.values(attributes).reduce((sum, val) => sum + (val || 0), 0);
@@ -60,18 +100,25 @@ export function StepAttributes() {
   };
 
   const handleReset = () => {
-    updateDraft({
-      attributes: {
-        conhecimento: 1,
-        raciocinio: 1,
-        corpo: 1,
-        reflexos: 1,
-        determinacao: 1,
-        coordenacao: 1,
-        carisma: 1,
-        intuicao: 1,
-      },
+    // Ao resetar, reaplicar os bônus de facção
+    const baseAttrs: Partial<CharacterAttributes> = {
+      conhecimento: 1,
+      raciocinio: 1,
+      corpo: 1,
+      reflexos: 1,
+      determinacao: 1,
+      coordenacao: 1,
+      carisma: 1,
+      intuicao: 1,
+    };
+    
+    // Aplicar bônus de facção
+    factionBonuses.forEach(attrId => {
+      const currentVal = baseAttrs[attrId as keyof CharacterAttributes] || 1;
+      baseAttrs[attrId as keyof CharacterAttributes] = currentVal + 1;
     });
+    
+    updateDraft({ attributes: baseAttrs });
   };
 
   const attributeError = validation.errors.find(e => e.field === 'attributes');
@@ -126,6 +173,36 @@ export function StepAttributes() {
           </CardContent>
         </Card>
 
+        {/* Bônus de Facção */}
+        {factionBonuses.length > 0 && faction && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="py-4">
+              <div className="flex items-start gap-3">
+                <Gift className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                  <div className="font-medium text-primary mb-1">
+                    Bônus de {faction.name}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {factionBonuses.map(attrId => {
+                      const attr = getAttributeById(attrId);
+                      return attr ? (
+                        <Badge key={attrId} variant="secondary" className="gap-1">
+                          +1 {attr.name}
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Estes bônus já foram aplicados aos seus atributos. 
+                    Cada ponto extra de atributo permite comprar mais 1 ponto de perícia.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Atributos por Virtude */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {VIRTUES.map((virtue) => (
@@ -135,6 +212,7 @@ export function StepAttributes() {
               attributes={attributes}
               theme={activeTheme}
               remainingPoints={remainingPoints}
+              factionBonuses={factionBonuses}
               onAttributeChange={handleAttributeChange}
             />
           ))}
@@ -163,10 +241,11 @@ interface VirtueGroupProps {
   attributes: Partial<CharacterAttributes>;
   theme: 'akashic' | 'tenebralux';
   remainingPoints: number;
+  factionBonuses: string[];
   onAttributeChange: (attrId: string, delta: number) => void;
 }
 
-function VirtueGroup({ virtue, attributes, theme, remainingPoints, onAttributeChange }: VirtueGroupProps) {
+function VirtueGroup({ virtue, attributes, theme, remainingPoints, factionBonuses, onAttributeChange }: VirtueGroupProps) {
   const virtueAttributes = getAttributesByVirtue(virtue.id);
   const IconComponent = (Icons as any)[virtue.icon] || Icons.Circle;
 
@@ -196,6 +275,7 @@ function VirtueGroup({ virtue, attributes, theme, remainingPoints, onAttributeCh
             theme={theme}
             virtueColor={virtue.color}
             canIncrease={remainingPoints > 0}
+            hasBonus={factionBonuses.includes(attr.id)}
             onIncrease={() => onAttributeChange(attr.id, 1)}
             onDecrease={() => onAttributeChange(attr.id, -1)}
           />
@@ -212,6 +292,7 @@ interface AttributeRowProps {
   theme: 'akashic' | 'tenebralux';
   virtueColor: string;
   canIncrease: boolean;
+  hasBonus?: boolean;
   onIncrease: () => void;
   onDecrease: () => void;
 }
@@ -222,6 +303,7 @@ function AttributeRow({
   theme, 
   virtueColor,
   canIncrease, 
+  hasBonus,
   onIncrease, 
   onDecrease 
 }: AttributeRowProps) {
@@ -237,10 +319,18 @@ function AttributeRow({
           <div className="flex items-center gap-2 min-w-[140px] cursor-help">
             <IconComponent className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium">{attribute.name}</span>
+            {hasBonus && (
+              <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 text-primary border-primary/50">
+                +1
+              </Badge>
+            )}
           </div>
         </TooltipTrigger>
         <TooltipContent side="left" className="max-w-[250px]">
           <p className="text-sm">{attribute.description[theme]}</p>
+          {hasBonus && (
+            <p className="text-xs text-primary mt-1">Este atributo recebe +1 da sua facção.</p>
+          )}
         </TooltipContent>
       </Tooltip>
 
