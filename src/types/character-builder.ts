@@ -8,6 +8,14 @@ export interface SkillSpecialization {
   specializationName: string;
 }
 
+// Estrutura para armazenar poderes escolhidos por virtude e nível
+export interface VirtuePowerChoice {
+  virtueId: string;
+  level: number;
+  powerId: string;
+  powerName: string;
+}
+
 // Estado do draft durante a criação
 export interface CharacterDraft {
   // Step 1: Conceito
@@ -33,6 +41,7 @@ export interface CharacterDraft {
   // Step 6: Virtudes
   virtues?: Partial<CharacterVirtues>;
   startingVirtue?: string; // Virtude inicial escolhida (se facção permite escolha)
+  virtuePowers?: Record<string, VirtuePowerChoice>; // "virtueId_level" -> poder escolhido
   
   // Step 7: Equipamento
   weaponId?: string;

@@ -4,13 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { 
   VIRTUES, 
   getVirtueById, 
   getStartingVirtue,
-  VirtueDefinition 
+  VirtueDefinition,
+  VirtuePower
 } from '@/data/character/virtues';
+import { VirtuePowerChoice } from '@/types/character-builder';
 import { 
   Sparkles, 
   Sword, 
@@ -18,7 +21,9 @@ import {
   Users, 
   Info,
   Check,
-  Lock
+  Lock,
+  Zap,
+  ChevronRight
 } from 'lucide-react';
 
 // Mapeamento de ícones
@@ -78,6 +83,27 @@ export function StepVirtues() {
     updateDraft({ virtues: virtuesObject });
   }, [virtuesObject, updateDraft]);
 
+  // Função para selecionar poder
+  const handleSelectPower = (virtueId: string, level: number, power: VirtuePower) => {
+    const key = `${virtueId}_${level}`;
+    const newPowers: Record<string, VirtuePowerChoice> = {
+      ...(draft.virtuePowers || {}),
+      [key]: {
+        virtueId,
+        level,
+        powerId: power.id,
+        powerName: power.name,
+      }
+    };
+    updateDraft({ virtuePowers: newPowers });
+  };
+
+  // Obter poder selecionado para uma virtude/nível
+  const getSelectedPower = (virtueId: string, level: number): string | null => {
+    const key = `${virtueId}_${level}`;
+    return draft.virtuePowers?.[key]?.powerId || null;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -106,7 +132,7 @@ export function StepVirtues() {
                 </p>
               )}
               <p className="mt-1">
-                Virtudes evoluem durante o jogo através de ações e decisões roleplay.
+                <strong>Ao subir de nível em uma virtude, escolha 1 entre 2 poderes disponíveis.</strong>
               </p>
             </div>
           </div>
@@ -175,7 +201,7 @@ export function StepVirtues() {
       )}
 
       {/* Cards de Virtudes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {VIRTUES.map((virtue) => (
           <VirtueCard
             key={virtue.id}
@@ -183,6 +209,8 @@ export function StepVirtues() {
             currentLevel={virtuesObject[virtue.id] || 0}
             isActive={activeVirtueId === virtue.id}
             isLocked={!needsChoice && activeVirtueId !== virtue.id}
+            getSelectedPower={getSelectedPower}
+            onSelectPower={handleSelectPower}
           />
         ))}
       </div>
@@ -210,11 +238,19 @@ interface VirtueCardProps {
   currentLevel: number;
   isActive: boolean;
   isLocked: boolean;
+  getSelectedPower: (virtueId: string, level: number) => string | null;
+  onSelectPower: (virtueId: string, level: number, power: VirtuePower) => void;
 }
 
-function VirtueCard({ virtue, currentLevel, isActive, isLocked }: VirtueCardProps) {
+function VirtueCard({ 
+  virtue, 
+  currentLevel, 
+  isActive, 
+  isLocked,
+  getSelectedPower,
+  onSelectPower
+}: VirtueCardProps) {
   const IconComponent = VIRTUE_ICONS[virtue.id] || Sparkles;
-  const currentLevelData = virtue.levels[currentLevel];
 
   return (
     <Card className={cn(
@@ -281,45 +317,101 @@ function VirtueCard({ virtue, currentLevel, isActive, isLocked }: VirtueCardProp
           </div>
         </div>
 
-        {/* Nível atual */}
-        <div className="p-3 rounded-lg bg-muted/50">
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="text-xs">
-              Nível {currentLevel}
-            </Badge>
-            <span className="font-medium text-sm">{currentLevelData.name}</span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {currentLevelData.description}
-          </p>
-          {currentLevelData.benefits && currentLevelData.benefits.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {currentLevelData.benefits.map((benefit, i) => (
-                <li key={i} className="text-xs flex items-start gap-1">
-                  <Check className="w-3 h-3 mt-0.5 text-green-500 shrink-0" />
-                  <span>{benefit}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {/* Lista de níveis com poderes */}
+        <ScrollArea className="max-h-[400px]">
+          <div className="space-y-3 pr-2">
+            {virtue.levels.slice(1).map((levelData) => {
+              const isUnlocked = levelData.level <= currentLevel;
+              const selectedPowerId = getSelectedPower(virtue.id, levelData.level);
+              
+              return (
+                <div 
+                  key={levelData.level}
+                  className={cn(
+                    "p-3 rounded-lg border transition-all",
+                    isUnlocked ? "bg-card" : "bg-muted/30 opacity-60",
+                    levelData.level === currentLevel && isActive && "ring-1 ring-offset-1"
+                  )}
+                  style={{
+                    borderColor: isUnlocked ? `${virtue.color}40` : undefined,
+                    ['--tw-ring-color' as string]: virtue.color,
+                  }}
+                >
+                  {/* Header do nível */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge 
+                      variant={isUnlocked ? "default" : "outline"} 
+                      className="text-xs"
+                      style={{
+                        backgroundColor: isUnlocked ? virtue.color : undefined,
+                      }}
+                    >
+                      Nível {levelData.level}
+                    </Badge>
+                    <span className="font-medium text-sm">{levelData.name}</span>
+                    {!isUnlocked && <Lock className="w-3 h-3 text-muted-foreground ml-auto" />}
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {levelData.description}
+                  </p>
 
-        {/* Preview do próximo nível */}
-        {currentLevel < 3 && (
-          <div className="p-3 rounded-lg border border-dashed opacity-60">
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="outline" className="text-xs">
-                Próximo: Nível {currentLevel + 1}
-              </Badge>
-              <span className="font-medium text-sm">
-                {virtue.levels[currentLevel + 1].name}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {virtue.levels[currentLevel + 1].description}
-            </p>
+                  {/* Opções de poderes */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                      <Zap className="w-3 h-3" />
+                      Escolha um poder:
+                    </div>
+                    
+                    <RadioGroup
+                      value={selectedPowerId || ''}
+                      onValueChange={(powerId) => {
+                        const power = levelData.powers.find(p => p.id === powerId);
+                        if (power) {
+                          onSelectPower(virtue.id, levelData.level, power);
+                        }
+                      }}
+                      className="space-y-2"
+                      disabled={!isUnlocked && !isActive}
+                    >
+                      {levelData.powers.map((power) => (
+                        <Label
+                          key={power.id}
+                          htmlFor={`power-${virtue.id}-${levelData.level}-${power.id}`}
+                          className={cn(
+                            "flex items-start gap-2 p-2 rounded-md border cursor-pointer transition-all text-sm",
+                            "hover:bg-muted/50",
+                            selectedPowerId === power.id && "border-2 bg-muted/30",
+                            (!isUnlocked && !isActive) && "cursor-not-allowed opacity-50"
+                          )}
+                          style={{
+                            borderColor: selectedPowerId === power.id ? virtue.color : undefined,
+                          }}
+                        >
+                          <RadioGroupItem 
+                            value={power.id} 
+                            id={`power-${virtue.id}-${levelData.level}-${power.id}`}
+                            className="mt-0.5"
+                            disabled={!isUnlocked && !isActive}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1">
+                              <ChevronRight className="w-3 h-3 shrink-0" style={{ color: virtue.color }} />
+                              <span className="font-medium">{power.name}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                              {power.description}
+                            </p>
+                          </div>
+                        </Label>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </ScrollArea>
       </CardContent>
     </Card>
   );

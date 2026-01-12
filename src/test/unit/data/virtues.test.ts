@@ -200,25 +200,38 @@ describe('Data - Virtues', () => {
       });
     });
 
-    it('should have benefits array for all levels', () => {
+    it('should have powers array with exactly 2 options for all levels', () => {
       VIRTUES.forEach(virtue => {
         virtue.levels.forEach(level => {
-          expect(level).toHaveProperty('benefits');
-          expect(Array.isArray(level.benefits)).toBe(true);
+          expect(level).toHaveProperty('powers');
+          expect(Array.isArray(level.powers)).toBe(true);
+          expect(level.powers).toHaveLength(2);
         });
       });
     });
 
-    it('should have empty benefits for level 0', () => {
+    it('should have valid power structure', () => {
       VIRTUES.forEach(virtue => {
-        expect(virtue.levels[0].benefits).toEqual([]);
+        virtue.levels.forEach(level => {
+          level.powers.forEach(power => {
+            expect(power).toHaveProperty('id');
+            expect(power).toHaveProperty('name');
+            expect(power).toHaveProperty('description');
+            expect(typeof power.id).toBe('string');
+            expect(typeof power.name).toBe('string');
+            expect(typeof power.description).toBe('string');
+          });
+        });
       });
     });
 
-    it('should have benefits for levels 1-3', () => {
+    it('should have meaningful powers for levels 1-3', () => {
       VIRTUES.forEach(virtue => {
         virtue.levels.slice(1).forEach(level => {
-          expect(level.benefits?.length).toBeGreaterThan(0);
+          level.powers.forEach(power => {
+            expect(power.name).not.toBe('-');
+            expect(power.description.length).toBeGreaterThan(20);
+          });
         });
       });
     });
