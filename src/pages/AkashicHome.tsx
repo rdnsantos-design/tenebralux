@@ -224,10 +224,9 @@ export default function AkashicHome() {
   const [selectedMode, setSelectedMode] = useState<GameMode>(null);
 
   return (
-    <div className="min-h-screen bg-akashic-deep relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 dark:from-akashic-deep dark:to-akashic-space relative overflow-hidden">
       {/* Background layers */}
-      <div className="absolute inset-0 bg-gradient-to-b from-akashic-deep via-akashic-space to-akashic-deep" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-akashic-violet/10 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-akashic-cyan/5 via-transparent to-transparent dark:from-akashic-violet/10" />
       <CosmicParticles />
       
       {/* Header */}
@@ -322,7 +321,7 @@ export default function AkashicHome() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="fixed bottom-0 left-0 right-0 bg-akashic-deep/90 backdrop-blur-md border-t border-akashic-cyan/20"
+          className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-akashic-deep/90 backdrop-blur-md border-t border-slate-200 dark:border-akashic-cyan/20"
         >
           <div className="max-w-4xl mx-auto px-4 py-3 flex justify-center gap-2 md:gap-6">
             {sharedTools.map((tool) => {
