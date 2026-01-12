@@ -90,9 +90,14 @@ export function CharacterSheet({ draft, theme, className }: CharacterSheetProps)
   const skills = draft.skills || {};
   const virtues = draft.virtues || {};
   
+  // Obtém arma e armadura
+  const weapon = draft.weaponId ? getEquipmentById(draft.weaponId) : null;
+  const armor = draft.armorId ? getEquipmentById(draft.armorId) : null;
+  const armorBonus = armor?.stats?.defense || 0;
+  
   const derivedStats = useMemo(() => {
-    return calculateDerivedStats(attributes, skills);
-  }, [attributes, skills]);
+    return calculateDerivedStats(attributes, skills, armorBonus);
+  }, [attributes, skills, armorBonus]);
 
   const regencyStats = useMemo(() => {
     return calculateRegencyStats(attributes, skills, theme);
@@ -123,6 +128,34 @@ export function CharacterSheet({ draft, theme, className }: CharacterSheetProps)
       data: getEquipmentById(item.id) 
     })).filter(item => item.data);
   }, [draft.weaponId, draft.armorId, draft.itemIds]);
+
+  // Calcula a rolagem de ataque baseado no tipo de arma
+  const attackRoll = useMemo(() => {
+    if (!weapon) return null;
+    
+    if (weapon.type === 'ranged' || weapon.type === 'heavy') {
+      // Arma de distância: Coordenação + Tiro
+      return {
+        attribute: 'Coord',
+        attributeValue: attributes.coordenacao || 1,
+        skill: 'Tiro',
+        skillValue: skills['tiro'] || 0,
+        total: (attributes.coordenacao || 1) + (skills['tiro'] || 0),
+      };
+    } else {
+      // Arma corpo a corpo: Reflexos + Luta ou Lâminas
+      const usesLaminas = weapon.id.includes('sword') || weapon.id.includes('knife') || weapon.id.includes('axe');
+      const skillId = usesLaminas ? 'laminas' : 'luta';
+      const skillName = usesLaminas ? 'Lâminas' : 'Luta';
+      return {
+        attribute: 'Refl',
+        attributeValue: attributes.reflexos || 1,
+        skill: skillName,
+        skillValue: skills[skillId] || 0,
+        total: (attributes.reflexos || 1) + (skills[skillId] || 0),
+      };
+    }
+  }, [weapon, attributes, skills]);
 
   const activeVirtue = useMemo(() => {
     const entry = Object.entries(virtues).find(([_, level]) => level > 0);
@@ -223,20 +256,99 @@ export function CharacterSheet({ draft, theme, className }: CharacterSheetProps)
             {/* Stats de Combate e Social */}
             <section>
               <SectionTitle icon={Swords} title="Características de Combate" />
-              <div className="grid grid-cols-5 gap-2 mt-3">
+              <div className="grid grid-cols-6 gap-2 mt-3">
                 <StatBox label="Vitalidade" value={derivedStats.vitalidade} icon={Heart} color="rose" />
-                <StatBox label="Guarda" value={derivedStats.guarda} icon={ShieldCheck} color="amber" />
+                <StatBox label="Guarda" value={derivedStats.guarda} icon={Shield} color="sky" />
+                <StatBox label="Resistência" value={derivedStats.resistencia} icon={ShieldCheck} color="amber" />
+                <StatBox label="Defesa" value={derivedStats.defesa} icon={ShieldCheck} color="emerald" />
                 <StatBox label="Evasão" value={derivedStats.evasao} icon={Wind} color="sky" />
                 <StatBox label="Reação" value={derivedStats.reacao} icon={Zap} color="yellow" />
-                <StatBox label="Vontade" value={derivedStats.vontade} icon={Flame} color="purple" />
               </div>
               
               <div className="grid grid-cols-5 gap-2 mt-3">
                 <StatBox label="Movimento" value={derivedStats.movimento} variant="secondary" />
+                <StatBox label="Vontade" value={derivedStats.vontade} variant="secondary" />
                 <StatBox label="Tensão" value={derivedStats.tensao} variant="secondary" />
                 <StatBox label="Fortitude" value={derivedStats.fortitude} variant="secondary" />
                 <StatBox label="Convicção" value={derivedStats.conviccao} variant="secondary" />
-                <StatBox label="Influência" value={derivedStats.influencia} variant="secondary" />
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* NOVO: Quadro de Combate */}
+            <section>
+              <SectionTitle icon={Crosshair} title="Combate" />
+              <div className="mt-3 p-4 rounded-lg border-2 border-red-500/30 bg-red-500/5">
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Arma Principal */}
+                  <div className="space-y-2">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Arma Principal</span>
+                    {weapon ? (
+                      <div className="p-2 rounded bg-background/50 border">
+                        <p className="font-semibold text-sm">{getEquipmentName(weapon, theme)}</p>
+                        <p className="text-xs text-muted-foreground">{weapon.stats?.range || 'Corpo a corpo'}</p>
+                      </div>
+                    ) : (
+                      <div className="p-2 rounded bg-muted/30 border border-dashed">
+                        <p className="text-sm text-muted-foreground italic">Nenhuma arma</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Rolagem de Ataque */}
+                  <div className="space-y-2">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Rolagem de Ataque</span>
+                    {attackRoll ? (
+                      <div className="p-2 rounded bg-background/50 border">
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-lg font-bold text-primary">2d6</span>
+                          <span className="text-lg font-bold">+{attackRoll.total}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground text-center mt-1">
+                          {attackRoll.attribute} ({attackRoll.attributeValue}) + {attackRoll.skill} ({attackRoll.skillValue})
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-2 rounded bg-muted/30 border border-dashed">
+                        <p className="text-sm text-muted-foreground italic text-center">—</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Dano Fixo */}
+                  <div className="space-y-2">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Dano Fixo</span>
+                    {weapon?.stats?.damage ? (
+                      <div className="p-2 rounded bg-background/50 border">
+                        <p className="font-bold text-lg text-center text-red-500">{weapon.stats.damage}</p>
+                        {weapon.stats.special && (
+                          <p className="text-xs text-muted-foreground text-center mt-1">{weapon.stats.special}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-2 rounded bg-muted/30 border border-dashed">
+                        <p className="text-sm text-muted-foreground italic text-center">—</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Defesa destacada */}
+                <div className="mt-4 pt-4 border-t border-red-500/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                      <span className="font-semibold">Defesa (Oponente deve superar)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl font-bold text-emerald-500">{derivedStats.defesa}</span>
+                      <span className="text-xs text-muted-foreground">
+                        (Guarda {derivedStats.guarda} + Resistência {derivedStats.resistencia})
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 

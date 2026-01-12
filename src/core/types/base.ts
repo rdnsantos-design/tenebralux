@@ -33,15 +33,17 @@ export interface CharacterVirtues {
 // === STATS DERIVADOS (CORRIGIDO) ===
 export interface DerivedStats {
   // Combate Físico
-  vitalidade: number;   // Corpo×2 + Resistência
+  vitalidade: number;   // Corpo×2 + Resistência (perícia)
   evasao: number;       // Reflexos×2 + Instinto
-  guarda: number;       // Reflexos×2 + Esquiva + Armadura
-  reacao: number;       // Intuição + Reflexos + Prontidão
+  guarda: number;       // Reflexos×2 + Esquiva (SEM armadura)
+  resistencia: number;  // Bônus da Armadura
+  defesa: number;       // Guarda + Resistência (número final que oponente deve superar)
+  reacao: number;       // 12 - (Reflexos×2 + Instinto)
   movimento: number;    // Corpo×2 + Atletismo
   
   // Combate Social
   vontade: number;      // Raciocínio×2 + Resiliência
-  conviccao: number;    // Lógica + Determinação
+  conviccao: number;    // Determinação×2 + Lógica
   influencia: number;   // Carisma
   
   // Recursos
