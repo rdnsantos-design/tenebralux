@@ -161,14 +161,23 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
         break;
 
       case 3: // Perícias
-        // Validar que todos os pontos foram distribuídos
-        const totalAttributePoints = Object.values(draft.attributes || {}).reduce((sum, val) => sum + (val || 0), 0);
-        const totalSkillPoints = Object.values(draft.skills || {}).reduce((sum, val) => sum + (val || 0), 0);
+        // Validar que todos os pontos de cada atributo foram distribuídos nas suas perícias
+        const attributeIds = ['conhecimento', 'raciocinio', 'corpo', 'reflexos', 'determinacao', 'coordenacao', 'carisma', 'intuicao'];
+        let allPointsDistributed = true;
         
-        if (totalSkillPoints !== totalAttributePoints) {
+        for (const attrId of attributeIds) {
+          const available = draft.attributes?.[attrId as keyof CharacterAttributes] || 1;
+          const used = getUsedSkillPoints(attrId);
+          if (used !== available) {
+            allPointsDistributed = false;
+            break;
+          }
+        }
+        
+        if (!allPointsDistributed) {
           errors.push({
             field: 'skills',
-            message: `Distribua todos os pontos de perícia (${totalSkillPoints}/${totalAttributePoints})`
+            message: 'Distribua todos os pontos de perícia de cada atributo'
           });
         }
         break;
