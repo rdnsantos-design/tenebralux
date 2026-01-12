@@ -8,3 +8,4 @@ export * from './factions';
 export * from './cultures';
 export * from './privileges';
 export * from './equipment';
+export * from './reputationFactions';
