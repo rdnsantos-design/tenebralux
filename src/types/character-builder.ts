@@ -28,7 +28,8 @@ export interface CharacterDraft {
   attributes?: Partial<CharacterAttributes>;
   
   // Step 3: Perícias
-  skills?: Record<string, number>;
+  skills?: Record<string, number>; // Pontos de atributo (máx 3 por perícia)
+  freeSkillPoints?: Record<string, number>; // Pontos livres (máx 1 por perícia, eleva até 4)
   skillSpecializations?: Record<string, SkillSpecialization>; // skillId -> especialização
   
   // Step 4: Derivados (calculados)

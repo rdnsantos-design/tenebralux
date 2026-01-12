@@ -26,20 +26,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ATTRIBUTES } from '@/data/character/attributes';
-import { getSkillsByAttribute, getSkillLabel } from '@/data/character/skills';
+import { SKILLS, getSkillsByAttribute, getSkillLabel } from '@/data/character/skills';
 import { getVirtueByAttribute } from '@/data/character/virtues';
 import { CharacterAttributes } from '@/core/types';
-import { Minus, Plus, RotateCcw, Check, AlertCircle, Sparkles, X, Loader2 } from 'lucide-react';
+import { Minus, Plus, RotateCcw, Check, AlertCircle, Sparkles, Loader2, Star } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useRpgSkillSpecializations, RpgSkillSpecialization } from '@/hooks/useRpgSkills';
-
-// Na criação de personagem: máximo 4 níveis por perícia
-// O 4º nível pode ser normal OU uma especialização (3 níveis + 1 especialização)
-const MAX_SKILL_VALUE_CREATION = 4;
-const MIN_SKILL_VALUE = 0;
-
 import { SkillSpecialization } from '@/types/character-builder';
+
+// Configurações do sistema de perícias
+const MAX_SKILL_LEVEL = 6; // Nível máximo absoluto de perícia
+const MAX_SKILL_FROM_ATTRIBUTES = 3; // Máximo que pontos de atributo podem elevar
+const MAX_SKILL_CREATION = 4; // Máximo na criação de personagem (com pontos livres)
+const FREE_SKILL_POINTS = 6; // Pontos livres para distribuir
+const MIN_SKILL_VALUE = 0;
 
 export function StepSkills() {
   const { draft, updateDraft } = useCharacterBuilder();
@@ -49,6 +51,7 @@ export function StepSkills() {
   const [specDialogOpen, setSpecDialogOpen] = useState(false);
   const [pendingSkillId, setPendingSkillId] = useState<string | null>(null);
   const [pendingAttributeId, setPendingAttributeId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'attributes' | 'free'>('attributes');
 
   const attributes = draft.attributes || {
     conhecimento: 1,
@@ -61,11 +64,14 @@ export function StepSkills() {
     intuicao: 1,
   };
 
-  const skills = draft.skills || {};
+  const skills = draft.skills || {}; // Pontos de atributo
+  const freeSkillPoints = draft.freeSkillPoints || {}; // Pontos livres
   const skillSpecializations: Record<string, SkillSpecialization> = draft.skillSpecializations || {};
 
-  // Calcular pontos usados por atributo (cada nível custa 1, especialização também custa 1)
-  const getUsedPointsForAttribute = (attributeId: string): number => {
+  // ===== CÁLCULOS DE PONTOS DE ATRIBUTO =====
+  
+  // Pontos de atributo usados por atributo
+  const getUsedAttributePointsFor = (attributeId: string): number => {
     const attrSkills = getSkillsByAttribute(attributeId);
     return attrSkills.reduce((sum, skill) => {
       const baseValue = skills[skill.id] || 0;
@@ -74,55 +80,76 @@ export function StepSkills() {
     }, 0);
   };
 
-  // Calcular pontos restantes por atributo
-  const getRemainingPointsForAttribute = (attributeId: string): number => {
+  // Pontos de atributo restantes por atributo
+  const getRemainingAttributePointsFor = (attributeId: string): number => {
     const available = attributes[attributeId as keyof CharacterAttributes] || 1;
-    const used = getUsedPointsForAttribute(attributeId);
+    const used = getUsedAttributePointsFor(attributeId);
     return available - used;
   };
 
-  // Obter o "nível efetivo" de uma perícia (níveis + especialização se houver)
-  const getEffectiveSkillLevel = (skillId: string): number => {
-    const base = skills[skillId] || 0;
-    const hasSpec = skillSpecializations[skillId] !== undefined;
-    return base + (hasSpec ? 1 : 0);
+  // ===== CÁLCULOS DE PONTOS LIVRES =====
+  
+  // Pontos livres usados
+  const getUsedFreePoints = (): number => {
+    return Object.values(freeSkillPoints).reduce((sum, val) => sum + (val || 0), 0);
   };
 
-  // Handler para aumentar perícia
-  const handleSkillIncrease = (skillId: string, attributeId: string) => {
-    const currentBase = skills[skillId] || 0;
+  // Pontos livres restantes
+  const getRemainingFreePoints = (): number => {
+    return FREE_SKILL_POINTS - getUsedFreePoints();
+  };
+
+  // ===== NÍVEL EFETIVO =====
+  
+  // Nível total de uma perícia (atributo + livre + especialização)
+  const getEffectiveSkillLevel = (skillId: string): number => {
+    const fromAttr = skills[skillId] || 0;
+    const fromFree = freeSkillPoints[skillId] || 0;
     const hasSpec = skillSpecializations[skillId] !== undefined;
-    const effectiveLevel = currentBase + (hasSpec ? 1 : 0);
+    return fromAttr + fromFree + (hasSpec ? 1 : 0);
+  };
 
-    // Se já está no máximo (4), não pode aumentar
-    if (effectiveLevel >= MAX_SKILL_VALUE_CREATION) return;
-    // Se não tem pontos sobrando, não pode aumentar
-    if (getRemainingPointsForAttribute(attributeId) <= 0) return;
+  // Nível base (sem especialização)
+  const getBaseSkillLevel = (skillId: string): number => {
+    const fromAttr = skills[skillId] || 0;
+    const fromFree = freeSkillPoints[skillId] || 0;
+    return fromAttr + fromFree;
+  };
 
-    // Se vai para o nível 4, oferece escolha: nível normal ou especialização
+  // ===== HANDLERS DE PONTOS DE ATRIBUTO =====
+
+  const handleAttributeSkillIncrease = (skillId: string, attributeId: string) => {
+    const currentFromAttr = skills[skillId] || 0;
+    const hasSpec = skillSpecializations[skillId] !== undefined;
+    const effectiveLevel = getEffectiveSkillLevel(skillId);
+
+    // Verificações
+    if (currentFromAttr >= MAX_SKILL_FROM_ATTRIBUTES) return; // Máximo de pontos de atributo
+    if (effectiveLevel >= MAX_SKILL_CREATION) return; // Máximo na criação
+    if (getRemainingAttributePointsFor(attributeId) <= 0) return; // Sem pontos
+
+    // Se vai para o nível 4 efetivo, oferece escolha de especialização
     if (effectiveLevel === 3 && !hasSpec) {
-      // Abre dialog para escolher entre nível 4 ou especialização
       setPendingSkillId(skillId);
       setPendingAttributeId(attributeId);
       setSpecDialogOpen(true);
       return;
     }
 
-    // Caso normal: apenas aumenta o nível
     updateDraft({
       skills: {
         ...skills,
-        [skillId]: currentBase + 1,
+        [skillId]: currentFromAttr + 1,
       },
     });
   };
 
-  // Handler para diminuir perícia
-  const handleSkillDecrease = (skillId: string, attributeId: string) => {
-    const currentBase = skills[skillId] || 0;
+  const handleAttributeSkillDecrease = (skillId: string) => {
+    const currentFromAttr = skills[skillId] || 0;
+    const currentFromFree = freeSkillPoints[skillId] || 0;
     const hasSpec = skillSpecializations[skillId] !== undefined;
 
-    // Se tem especialização e vai diminuir, remove a especialização primeiro
+    // Primeiro remove especialização
     if (hasSpec) {
       const newSpecs = { ...skillSpecializations };
       delete newSpecs[skillId];
@@ -130,35 +157,114 @@ export function StepSkills() {
       return;
     }
 
-    // Caso normal: diminui o nível
-    if (currentBase <= MIN_SKILL_VALUE) return;
+    // Depois remove pontos livres
+    if (currentFromFree > 0) {
+      updateDraft({
+        freeSkillPoints: {
+          ...freeSkillPoints,
+          [skillId]: currentFromFree - 1,
+        },
+      });
+      return;
+    }
+
+    // Por último remove pontos de atributo
+    if (currentFromAttr > MIN_SKILL_VALUE) {
+      updateDraft({
+        skills: {
+          ...skills,
+          [skillId]: currentFromAttr - 1,
+        },
+      });
+    }
+  };
+
+  // ===== HANDLERS DE PONTOS LIVRES =====
+
+  const handleFreeSkillIncrease = (skillId: string) => {
+    const currentFromFree = freeSkillPoints[skillId] || 0;
+    const hasSpec = skillSpecializations[skillId] !== undefined;
+    const effectiveLevel = getEffectiveSkillLevel(skillId);
+
+    // Verificações
+    if (effectiveLevel >= MAX_SKILL_CREATION) return; // Máximo na criação
+    if (getRemainingFreePoints() <= 0) return; // Sem pontos livres
+
+    // Se vai para o nível 4 efetivo, oferece escolha de especialização
+    if (effectiveLevel === 3 && !hasSpec) {
+      setPendingSkillId(skillId);
+      setPendingAttributeId(null); // null indica que é ponto livre
+      setSpecDialogOpen(true);
+      return;
+    }
 
     updateDraft({
-      skills: {
-        ...skills,
-        [skillId]: currentBase - 1,
+      freeSkillPoints: {
+        ...freeSkillPoints,
+        [skillId]: currentFromFree + 1,
       },
     });
   };
 
-  // Escolher nível 4 normal
+  const handleFreeSkillDecrease = (skillId: string) => {
+    const currentFromFree = freeSkillPoints[skillId] || 0;
+    const hasSpec = skillSpecializations[skillId] !== undefined;
+
+    // Se tem especialização e ela veio de ponto livre
+    if (hasSpec) {
+      const fromAttr = skills[skillId] || 0;
+      // Se tem 3 de atributo e especialização, a spec veio de atributo
+      // Se tem menos de 3 de atributo, a spec pode ter vindo de livre
+      if (fromAttr < 3) {
+        const newSpecs = { ...skillSpecializations };
+        delete newSpecs[skillId];
+        updateDraft({ skillSpecializations: newSpecs });
+        return;
+      }
+    }
+
+    // Remove ponto livre
+    if (currentFromFree > MIN_SKILL_VALUE) {
+      updateDraft({
+        freeSkillPoints: {
+          ...freeSkillPoints,
+          [skillId]: currentFromFree - 1,
+        },
+      });
+    }
+  };
+
+  // ===== HANDLERS DE ESPECIALIZAÇÃO =====
+
   const handleChooseNormalLevel = () => {
     if (!pendingSkillId) return;
     
-    const currentBase = skills[pendingSkillId] || 0;
-    updateDraft({
-      skills: {
-        ...skills,
-        [pendingSkillId]: currentBase + 1,
-      },
-    });
+    // Determina se o ponto vem de atributo ou livre
+    if (pendingAttributeId) {
+      // Ponto de atributo
+      const currentFromAttr = skills[pendingSkillId] || 0;
+      updateDraft({
+        skills: {
+          ...skills,
+          [pendingSkillId]: currentFromAttr + 1,
+        },
+      });
+    } else {
+      // Ponto livre
+      const currentFromFree = freeSkillPoints[pendingSkillId] || 0;
+      updateDraft({
+        freeSkillPoints: {
+          ...freeSkillPoints,
+          [pendingSkillId]: currentFromFree + 1,
+        },
+      });
+    }
     
     setSpecDialogOpen(false);
     setPendingSkillId(null);
     setPendingAttributeId(null);
   };
 
-  // Escolher especialização
   const handleChooseSpecialization = (spec: RpgSkillSpecialization) => {
     if (!pendingSkillId) return;
 
@@ -178,36 +284,61 @@ export function StepSkills() {
     setPendingAttributeId(null);
   };
 
-  // Reset todas as perícias
+  // ===== RESET =====
+
   const handleResetAll = () => {
-    updateDraft({ skills: {}, skillSpecializations: {} });
+    updateDraft({ skills: {}, freeSkillPoints: {}, skillSpecializations: {} });
   };
 
-  // Reset perícias de um atributo
   const handleResetAttribute = (attributeId: string) => {
     const attrSkills = getSkillsByAttribute(attributeId);
     const newSkills = { ...skills };
+    const newFreeSkills = { ...freeSkillPoints };
     const newSpecs = { ...skillSpecializations };
     
     attrSkills.forEach(skill => {
       delete newSkills[skill.id];
+      delete newFreeSkills[skill.id];
       delete newSpecs[skill.id];
     });
     
-    updateDraft({ skills: newSkills, skillSpecializations: newSpecs });
+    updateDraft({ skills: newSkills, freeSkillPoints: newFreeSkills, skillSpecializations: newSpecs });
   };
 
-  // Verificar se todos os pontos foram distribuídos
-  const allPointsDistributed = useMemo(() => {
-    return ATTRIBUTES.every(attr => getRemainingPointsForAttribute(attr.id) === 0);
+  const handleResetFreePoints = () => {
+    // Remove pontos livres mas mantém pontos de atributo
+    // Remove especializações que dependiam de pontos livres
+    const newSpecs = { ...skillSpecializations };
+    
+    Object.keys(freeSkillPoints).forEach(skillId => {
+      const fromAttr = skills[skillId] || 0;
+      // Se tinha menos de 3 de atributo e tinha especialização, remove
+      if (fromAttr < 3 && newSpecs[skillId]) {
+        delete newSpecs[skillId];
+      }
+    });
+    
+    updateDraft({ freeSkillPoints: {}, skillSpecializations: newSpecs });
+  };
+
+  // ===== CÁLCULOS GERAIS =====
+
+  // Verificar se todos os pontos de atributo foram distribuídos
+  const allAttributePointsDistributed = useMemo(() => {
+    return ATTRIBUTES.every(attr => getRemainingAttributePointsFor(attr.id) === 0);
   }, [attributes, skills, skillSpecializations]);
 
-  // Calcular totais
-  const totalAvailable = useMemo(() => {
+  // Verificar se todos os pontos livres foram distribuídos
+  const allFreePointsDistributed = useMemo(() => {
+    return getRemainingFreePoints() === 0;
+  }, [freeSkillPoints]);
+
+  // Totais de pontos de atributo
+  const totalAttributePointsAvailable = useMemo(() => {
     return Object.values(attributes).reduce((sum, val) => sum + (val || 0), 0);
   }, [attributes]);
 
-  const totalUsed = useMemo(() => {
+  const totalAttributePointsUsed = useMemo(() => {
     const skillPoints = Object.values(skills).reduce((sum, val) => sum + (val || 0), 0);
     const specPoints = Object.keys(skillSpecializations).length;
     return skillPoints + specPoints;
@@ -221,6 +352,18 @@ export function StepSkills() {
 
   const pendingSkillLabel = pendingSkillId ? getSkillLabel(pendingSkillId, activeTheme) : '';
 
+  // Perícias com pontos (para aba de pontos livres)
+  const skillsWithPoints = useMemo(() => {
+    return SKILLS.map(skill => ({
+      ...skill,
+      fromAttr: skills[skill.id] || 0,
+      fromFree: freeSkillPoints[skill.id] || 0,
+      hasSpec: skillSpecializations[skill.id] !== undefined,
+      specialization: skillSpecializations[skill.id],
+      effectiveLevel: getEffectiveSkillLevel(skill.id),
+    })).sort((a, b) => b.effectiveLevel - a.effectiveLevel);
+  }, [skills, freeSkillPoints, skillSpecializations]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -228,7 +371,7 @@ export function StepSkills() {
         <div>
           <h2 className="text-2xl font-bold">Perícias</h2>
           <p className="text-muted-foreground">
-            Distribua os pontos de cada atributo entre suas perícias associadas.
+            Distribua pontos de atributo e pontos livres entre as perícias.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={handleResetAll}>
@@ -237,153 +380,262 @@ export function StepSkills() {
         </Button>
       </div>
 
-      {/* Resumo Geral */}
-      <Card className={cn(
-        "transition-colors",
-        allPointsDistributed && "border-green-500 bg-green-500/5"
-      )}>
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium">Progresso Geral</span>
-            <span className={cn(
-              "text-lg font-bold",
-              allPointsDistributed ? "text-green-500" : "text-amber-500"
-            )}>
-              {totalUsed} / {totalAvailable} pontos
-            </span>
-          </div>
-          <Progress 
-            value={(totalUsed / totalAvailable) * 100} 
-            className="h-2"
-          />
-          {!allPointsDistributed && (
-            <p className="text-sm text-muted-foreground mt-2">
-              Distribua todos os pontos de perícia para continuar.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      {/* Tabs: Pontos de Atributo / Pontos Livres */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'attributes' | 'free')}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="attributes" className="gap-2">
+            <Icons.Target className="w-4 h-4" />
+            Pontos de Atributo
+            {allAttributePointsDistributed ? (
+              <Check className="w-4 h-4 text-green-500" />
+            ) : (
+              <Badge variant="secondary" className="text-xs">
+                {totalAttributePointsAvailable - totalAttributePointsUsed}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="free" className="gap-2" disabled={!allAttributePointsDistributed}>
+            <Star className="w-4 h-4" />
+            Pontos Livres
+            {allFreePointsDistributed ? (
+              <Check className="w-4 h-4 text-green-500" />
+            ) : (
+              <Badge variant="secondary" className="text-xs">
+                {getRemainingFreePoints()}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Accordion de Atributos */}
-      <Accordion type="multiple" defaultValue={[ATTRIBUTES[0].id]} className="space-y-3">
-        {ATTRIBUTES.map((attribute) => {
-          const virtue = getVirtueByAttribute(attribute.id);
-          const attrSkills = getSkillsByAttribute(attribute.id);
-          const available = attributes[attribute.id as keyof CharacterAttributes] || 1;
-          const used = getUsedPointsForAttribute(attribute.id);
-          const remaining = available - used;
-          const isComplete = remaining === 0;
-          const IconComponent = (Icons as any)[attribute.icon] || Icons.Circle;
-
-          return (
-            <AccordionItem 
-              key={attribute.id} 
-              value={attribute.id}
-              className={cn(
-                "border rounded-lg overflow-hidden",
-                isComplete && "border-green-500/50"
+        {/* TAB: Pontos de Atributo */}
+        <TabsContent value="attributes" className="space-y-4 mt-4">
+          {/* Resumo de Atributos */}
+          <Card className={cn(
+            "transition-colors",
+            allAttributePointsDistributed && "border-green-500 bg-green-500/5"
+          )}>
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium">Pontos de Atributo</span>
+                <span className={cn(
+                  "text-lg font-bold",
+                  allAttributePointsDistributed ? "text-green-500" : "text-amber-500"
+                )}>
+                  {totalAttributePointsUsed} / {totalAttributePointsAvailable} pontos
+                </span>
+              </div>
+              <Progress 
+                value={(totalAttributePointsUsed / totalAttributePointsAvailable) * 100} 
+                className="h-2"
+              />
+              {!allAttributePointsDistributed && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Distribua os pontos de cada atributo (máximo 3 por perícia).
+                </p>
               )}
-            >
-              <AccordionTrigger 
-                className={cn(
-                  "px-4 py-3 hover:no-underline",
-                  isComplete && "bg-green-500/5"
-                )}
-                style={{ 
-                  borderLeft: `4px solid ${virtue?.color || '#888'}` 
-                }}
-              >
-                <div className="flex items-center justify-between w-full pr-4">
-                  <div className="flex items-center gap-3">
-                    <IconComponent 
-                      className="w-5 h-5" 
-                      style={{ color: virtue?.color }}
-                    />
-                    <span className="font-semibold">{attribute.name}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {available} pontos
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {isComplete ? (
-                      <Badge variant="default" className="bg-green-500">
-                        <Check className="w-3 h-3 mr-1" />
-                        Completo
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-amber-500 border-amber-500">
-                        {remaining} restantes
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-3 pt-2">
-                  {/* Progress do atributo */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <Progress 
-                      value={(used / available) * 100} 
-                      className="h-1.5 flex-1"
-                    />
-                    <span className="text-xs text-muted-foreground w-16 text-right">
-                      {used}/{available}
-                    </span>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 px-2 text-xs"
-                      onClick={() => handleResetAttribute(attribute.id)}
-                    >
-                      Reset
-                    </Button>
-                  </div>
+            </CardContent>
+          </Card>
 
-                  {/* Lista de Perícias */}
-                  {attrSkills.map((skill) => {
-                    const baseValue = skills[skill.id] || 0;
-                    const specialization = skillSpecializations[skill.id];
-                    const effectiveLevel = baseValue + (specialization ? 1 : 0);
-                    
-                    return (
-                      <SkillRow
-                        key={skill.id}
-                        skillId={skill.id}
-                        label={getSkillLabel(skill.id, activeTheme)}
-                        baseValue={baseValue}
-                        specialization={specialization}
-                        effectiveLevel={effectiveLevel}
-                        maxLevel={MAX_SKILL_VALUE_CREATION}
-                        virtueColor={virtue?.color || '#888'}
-                        canIncrease={remaining > 0 && effectiveLevel < MAX_SKILL_VALUE_CREATION}
-                        onIncrease={() => handleSkillIncrease(skill.id, attribute.id)}
-                        onDecrease={() => handleSkillDecrease(skill.id, attribute.id)}
-                      />
-                    );
-                  })}
+          {/* Accordion de Atributos */}
+          <Accordion type="multiple" defaultValue={[ATTRIBUTES[0].id]} className="space-y-3">
+            {ATTRIBUTES.map((attribute) => {
+              const virtue = getVirtueByAttribute(attribute.id);
+              const attrSkills = getSkillsByAttribute(attribute.id);
+              const available = attributes[attribute.id as keyof CharacterAttributes] || 1;
+              const used = getUsedAttributePointsFor(attribute.id);
+              const remaining = available - used;
+              const isComplete = remaining === 0;
+              const IconComponent = (Icons as any)[attribute.icon] || Icons.Circle;
+
+              return (
+                <AccordionItem 
+                  key={attribute.id} 
+                  value={attribute.id}
+                  className={cn(
+                    "border rounded-lg overflow-hidden",
+                    isComplete && "border-green-500/50"
+                  )}
+                >
+                  <AccordionTrigger 
+                    className={cn(
+                      "px-4 py-3 hover:no-underline",
+                      isComplete && "bg-green-500/5"
+                    )}
+                    style={{ 
+                      borderLeft: `4px solid ${virtue?.color || '#888'}` 
+                    }}
+                  >
+                    <div className="flex items-center justify-between w-full pr-4">
+                      <div className="flex items-center gap-3">
+                        <IconComponent 
+                          className="w-5 h-5" 
+                          style={{ color: virtue?.color }}
+                        />
+                        <span className="font-semibold">{attribute.name}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {available} pontos
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isComplete ? (
+                          <Badge variant="default" className="bg-green-500">
+                            <Check className="w-3 h-3 mr-1" />
+                            Completo
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-amber-500 border-amber-500">
+                            {remaining} restantes
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="space-y-3 pt-2">
+                      {/* Progress do atributo */}
+                      <div className="flex items-center gap-2 mb-4">
+                        <Progress 
+                          value={(used / available) * 100} 
+                          className="h-1.5 flex-1"
+                        />
+                        <span className="text-xs text-muted-foreground w-16 text-right">
+                          {used}/{available}
+                        </span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-2 text-xs"
+                          onClick={() => handleResetAttribute(attribute.id)}
+                        >
+                          Reset
+                        </Button>
+                      </div>
+
+                      {/* Lista de Perícias */}
+                      {attrSkills.map((skill) => {
+                        const fromAttr = skills[skill.id] || 0;
+                        const fromFree = freeSkillPoints[skill.id] || 0;
+                        const specialization = skillSpecializations[skill.id];
+                        const effectiveLevel = fromAttr + fromFree + (specialization ? 1 : 0);
+                        
+                        return (
+                          <SkillRow
+                            key={skill.id}
+                            skillId={skill.id}
+                            label={getSkillLabel(skill.id, activeTheme)}
+                            fromAttr={fromAttr}
+                            fromFree={fromFree}
+                            specialization={specialization}
+                            effectiveLevel={effectiveLevel}
+                            maxLevelDisplay={MAX_SKILL_CREATION}
+                            virtueColor={virtue?.color || '#888'}
+                            canIncrease={remaining > 0 && fromAttr < MAX_SKILL_FROM_ATTRIBUTES && effectiveLevel < MAX_SKILL_CREATION}
+                            onIncrease={() => handleAttributeSkillIncrease(skill.id, attribute.id)}
+                            onDecrease={() => handleAttributeSkillDecrease(skill.id)}
+                            mode="attributes"
+                          />
+                        );
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        </TabsContent>
+
+        {/* TAB: Pontos Livres */}
+        <TabsContent value="free" className="space-y-4 mt-4">
+          {/* Resumo de Pontos Livres */}
+          <Card className={cn(
+            "transition-colors",
+            allFreePointsDistributed && "border-green-500 bg-green-500/5"
+          )}>
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-primary" />
+                  <span className="font-medium">Pontos Livres</span>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          );
-        })}
-      </Accordion>
+                <span className={cn(
+                  "text-lg font-bold",
+                  allFreePointsDistributed ? "text-green-500" : "text-amber-500"
+                )}>
+                  {getUsedFreePoints()} / {FREE_SKILL_POINTS} pontos
+                </span>
+              </div>
+              <Progress 
+                value={(getUsedFreePoints() / FREE_SKILL_POINTS) * 100} 
+                className="h-2"
+              />
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-sm text-muted-foreground">
+                  Pode elevar qualquer perícia até o nível 4.
+                </p>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 px-2 text-xs"
+                  onClick={handleResetFreePoints}
+                >
+                  Resetar Livres
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lista de Todas as Perícias */}
+          <Card>
+            <CardContent className="py-4">
+              <div className="space-y-2">
+                {skillsWithPoints.map((skill) => {
+                  const virtue = getVirtueByAttribute(skill.attributeId);
+                  
+                  return (
+                    <SkillRow
+                      key={skill.id}
+                      skillId={skill.id}
+                      label={getSkillLabel(skill.id, activeTheme)}
+                      fromAttr={skill.fromAttr}
+                      fromFree={skill.fromFree}
+                      specialization={skill.specialization}
+                      effectiveLevel={skill.effectiveLevel}
+                      maxLevelDisplay={MAX_SKILL_CREATION}
+                      virtueColor={virtue?.color || '#888'}
+                      canIncrease={getRemainingFreePoints() > 0 && skill.effectiveLevel < MAX_SKILL_CREATION}
+                      onIncrease={() => handleFreeSkillIncrease(skill.id)}
+                      onDecrease={() => handleFreeSkillDecrease(skill.id)}
+                      mode="free"
+                      attributeName={ATTRIBUTES.find(a => a.id === skill.attributeId)?.name}
+                    />
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Legenda */}
       <Card className="bg-muted/50">
         <CardContent className="py-4">
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <div>
+            <div className="space-y-1">
               <p>
-                Cada atributo fornece pontos iguais ao seu valor para distribuir entre suas perícias.
+                <strong>Pontos de Atributo:</strong> Cada atributo fornece pontos iguais ao seu valor. 
+                Podem elevar perícias até o nível <strong>3</strong>.
               </p>
-              <p className="mt-1">
-                Perícias podem ter nível de 0 a {MAX_SKILL_VALUE_CREATION} na criação. 
-                No 4º nível, você pode escolher entre um <strong>nível normal</strong> ou uma <strong>especialização</strong>.
+              <p>
+                <strong>Pontos Livres ({FREE_SKILL_POINTS}):</strong> Podem elevar qualquer perícia 
+                até o nível <strong>4</strong> (máximo na criação).
               </p>
-              <p className="mt-1">
+              <p>
                 <Sparkles className="w-3 h-3 inline mr-1" />
-                Especialização = 3 níveis + 1 ênfase específica (bônus em situações relacionadas)
+                <strong>Especialização:</strong> No 4º nível, pode trocar por uma ênfase específica.
+              </p>
+              <p className="text-xs opacity-75">
+                Obs: Perícias podem chegar até {MAX_SKILL_LEVEL} durante o jogo, mas na criação o máximo é {MAX_SKILL_CREATION}.
               </p>
             </div>
           </div>
@@ -475,49 +727,62 @@ export function StepSkills() {
   );
 }
 
-// Componente de linha de perícia
+// ===== COMPONENTE DE LINHA DE PERÍCIA =====
+
 interface SkillRowProps {
   skillId: string;
   label: string;
-  baseValue: number;
+  fromAttr: number;
+  fromFree: number;
   specialization?: SkillSpecialization;
   effectiveLevel: number;
-  maxLevel: number;
+  maxLevelDisplay: number;
   virtueColor: string;
   canIncrease: boolean;
   onIncrease: () => void;
   onDecrease: () => void;
+  mode: 'attributes' | 'free';
+  attributeName?: string;
 }
 
 function SkillRow({ 
   label, 
-  baseValue,
+  fromAttr,
+  fromFree,
   specialization,
   effectiveLevel,
-  maxLevel,
+  maxLevelDisplay,
   virtueColor,
   canIncrease, 
   onIncrease, 
-  onDecrease 
+  onDecrease,
+  mode,
+  attributeName,
 }: SkillRowProps) {
   const isMin = effectiveLevel <= MIN_SKILL_VALUE;
-  const isMax = effectiveLevel >= maxLevel;
+  const isMax = effectiveLevel >= maxLevelDisplay;
+  const baseLevel = fromAttr + fromFree;
 
   return (
     <div className="flex items-center gap-3 py-1">
       {/* Nome da Perícia */}
       <div className={cn(
-        "min-w-[140px]",
+        "min-w-[140px] flex-1",
         effectiveLevel > 0 ? "font-medium" : "text-muted-foreground"
       )}>
-        <span className="text-sm">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm">{label}</span>
+          {mode === 'free' && attributeName && (
+            <span className="text-xs text-muted-foreground">({attributeName})</span>
+          )}
+        </div>
         {specialization && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge 
                   variant="secondary" 
-                  className="ml-2 text-xs gap-1 cursor-help"
+                  className="mt-1 text-xs gap-1 cursor-help"
                   style={{ backgroundColor: `${virtueColor}20`, color: virtueColor }}
                 >
                   <Sparkles className="w-3 h-3" />
@@ -535,8 +800,16 @@ function SkillRow({
         )}
       </div>
 
+      {/* Info de pontos */}
+      {mode === 'free' && (fromAttr > 0 || fromFree > 0) && (
+        <div className="text-xs text-muted-foreground flex gap-2">
+          {fromAttr > 0 && <span>Atr: {fromAttr}</span>}
+          {fromFree > 0 && <span className="text-primary">Livre: {fromFree}</span>}
+        </div>
+      )}
+
       {/* Controles */}
-      <div className="flex items-center gap-2 ml-auto">
+      <div className="flex items-center gap-2">
         <Button
           variant="outline"
           size="icon"
@@ -549,9 +822,11 @@ function SkillRow({
 
         {/* Valor com dots */}
         <div className="flex items-center gap-1 w-28 justify-center">
-          {Array.from({ length: maxLevel }).map((_, i) => {
+          {Array.from({ length: maxLevelDisplay }).map((_, i) => {
             const isFilled = i < effectiveLevel;
-            const isSpecSlot = i === baseValue && specialization;
+            const isFromAttr = i < fromAttr;
+            const isFromFree = i >= fromAttr && i < baseLevel;
+            const isSpecSlot = i === baseLevel && specialization;
             
             return (
               <div
@@ -563,7 +838,11 @@ function SkillRow({
                     : "border-muted-foreground/30 bg-transparent"
                 )}
                 style={{ 
-                  backgroundColor: isFilled ? virtueColor : 'transparent',
+                  backgroundColor: isFilled 
+                    ? isFromFree 
+                      ? 'hsl(var(--primary))' 
+                      : virtueColor 
+                    : 'transparent',
                 }}
               >
                 {isSpecSlot && (
