@@ -1,6 +1,7 @@
 /**
  * Componente principal do jogo tático single player
  * Gerencia o estado local e integra o bot
+ * Implementa regras do Manual de Combate em Massa
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -9,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HexGrid } from '@/components/tactical/HexGrid';
 import { UnitStatCards } from './UnitStatCards';
 import { 
@@ -21,13 +23,27 @@ import {
   BattleLogEntry,
   HexData,
 } from '@/types/tactical-game';
+import { Posture } from '@/types/cards/unit-card';
 import { 
   BotDifficulty, 
   decideBotAction, 
   getBotThinkingDelay 
 } from '@/lib/tacticalHexBotEngine';
+import {
+  resolveCombat,
+  rollMoraleTest,
+  shouldTestMorale,
+  getEffectiveStats,
+  updateCurrentStats,
+  getPressureRecovery,
+  getPostureEffect,
+  getTerrainEffect,
+  getMovementCost,
+  getEffectiveRange,
+  getCommanderBonus,
+} from '@/lib/massCombatRules';
 import { hexKey, getNeighbors, hexDistance, generateMapHexes, isValidHex } from '@/lib/hexUtils';
-import { ArrowLeft, Bot, User, Clock, Target, Loader2, SkipForward, Scroll, Users } from 'lucide-react';
+import { ArrowLeft, Bot, User, Clock, Target, Loader2, SkipForward, Scroll, Users, Shield, Swords, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SinglePlayerTacticalGameProps {
@@ -434,10 +450,53 @@ export function SinglePlayerTacticalGame({
   const handleEndPhase = () => {
     if (!isPlayerTurn) return;
     
-    const newState = advancePhase(gameState);
+    let newState = advancePhase(gameState);
     addLog(newState, 'system', `${playerName} encerrou a fase`);
     setGameState(newState);
     setSelectedUnitId(null);
+  };
+
+  // Handler para mudança de postura
+  const handlePostureChange = (unitId: string, newPosture: Posture) => {
+    if (!isPlayerTurn) return;
+    
+    const unit = gameState.units[unitId];
+    if (!unit || unit.owner !== 'player1') return;
+    
+    const oldPosture = unit.posture;
+    const hexData = gameState.hexes[hexKey(unit.position)];
+    
+    // Atualizar unidade com nova postura e recalcular stats
+    let updatedUnit = { ...unit, posture: newPosture };
+    updatedUnit = updateCurrentStats(updatedUnit, hexData);
+    
+    const postureEffect = getPostureEffect(newPosture);
+    const logs: BattleLogEntry[] = [{
+      id: crypto.randomUUID(),
+      turn: gameState.turn,
+      phase: gameState.phase,
+      timestamp: Date.now(),
+      type: 'ability',
+      message: `🛡️ ${unit.name} mudou postura: ${oldPosture} → ${newPosture}`,
+    }];
+    
+    // Mostrar efeitos da postura
+    if (postureEffect.attackMod !== 0 || postureEffect.defenseMod !== 0) {
+      logs.push({
+        id: crypto.randomUUID(),
+        turn: gameState.turn,
+        phase: gameState.phase,
+        timestamp: Date.now(),
+        type: 'ability',
+        message: `📊 Efeitos: ATQ ${postureEffect.attackMod >= 0 ? '+' : ''}${postureEffect.attackMod}, DEF ${postureEffect.defenseMod >= 0 ? '+' : ''}${postureEffect.defenseMod}`,
+      });
+    }
+    
+    setGameState({
+      ...gameState,
+      units: { ...gameState.units, [unitId]: updatedUnit },
+      battleLog: [...gameState.battleLog, ...logs],
+    });
   };
 
   const selectedUnit = selectedUnitId ? gameState.units[selectedUnitId] : null;
@@ -587,13 +646,62 @@ export function SinglePlayerTacticalGame({
                           {selectedUnit.name}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="p-3 text-sm space-y-2">
+                      <CardContent className="p-3 text-sm space-y-3">
                         <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>ATQ: {selectedUnit.currentAttack}</div>
-                          <div>DEF: {selectedUnit.currentDefense}</div>
+                          <div>ATQ: {selectedUnit.currentAttack} {selectedUnit.hitsReceived > 0 && <span className="text-red-400">(-{selectedUnit.hitsReceived})</span>}</div>
+                          <div>DEF: {selectedUnit.currentDefense} {selectedUnit.hitsReceived > 0 && <span className="text-red-400">(-{selectedUnit.hitsReceived})</span>}</div>
                           <div>HP: {selectedUnit.currentHealth}/{selectedUnit.maxHealth}</div>
                           <div>Pressão: {selectedUnit.currentPressure}/{selectedUnit.maxPressure}</div>
+                          <div>Hits: {selectedUnit.hitsReceived}</div>
+                          <div>Moral: {selectedUnit.currentMorale}</div>
                         </div>
+                        
+                        {/* Posture Selector */}
+                        {isPlayerTurn && selectedUnit.owner === 'player1' && (
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">Postura:</label>
+                            <Select
+                              value={selectedUnit.posture}
+                              onValueChange={(value) => handlePostureChange(selectedUnit.id, value as Posture)}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Ofensiva">
+                                  <div className="flex items-center gap-2">
+                                    <Swords className="w-3 h-3" />
+                                    Ofensiva (+1 ATQ, -1 DEF)
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Defensiva">
+                                  <div className="flex items-center gap-2">
+                                    <Shield className="w-3 h-3" />
+                                    Defensiva (-1 ATQ, +2 DEF)
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Neutra">
+                                  <div className="flex items-center gap-2">
+                                    <User className="w-3 h-3" />
+                                    Neutra (Balanceada)
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Reorganização">
+                                  <div className="flex items-center gap-2">
+                                    <RefreshCw className="w-3 h-3" />
+                                    Reorganização (-1 DEF, remove Pressão)
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {selectedUnit.posture === 'Reorganização' && (
+                              <p className="text-[10px] text-muted-foreground">
+                                Remove {getPressureRecovery(selectedUnit)} pressão/turno. Não pode atacar.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        
                         {selectedUnit.hasActedThisTurn && (
                           <Badge variant="secondary" className="w-full justify-center text-xs">
                             Já agiu este turno
@@ -620,6 +728,10 @@ export function SinglePlayerTacticalGame({
                                 ? 'bg-red-500/10 text-red-400'
                                 : entry.type === 'rout'
                                 ? 'bg-yellow-500/10 text-yellow-500'
+                                : entry.type === 'ability'
+                                ? 'bg-green-500/10 text-green-400'
+                                : entry.type === 'rally'
+                                ? 'bg-purple-500/10 text-purple-400'
                                 : 'bg-blue-500/10 text-blue-400'
                             }`}
                           >
@@ -645,28 +757,45 @@ function calculateValidMoves(unit: BattleUnit, state: TacticalGameState): HexCoo
   const validMoves: HexCoord[] = [];
   const movement = unit.currentMovement;
   
-  const visited = new Set<string>();
-  const queue: { coord: HexCoord; steps: number }[] = [{ coord: unit.position, steps: 0 }];
+  // Verificar se postura permite movimento
+  const postureEffect = getPostureEffect(unit.posture);
+  if (!postureEffect.canMove) return [];
+  
+  // Aplicar modificador de movimento da postura
+  const effectiveMovement = Math.max(1, movement + postureEffect.movementMod);
+  
+  const visited = new Map<string, number>(); // key -> custo para chegar
+  const queue: { coord: HexCoord; cost: number }[] = [{ coord: unit.position, cost: 0 }];
   
   while (queue.length > 0) {
     const current = queue.shift()!;
     const key = hexKey(current.coord);
     
-    if (visited.has(key)) continue;
-    visited.add(key);
+    // Se já visitou com custo menor, pular
+    if (visited.has(key) && visited.get(key)! <= current.cost) continue;
+    visited.set(key, current.cost);
     
-    if (current.steps > 0 && current.steps <= movement) {
+    if (current.cost > 0 && current.cost <= effectiveMovement) {
       const hex = state.hexes[key];
       if (!hex?.unitId) {
         validMoves.push(current.coord);
       }
     }
     
-    if (current.steps < movement) {
+    if (current.cost < effectiveMovement) {
       const neighbors = getNeighbors(current.coord);
       for (const neighbor of neighbors) {
-        if (isValidHex(neighbor.q, neighbor.r) && !visited.has(hexKey(neighbor))) {
-          queue.push({ coord: neighbor, steps: current.steps + 1 });
+        if (!isValidHex(neighbor.q, neighbor.r)) continue;
+        
+        const neighborKey = hexKey(neighbor);
+        const neighborHex = state.hexes[neighborKey];
+        
+        // Calcular custo de movimento considerando terreno
+        const terrainCost = neighborHex ? getMovementCost(neighborHex) : 1;
+        const newCost = current.cost + terrainCost;
+        
+        if (newCost <= effectiveMovement && (!visited.has(neighborKey) || visited.get(neighborKey)! > newCost)) {
+          queue.push({ coord: neighbor, cost: newCost });
         }
       }
     }
@@ -758,68 +887,35 @@ function executeAttack(state: TacticalGameState, attackerId: string, targetId: s
   
   if (!attacker || !target) return state;
   
-  // === ROLAGENS DE COMBATE ===
-  // Dado de ataque (1d6)
-  const attackDie = Math.floor(Math.random() * 6) + 1;
-  // Dado de defesa (1d6)
-  const defenseDie = Math.floor(Math.random() * 6) + 1;
+  const attackerHex = state.hexes[hexKey(attacker.position)];
+  const targetHex = state.hexes[hexKey(target.position)];
   
-  // Modificadores
-  const attackMod = attacker.currentAttack;
-  const defenseMod = target.currentDefense;
+  // Verificar se é ataque ranged
+  const distance = hexDistance(attacker.position, target.position);
+  const isRanged = distance > 1 && attacker.currentRanged > 0;
   
-  // Totais
-  const attackTotal = attackDie + attackMod;
-  const defenseTotal = defenseDie + defenseMod;
-  
-  // Margem
-  const margin = attackTotal - defenseTotal;
+  // Usar o novo sistema de combate
+  const combatResult = resolveCombat(attacker, target, attackerHex, targetHex, isRanged);
   
   const newUnits = { ...state.units };
   const logs: BattleLogEntry[] = [];
   
-  // Log detalhado da rolagem
-  logs.push({
-    id: crypto.randomUUID(),
-    turn: state.turn,
-    phase: state.phase,
-    timestamp: Date.now(),
-    type: 'combat',
-    message: `⚔️ ${attacker.name} ataca ${target.name}`,
-    details: { attackerId, targetId }
-  });
-  
-  logs.push({
-    id: crypto.randomUUID(),
-    turn: state.turn,
-    phase: state.phase,
-    timestamp: Date.now(),
-    type: 'combat',
-    message: `🎲 ATQ: [${attackDie}] + ${attackMod} = ${attackTotal} | DEF: [${defenseDie}] + ${defenseMod} = ${defenseTotal}`,
-    details: { attackDie, attackMod, attackTotal, defenseDie, defenseMod, defenseTotal, margin }
-  });
-  
-  let damage = 0;
-  let pressure = 0;
-  
-  if (margin > 0) {
-    // Cálculo de dano: margem / 2 (mínimo 1)
-    damage = Math.max(1, Math.floor(margin / 2));
-    pressure = 1;
-    
-    // Log do resultado
+  // Adicionar logs do combate
+  for (const logMsg of combatResult.logs) {
     logs.push({
       id: crypto.randomUUID(),
       turn: state.turn,
       phase: state.phase,
       timestamp: Date.now(),
       type: 'combat',
-      message: `✅ ACERTO! Margem: +${margin} → Dano: ${damage}, Pressão: +${pressure}`,
-      details: { success: true, margin, damage, pressure }
+      message: logMsg,
     });
-    
-    const newHealth = Math.max(0, target.currentHealth - damage);
-    const newPressure = target.currentPressure + pressure;
+  }
+  
+  if (combatResult.damage > 0 || combatResult.pressure > 0) {
+    const newHealth = Math.max(0, target.currentHealth - combatResult.damage);
+    const newPressure = target.currentPressure + combatResult.pressure;
+    const newHits = target.hitsReceived + combatResult.damage;
     
     logs.push({
       id: crypto.randomUUID(),
@@ -827,27 +923,76 @@ function executeAttack(state: TacticalGameState, attackerId: string, targetId: s
       phase: state.phase,
       timestamp: Date.now(),
       type: 'combat',
-      message: `💔 ${target.name}: HP ${target.currentHealth} → ${newHealth} | Pressão ${target.currentPressure} → ${newPressure}`,
-      details: { targetId, oldHealth: target.currentHealth, newHealth, oldPressure: target.currentPressure, newPressure }
+      message: `💔 ${target.name}: HP ${target.currentHealth} → ${newHealth} | Pressão ${target.currentPressure} → ${newPressure} | Hits: ${newHits}`,
     });
     
-    newUnits[targetId] = {
+    // Atualizar unidade alvo com dano e recalcular stats
+    let updatedTarget: BattleUnit = {
       ...target,
       currentHealth: newHealth,
       currentPressure: newPressure,
+      hitsReceived: newHits,
     };
     
-    // Verificar rout
-    if (newUnits[targetId].currentPressure >= newUnits[targetId].maxPressure) {
-      newUnits[targetId] = { ...newUnits[targetId], isRouting: true };
+    // Recalcular atributos baseado nos hits (dano reduz atributos)
+    updatedTarget = updateCurrentStats(updatedTarget, targetHex);
+    
+    // Log de redução de atributos
+    if (combatResult.damage > 0) {
       logs.push({
         id: crypto.randomUUID(),
         turn: state.turn,
         phase: state.phase,
         timestamp: Date.now(),
-        type: 'rout',
-        message: `🏳️ ${target.name} ENTRA EM ROTA! (Pressão ${newPressure}/${target.maxPressure})`,
+        type: 'combat',
+        message: `📉 ${target.name} sofreu ${combatResult.damage} Hit(s)! Atributos reduzidos: ATQ ${updatedTarget.currentAttack}, DEF ${updatedTarget.currentDefense}, MOV ${updatedTarget.currentMovement}`,
       });
+    }
+    
+    newUnits[targetId] = updatedTarget;
+    
+    // Verificar se precisa testar moral
+    if (shouldTestMorale(updatedTarget) && !updatedTarget.isRouting) {
+      const moraleResult = rollMoraleTest(updatedTarget, state.commanders, newUnits, state.hexes);
+      
+      logs.push({
+        id: crypto.randomUUID(),
+        turn: state.turn,
+        phase: state.phase,
+        timestamp: Date.now(),
+        type: 'combat',
+        message: `🎲 TESTE DE MORAL: d20[${moraleResult.roll}] + ${moraleResult.modifier} = ${moraleResult.total} vs DC ${moraleResult.dc}`,
+      });
+      
+      logs.push({
+        id: crypto.randomUUID(),
+        turn: state.turn,
+        phase: state.phase,
+        timestamp: Date.now(),
+        type: 'combat',
+        message: `📊 Modificadores: ${moraleResult.reason}`,
+      });
+      
+      if (!moraleResult.success) {
+        newUnits[targetId] = { ...newUnits[targetId], isRouting: true };
+        logs.push({
+          id: crypto.randomUUID(),
+          turn: state.turn,
+          phase: state.phase,
+          timestamp: Date.now(),
+          type: 'rout',
+          message: `🏳️ ${target.name} FALHOU no teste de moral e ENTRA EM ROTA!`,
+        });
+      } else {
+        logs.push({
+          id: crypto.randomUUID(),
+          turn: state.turn,
+          phase: state.phase,
+          timestamp: Date.now(),
+          type: 'combat',
+          message: `💪 ${target.name} PASSOU no teste de moral e mantém a posição!`,
+        });
+      }
     }
     
     // Verificar morte
@@ -861,16 +1006,6 @@ function executeAttack(state: TacticalGameState, attackerId: string, targetId: s
         message: `💀 ${target.name} foi DESTRUÍDA!`,
       });
     }
-  } else {
-    logs.push({
-      id: crypto.randomUUID(),
-      turn: state.turn,
-      phase: state.phase,
-      timestamp: Date.now(),
-      type: 'combat',
-      message: `❌ BLOQUEADO! Margem: ${margin} (ATQ ${attackTotal} vs DEF ${defenseTotal})`,
-      details: { success: false, margin }
-    });
   }
   
   newUnits[attackerId] = { ...attacker, hasActedThisTurn: true };
@@ -889,8 +1024,39 @@ function advancePhase(state: TacticalGameState): TacticalGameState {
   let newPhase: GamePhase;
   let newTurn = state.turn;
   let newActivePlayer = state.activePlayer;
+  const logs: BattleLogEntry[] = [];
 
   const isEndOfTurn = currentIndex === phases.length - 1 || currentIndex === -1;
+
+  // Processar fase de reorganização antes de avançar
+  if (state.phase === 'reorganization') {
+    const newUnits = { ...state.units };
+    
+    for (const id of Object.keys(newUnits)) {
+      const unit = newUnits[id];
+      if (unit.owner !== state.activePlayer) continue;
+      if (unit.posture !== 'Reorganização') continue;
+      if (unit.isRouting || unit.currentHealth <= 0) continue;
+      
+      const pressureRecovery = getPressureRecovery(unit);
+      if (pressureRecovery > 0 && unit.currentPressure > 0) {
+        const newPressure = Math.max(0, unit.currentPressure - pressureRecovery);
+        
+        logs.push({
+          id: crypto.randomUUID(),
+          turn: state.turn,
+          phase: state.phase,
+          timestamp: Date.now(),
+          type: 'ability',
+          message: `🔄 ${unit.name} se reorganiza: Pressão ${unit.currentPressure} → ${newPressure} (-${Math.min(pressureRecovery, unit.currentPressure)})`,
+        });
+        
+        newUnits[id] = { ...unit, currentPressure: newPressure };
+      }
+    }
+    
+    state = { ...state, units: newUnits, battleLog: [...state.battleLog, ...logs] };
+  }
 
   if (isEndOfTurn) {
     // Fim do turno do jogador atual → alterna jogador e (se era o bot) incrementa o turno
@@ -908,10 +1074,10 @@ function advancePhase(state: TacticalGameState): TacticalGameState {
   }
 
   // Reset de ações no início de cada fase para o jogador ativo
-  const newUnits = { ...state.units };
-  for (const id of Object.keys(newUnits)) {
-    if (newUnits[id].owner === newActivePlayer) {
-      newUnits[id] = { ...newUnits[id], hasActedThisTurn: false };
+  const finalUnits = { ...state.units };
+  for (const id of Object.keys(finalUnits)) {
+    if (finalUnits[id].owner === newActivePlayer) {
+      finalUnits[id] = { ...finalUnits[id], hasActedThisTurn: false };
     }
   }
 
@@ -920,7 +1086,7 @@ function advancePhase(state: TacticalGameState): TacticalGameState {
     phase: newPhase,
     turn: newTurn,
     activePlayer: newActivePlayer,
-    units: newUnits,
+    units: finalUnits,
     unitsMovedThisPhase: 0,
     battleLog: [
       ...state.battleLog,
