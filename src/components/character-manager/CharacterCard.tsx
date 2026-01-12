@@ -20,6 +20,7 @@ import {
   Trash2,
   Sparkles,
   Swords,
+  FileText,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -30,6 +31,7 @@ interface CharacterCardProps {
   onEdit: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onViewSheet?: () => void;
 }
 
 export function CharacterCard({
@@ -38,6 +40,7 @@ export function CharacterCard({
   onEdit,
   onDuplicate,
   onDelete,
+  onViewSheet,
 }: CharacterCardProps) {
   const faction = getFactionById(character.factionId);
   const isAkashic = character.theme === 'akashic';
@@ -64,6 +67,12 @@ export function CharacterCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {onViewSheet && (
+                <DropdownMenuItem onClick={onViewSheet}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Ver Ficha
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={onEdit}>
                 <Edit className="w-4 h-4 mr-2" />
                 Editar
