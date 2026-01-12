@@ -55,6 +55,7 @@ const DEFAULT_ATTRIBUTES: CharacterAttributes = {
 
 const TOTAL_ATTRIBUTE_POINTS = 25;
 const BASE_ATTRIBUTE_POINTS = 8; // 8 atributos x 1 ponto mínimo
+const FREE_SKILL_POINTS = 6; // Pontos livres para distribuir em perícias
 
 export function CharacterBuilderProvider({ children }: { children: React.ReactNode }) {
   const { activeTheme } = useTheme();
@@ -85,6 +86,8 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
       theme: activeTheme,
       attributes: { ...DEFAULT_ATTRIBUTES },
       skills: {},
+      freeSkillPoints: {},
+      skillSpecializations: {},
       virtues: { sabedoria: 0, coragem: 0, perseveranca: 0, harmonia: 0 },
     });
     setSimplifiedMode(false);
@@ -131,10 +134,21 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
     if (!draft.skills) return 0;
     const skillsForAttribute = getSkillsByAttribute(attributeId);
     const skillIds = skillsForAttribute.map(s => s.id);
-    return Object.entries(draft.skills)
+    // Conta pontos de atributo e especializações
+    const skillPoints = Object.entries(draft.skills)
       .filter(([skillId]) => skillIds.includes(skillId))
       .reduce((sum, [, level]) => sum + level, 0);
-  }, [draft.skills]);
+    const specPoints = draft.skillSpecializations
+      ? Object.keys(draft.skillSpecializations).filter(id => skillIds.includes(id)).length
+      : 0;
+    return skillPoints + specPoints;
+  }, [draft.skills, draft.skillSpecializations]);
+
+  // Calcular pontos livres usados
+  const getUsedFreeSkillPoints = useCallback((): number => {
+    if (!draft.freeSkillPoints) return 0;
+    return Object.values(draft.freeSkillPoints).reduce((sum, val) => sum + (val || 0), 0);
+  }, [draft.freeSkillPoints]);
 
   // Validação por step
   const validateStep = useCallback((step: WizardStep): StepValidation => {
@@ -163,21 +177,30 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
       case 3: // Perícias
         // Validar que todos os pontos de cada atributo foram distribuídos nas suas perícias
         const attributeIds = ['conhecimento', 'raciocinio', 'corpo', 'reflexos', 'determinacao', 'coordenacao', 'carisma', 'intuicao'];
-        let allPointsDistributed = true;
+        let allAttrPointsDistributed = true;
         
         for (const attrId of attributeIds) {
           const available = draft.attributes?.[attrId as keyof CharacterAttributes] || 1;
           const used = getUsedSkillPoints(attrId);
           if (used !== available) {
-            allPointsDistributed = false;
+            allAttrPointsDistributed = false;
             break;
           }
         }
         
-        if (!allPointsDistributed) {
+        if (!allAttrPointsDistributed) {
           errors.push({
             field: 'skills',
             message: 'Distribua todos os pontos de perícia de cada atributo'
+          });
+        }
+        
+        // Validar pontos livres
+        const usedFreePoints = getUsedFreeSkillPoints();
+        if (usedFreePoints !== FREE_SKILL_POINTS) {
+          errors.push({
+            field: 'freeSkillPoints',
+            message: `Distribua todos os ${FREE_SKILL_POINTS} pontos livres (atual: ${usedFreePoints})`
           });
         }
         break;
@@ -278,11 +301,23 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
     if (!draft.name || !draft.theme || !draft.attributes) return null;
 
     const attributes = draft.attributes as CharacterAttributes;
-    const skills = draft.skills || {};
+    // Combinar pontos de atributo e pontos livres para o total de skills
+    const attrSkills = draft.skills || {};
+    const freeSkills = draft.freeSkillPoints || {};
+    const combinedSkills: Record<string, number> = {};
+    
+    // Combinar todos os skill IDs
+    const allSkillIds = new Set([...Object.keys(attrSkills), ...Object.keys(freeSkills)]);
+    allSkillIds.forEach(skillId => {
+      const fromAttr = attrSkills[skillId] || 0;
+      const fromFree = freeSkills[skillId] || 0;
+      combinedSkills[skillId] = fromAttr + fromFree;
+    });
+    
     const theme = draft.theme;
 
-    const derivedStats = calculateDerivedStats(attributes, skills);
-    const regencyStats = calculateRegencyStats(attributes, skills, theme);
+    const derivedStats = calculateDerivedStats(attributes, combinedSkills);
+    const regencyStats = calculateRegencyStats(attributes, combinedSkills, theme);
 
     const character: Character = {
       id: crypto.randomUUID(),
@@ -291,7 +326,7 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
       faction: draft.factionId,
       culture: draft.culture,
       attributes,
-      skills,
+      skills: combinedSkills,
       virtues: {
         sabedoria: draft.virtues?.sabedoria ?? 0,
         coragem: draft.virtues?.coragem ?? 0,
