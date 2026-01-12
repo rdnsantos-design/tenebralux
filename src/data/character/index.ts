@@ -3,6 +3,7 @@ export * from './skills';
 export * from './virtues';
 export * from './regency';
 export * from './derivedStats';
+export * from './domainSkills';
 export * from './factions';
 export * from './cultures';
 export * from './privileges';

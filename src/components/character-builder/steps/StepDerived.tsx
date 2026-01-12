@@ -7,12 +7,18 @@ import { cn } from '@/lib/utils';
 import { 
   calculateDerivedStats, 
   calculateRegencyStats,
+  calculateDomainSkills,
   CharacterAttributes,
   DerivedStats,
   RegencyStats 
 } from '@/core/types';
 import { DERIVED_STATS, getDerivedStatsByCategory, DerivedStatDefinition } from '@/data/character/derivedStats';
 import { REGENCY_ATTRIBUTES, getRegencyForTheme, RegencyDefinition } from '@/data/character/regency';
+import { 
+  DOMAIN_SKILL_DEFINITIONS, 
+  DomainSkillDefinition, 
+  DomainSkillsResult 
+} from '@/data/character/domainSkills';
 import { 
   Heart, 
   Shield, 
@@ -30,7 +36,11 @@ import {
   Users,
   Cpu,
   Wand2,
-  Info
+  Info,
+  Factory,
+  Coins,
+  Lightbulb,
+  Castle
 } from 'lucide-react';
 
 // Mapeamento de ícones por stat
@@ -52,6 +62,12 @@ const STAT_ICONS: Record<string, React.ElementType> = {
   politica: Users,
   tecnologia: Cpu,
   geomancia: Wand2,
+  // Perícias de Domínio
+  regencia: Castle,
+  seguranca: Shield,
+  industria: Factory,
+  comercio: Coins,
+  inovacao: Lightbulb,
 };
 
 // Cores por categoria
@@ -60,6 +76,7 @@ const CATEGORY_COLORS = {
   social: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-500' },
   resources: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-500' },
   regency: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-500' },
+  domain: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-500' },
 };
 
 export function StepDerived() {
@@ -88,6 +105,11 @@ export function StepDerived() {
   const regencyStats = useMemo(() => {
     return calculateRegencyStats(attributes, skills, activeTheme);
   }, [attributes, skills, activeTheme]);
+
+  // Calcular perícias de domínio
+  const domainSkills = useMemo(() => {
+    return calculateDomainSkills(attributes.intuicao, skills);
+  }, [attributes.intuicao, skills]);
 
   // Stats por categoria
   const physicalStats = getDerivedStatsByCategory('physical');
@@ -157,6 +179,13 @@ export function StepDerived() {
           regencyDefs={regencyDefs}
           regencyStats={regencyStats}
           theme={activeTheme}
+        />
+
+        {/* Perícias de Domínio */}
+        <DomainSkillsCard
+          title="Perícias de Domínio"
+          description="Para gestão e desenvolvimento de territórios"
+          domainSkills={domainSkills}
         />
       </div>
 
@@ -305,6 +334,76 @@ function RegencyCard({
             </div>
           );
         })}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Componente de Card de Perícias de Domínio
+interface DomainSkillsCardProps {
+  title: string;
+  description: string;
+  domainSkills: DomainSkillsResult;
+}
+
+function DomainSkillsCard({ 
+  title, 
+  description, 
+  domainSkills 
+}: DomainSkillsCardProps) {
+  const colors = CATEGORY_COLORS.domain;
+
+  return (
+    <Card className={cn("overflow-hidden lg:col-span-2", colors.border)}>
+      <CardHeader className={cn("py-3", colors.bg)}>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Castle className={cn("w-5 h-5", colors.text)} />
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="p-4">
+        {/* Regência Principal */}
+        <div className="mb-4 p-3 rounded-lg bg-muted/50 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Castle className={cn("w-6 h-6", colors.text)} />
+            <div>
+              <span className="font-bold text-lg">Regência</span>
+              <p className="text-xs text-muted-foreground">Intuição + Administração</p>
+            </div>
+          </div>
+          <Badge className="text-lg px-4 py-1 bg-emerald-500 text-white">
+            {domainSkills.regencia}
+          </Badge>
+        </div>
+
+        {/* Grid de Perícias */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {DOMAIN_SKILL_DEFINITIONS.map((skill) => {
+            const Icon = STAT_ICONS[skill.id] || Zap;
+            const value = domainSkills[skill.id as keyof DomainSkillsResult] || 0;
+
+            return (
+              <div 
+                key={skill.id} 
+                className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon className={cn("w-5 h-5", colors.text)} />
+                  <span className="font-medium">{skill.name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                    {skill.formula}
+                  </span>
+                  <Badge variant="secondary" className="min-w-[36px] justify-center">
+                    {value}
+                  </Badge>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
