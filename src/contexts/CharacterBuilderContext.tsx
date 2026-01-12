@@ -269,7 +269,7 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
     if (!validation.isValid) {
       return false;
     }
-    if (currentStep < 8) {
+    if (currentStep < 9) {
       setCurrentStep((prev) => (prev + 1) as WizardStep);
       return true;
     }
@@ -283,14 +283,14 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
   }, [currentStep]);
 
   const goToStep = useCallback((step: WizardStep) => {
-    if (step >= 1 && step <= 8 && canProceedToStep(step)) {
+    if (step >= 1 && step <= 9 && canProceedToStep(step)) {
       setCurrentStep(step);
     }
   }, [canProceedToStep]);
 
   // Finalização
   const canFinalize = useCallback((): boolean => {
-    for (let s = 1; s <= 7; s++) {
+    for (let s = 1; s <= 8; s++) {
       if (!validateStep(s as WizardStep).isValid) {
         return false;
       }

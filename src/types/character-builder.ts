@@ -16,6 +16,14 @@ export interface VirtuePowerChoice {
   powerName: string;
 }
 
+// Estrutura para reputação com facções
+export interface FactionReputation {
+  factionId: string;
+  factionName: string;
+  value: number; // -6 a +6
+  isCustom?: boolean; // Se é facção adicionada pelo usuário
+}
+
 // Estado do draft durante a criação
 export interface CharacterDraft {
   // Step 1: Conceito
@@ -49,11 +57,14 @@ export interface CharacterDraft {
   armorId?: string;
   itemIds?: string[];
   
-  // Step 8: Resumo
+  // Step 8: Reputação
+  reputations?: FactionReputation[];
+  
+  // Step 9: Resumo
   // Não armazena - mostra tudo
 }
 
-export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 export interface WizardStepDefinition {
   step: WizardStep;
@@ -71,7 +82,8 @@ export const WIZARD_STEPS: WizardStepDefinition[] = [
   { step: 5, id: 'privileges', name: 'Legados', description: 'Privilégios e desafios', icon: 'Gift' },
   { step: 6, id: 'virtues', name: 'Virtudes', description: '4 virtudes', icon: 'Sparkles' },
   { step: 7, id: 'equipment', name: 'Equipamento', description: 'Armas e armaduras', icon: 'Swords' },
-  { step: 8, id: 'summary', name: 'Resumo', description: 'Ficha completa', icon: 'FileText' },
+  { step: 8, id: 'reputation', name: 'Reputação', description: 'Status com facções', icon: 'Users' },
+  { step: 9, id: 'summary', name: 'Resumo', description: 'Ficha completa', icon: 'FileText' },
 ];
 
 export interface ValidationError {

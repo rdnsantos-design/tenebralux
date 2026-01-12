@@ -434,8 +434,6 @@ export function CharacterSheet({ draft, theme, className }: CharacterSheetProps)
               </section>
             )}
 
-            <Separator />
-
             {/* Equipamento */}
             {equipment.length > 0 && (
               <section>
@@ -468,6 +466,43 @@ export function CharacterSheet({ draft, theme, className }: CharacterSheetProps)
                   ))}
                 </div>
               </section>
+            )}
+
+            {/* Reputação */}
+            {draft.reputations && draft.reputations.filter(r => r.value !== 0).length > 0 && (
+              <>
+                <Separator />
+                <section>
+                  <SectionTitle icon={Users} title="Reputação" />
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    {draft.reputations
+                      .filter(r => r.value !== 0)
+                      .sort((a, b) => b.value - a.value)
+                      .map((rep) => (
+                        <div 
+                          key={rep.factionId}
+                          className={cn(
+                            "flex items-center justify-between p-2 rounded-lg border",
+                            rep.value > 0 && "bg-green-500/5 border-green-500/20",
+                            rep.value < 0 && "bg-red-500/5 border-red-500/20"
+                          )}
+                        >
+                          <span className="text-sm truncate">{rep.factionName}</span>
+                          <Badge 
+                            variant="outline"
+                            className={cn(
+                              "ml-2 shrink-0",
+                              rep.value > 0 && "border-green-500/50 text-green-500",
+                              rep.value < 0 && "border-red-500/50 text-red-500"
+                            )}
+                          >
+                            {rep.value > 0 ? `+${rep.value}` : rep.value}
+                          </Badge>
+                        </div>
+                      ))}
+                  </div>
+                </section>
+              </>
             )}
           </div>
         </div>

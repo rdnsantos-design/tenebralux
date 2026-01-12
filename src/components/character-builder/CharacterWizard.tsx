@@ -8,6 +8,7 @@ import { StepDerived } from './steps/StepDerived';
 import { StepPrivileges } from './steps/StepPrivileges';
 import { StepVirtues } from './steps/StepVirtues';
 import { StepEquipment } from './steps/StepEquipment';
+import { StepReputation } from './steps/StepReputation';
 import { StepSummary } from './steps/StepSummary';
 
 interface CharacterWizardProps {
@@ -35,6 +36,8 @@ export function CharacterWizard({ onBack, onFinish }: CharacterWizardProps) {
       case 7:
         return <StepEquipment />;
       case 8:
+        return <StepReputation />;
+      case 9:
         return <StepSummary onFinish={onFinish} />;
       default:
         return <StepSummary onFinish={onFinish} />;
