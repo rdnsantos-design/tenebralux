@@ -317,19 +317,20 @@ export interface BattleLogEntry {
 // ============= FUNÇÕES DE CÁLCULO DE STATS =============
 
 /**
- * Calcula a Reação do combatente
- * Fórmula: Reflexos × 2 + Prontidão
+ * Calcula a Reação do combatente (Tick inicial na timeline)
+ * Fórmula: 12 - (Reflexos × 2 + Instinto)
+ * Menor valor = age mais rápido
  */
-export function calculateReaction(reflexos: number, prontidao: number): number {
-  return (reflexos * 2) + prontidao;
+export function calculateReaction(reflexos: number, instinto: number): number {
+  return 12 - ((reflexos * 2) + instinto);
 }
 
 /**
  * Calcula a Guarda do combatente
- * Fórmula: Reflexos + Esquiva + Instinto
+ * Fórmula: Reflexos × 2 + Esquiva + Armadura
  */
-export function calculateGuard(reflexos: number, esquiva: number, instinto: number): number {
-  return reflexos + esquiva + instinto;
+export function calculateGuard(reflexos: number, esquiva: number, armorBonus: number = 0): number {
+  return (reflexos * 2) + esquiva + armorBonus;
 }
 
 /**

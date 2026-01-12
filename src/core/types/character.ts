@@ -105,17 +105,21 @@ export function calculateDerivedStats(
 ): DerivedStats {
   const getSkill = (id: string) => skills[id] || 0;
   
+  // Reação = 12 - (Reflexos × 2 + Instinto)
+  // Menor valor = age mais rápido
+  const reacaoBase = (attributes.reflexos * 2) + getSkill('instinto');
+  
   return {
     // Combate Físico
     vitalidade: attributes.corpo * 2 + getSkill('resistencia'),
     evasao: attributes.reflexos * 2 + getSkill('instinto'),
-    guarda: attributes.reflexos * 2 + getSkill('esquiva') + armorBonus,
-    reacao: attributes.intuicao + attributes.reflexos + getSkill('prontidao'),
+    guarda: attributes.reflexos * 2 + getSkill('esquiva') + armorBonus, // Armadura somada na finalização
+    reacao: 12 - reacaoBase, // Tick inicial na timeline
     movimento: attributes.corpo * 2 + getSkill('atletismo'),
     
     // Combate Social
     vontade: attributes.raciocinio * 2 + getSkill('resiliencia'),
-    conviccao: getSkill('logica') + attributes.determinacao,
+    conviccao: attributes.determinacao * 2 + getSkill('logica'), // Determinação × 2 + Lógica
     influencia: attributes.carisma,
     
     // Recursos
