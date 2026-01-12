@@ -7,9 +7,11 @@ export interface DerivedStatDefinition {
 
 export const DERIVED_STATS: DerivedStatDefinition[] = [
   // Combate Físico
-  { id: 'vitalidade', name: 'Vitalidade', formula: 'Corpo × 2 + Resistência', category: 'physical' },
+  { id: 'vitalidade', name: 'Vitalidade', formula: 'Corpo × 2 + Resistência (perícia)', category: 'physical' },
   { id: 'evasao', name: 'Evasão', formula: 'Reflexos × 2 + Instinto', category: 'physical' },
-  { id: 'guarda', name: 'Guarda', formula: 'Reflexos × 2 + Esquiva + Armadura', category: 'physical' },
+  { id: 'guarda', name: 'Guarda', formula: 'Reflexos × 2 + Esquiva', category: 'physical' },
+  { id: 'resistencia', name: 'Resistência', formula: 'Bônus da Armadura', category: 'physical' },
+  { id: 'defesa', name: 'Defesa', formula: 'Guarda + Resistência', category: 'physical' },
   { id: 'reacao', name: 'Reação', formula: '12 - (Reflexos × 2 + Instinto)', category: 'physical' },
   { id: 'movimento', name: 'Movimento', formula: 'Corpo × 2 + Atletismo', category: 'physical' },
   

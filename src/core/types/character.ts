@@ -97,6 +97,11 @@ export interface Character extends BaseEntity {
 /**
  * Calcula os stats derivados do personagem
  * Fórmulas atualizadas conforme planilha do RPG
+ * 
+ * Nomenclatura:
+ * - Guarda: Reflexos × 2 + Esquiva (SEM armadura)
+ * - Resistência: Bônus da armadura
+ * - Defesa: Guarda + Resistência (número que oponente deve superar)
  */
 export function calculateDerivedStats(
   attributes: CharacterAttributes,
@@ -109,11 +114,16 @@ export function calculateDerivedStats(
   // Menor valor = age mais rápido
   const reacaoBase = (attributes.reflexos * 2) + getSkill('instinto');
   
+  // Guarda SEM armadura
+  const guarda = attributes.reflexos * 2 + getSkill('esquiva');
+  
   return {
     // Combate Físico
     vitalidade: attributes.corpo * 2 + getSkill('resistencia'),
     evasao: attributes.reflexos * 2 + getSkill('instinto'),
-    guarda: attributes.reflexos * 2 + getSkill('esquiva') + armorBonus, // Armadura somada na finalização
+    guarda: guarda, // SEM armadura
+    resistencia: armorBonus, // Bônus da armadura
+    defesa: guarda + armorBonus, // Número final que oponente deve superar
     reacao: 12 - reacaoBase, // Tick inicial na timeline
     movimento: attributes.corpo * 2 + getSkill('atletismo'),
     

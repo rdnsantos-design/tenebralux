@@ -229,6 +229,8 @@ describe('Core Types - Character Calculations', () => {
         vitalidade: 6,
         evasao: 5,
         guarda: 9, // Should result in guard = 3
+        resistencia: 0,
+        defesa: 9,
         reacao: 5,
         movimento: 6,
         vontade: 8,
@@ -258,6 +260,8 @@ describe('Core Types - Character Calculations', () => {
         vitalidade: 18,
         evasao: 18,
         guarda: 21, // Should result in guard = 6 (capped)
+        resistencia: 0,
+        defesa: 21,
         reacao: 18,
         movimento: 18,
         vontade: 18,
