@@ -7,6 +7,7 @@ import { CharacterFilters } from './CharacterFilters';
 import { ImportExportDialog } from './ImportExportDialog';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { ConnectionStatus } from './ConnectionStatus';
+import { CharacterSheetDialog } from './CharacterSheetDialog';
 import { UserMenu } from '@/components/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,6 +61,7 @@ export function CharacterList({
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<SavedCharacter | null>(null);
   const [showImportExport, setShowImportExport] = useState(false);
+  const [viewSheetCharacter, setViewSheetCharacter] = useState<SavedCharacter | null>(null);
 
   // Atualizar filtro de busca
   const handleSearch = (query: string) => {
@@ -233,6 +235,7 @@ export function CharacterList({
               onEdit={() => onEdit(character.id)}
               onDuplicate={() => handleDuplicate(character.id)}
               onDelete={() => setDeleteTarget(character)}
+              onViewSheet={() => setViewSheetCharacter(character)}
             />
           ))}
         </div>
@@ -252,6 +255,13 @@ export function CharacterList({
         onOpenChange={setShowImportExport}
         onImport={handleImport}
         onExport={exportAll}
+      />
+
+      {/* Character Sheet Dialog */}
+      <CharacterSheetDialog
+        character={viewSheetCharacter}
+        open={!!viewSheetCharacter}
+        onOpenChange={(open) => !open && setViewSheetCharacter(null)}
       />
     </div>
   );
