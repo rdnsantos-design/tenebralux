@@ -64,7 +64,7 @@ export const SKILLS: SkillDefinition[] = [
   { id: 'empatia', attributeId: 'intuicao', labels: { akashic: 'Empatia', tenebralux: 'Empatia' } },
   { id: 'instinto', attributeId: 'intuicao', labels: { akashic: 'Instinto', tenebralux: 'Instinto' } },
   { id: 'augurio', attributeId: 'intuicao', labels: { akashic: 'Augúrio', tenebralux: 'Augúrio' } },
-  { id: 'artes', attributeId: 'intuicao', labels: { akashic: 'Artes', tenebralux: 'Artes' } },
+  { id: 'sincronicidade', attributeId: 'intuicao', labels: { akashic: 'Sincronicidade', tenebralux: 'Sincronicidade' } },
 ];
 
 export function getSkillsByAttribute(attributeId: string): SkillDefinition[] {

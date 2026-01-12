@@ -2,15 +2,17 @@
  * Engine de Combate Tático Individual
  * 
  * Sistema de Timeline (Ticks):
- * - Velocidade Total = Reação + Velocidade da Carta + Velocidade da Arma
+ * - Reação = 12 - (Reflexos × 2 + Instinto) 
+ * - Tick de ação = Reação + Velocidade da Carta + Velocidade da Arma
  * 
- * Ataque:
- * - 2d6 + Coordenação/Reflexos + Perícia + Modificador da Carta vs Guarda/Evasão
+ * Ataque (2d6):
+ * - 2d6 + Atributo + Perícia + Modificadores vs Guarda + Modificadores ambiente
  * - Crítico: 12 natural (dobra dano)
  * - Falha Crítica: 2 natural (consequência negativa)
  * 
  * Dano:
- * - Dano da Arma + Margem de Sucesso - Redução de Armadura
+ * - Se Ataque > Guarda: Dano = Dano da Arma + (Margem × Ratio do tipo)
+ * - Ratios: Balístico/Energia 1:1, Lâminas 1:2, Desarmado 1:4, Explosão 2:1
  */
 
 import { 
@@ -21,12 +23,8 @@ import {
   CombatCard,
   BattleLogEntry,
   HexCoord,
-  calculateReaction,
-  calculateGuard,
-  calculateEvasion,
-  calculateVitality,
-  calculateMovement,
-  calculatePrep
+  WeaponType,
+  CombatantStats
 } from '@/types/tactical-combat';
 import { getCardById } from '@/data/combat/cards';
 import { createBasicHexMap, addRandomCover, hexKey } from '@/lib/hexCombatUtils';
@@ -40,6 +38,71 @@ export {
   calculateVitality, 
   calculateMovement, 
   calculatePrep 
+} from '@/types/tactical-combat';
+
+// ============= TIPOS DE MODIFICADORES DE COMBATE =============
+
+export type DistanceRange = 'point-blank' | 'short' | 'medium' | 'long' | 'extreme';
+export type LightingCondition = 'normal' | 'dim' | 'darkness';
+export type CoverLevel = 'none' | 'partial' | 'substantial' | 'almost-total' | 'total';
+export type TargetMovement = 'stationary' | 'normal' | 'running' | 'sprint';
+export type PositionAdvantage = 'none' | 'elevated' | 'lowground' | 'flanking' | 'rear' | 'surprise';
+
+export interface CombatModifiers {
+  distance: DistanceRange;
+  lighting: LightingCondition;
+  cover: CoverLevel;
+  targetMovement: TargetMovement;
+  position: PositionAdvantage;
+}
+
+// ============= TABELAS DE MODIFICADORES =============
+
+export const DISTANCE_MODIFIERS: Record<DistanceRange, { attack: number; guardMod: number }> = {
+  'point-blank': { attack: 2, guardMod: -2 },  // ≤2m
+  'short': { attack: 1, guardMod: 0 },          // ≤10m
+  'medium': { attack: 0, guardMod: 0 },         // 10-50m
+  'long': { attack: -2, guardMod: 0 },          // 50-200m
+  'extreme': { attack: -4, guardMod: 0 },       // 200m+
+};
+
+export const LIGHTING_MODIFIERS: Record<LightingCondition, number> = {
+  'normal': 0,
+  'dim': -2,
+  'darkness': -4,
+};
+
+export const COVER_GUARD_BONUS: Record<CoverLevel, number> = {
+  'none': 0,
+  'partial': 2,       // 25%
+  'substantial': 4,   // 50%
+  'almost-total': 6,  // 75%
+  'total': 999,       // Impossível atacar
+};
+
+export const TARGET_MOVEMENT_MODIFIERS: Record<TargetMovement, number> = {
+  'stationary': 2,
+  'normal': 0,
+  'running': -2,
+  'sprint': -4,
+};
+
+export const POSITION_MODIFIERS: Record<PositionAdvantage, { attack: number; ignoreEsquiva: boolean }> = {
+  'none': { attack: 0, ignoreEsquiva: false },
+  'elevated': { attack: 2, ignoreEsquiva: false },
+  'lowground': { attack: -2, ignoreEsquiva: false },
+  'flanking': { attack: 2, ignoreEsquiva: false },
+  'rear': { attack: 4, ignoreEsquiva: false },
+  'surprise': { attack: 0, ignoreEsquiva: true },  // Alvo não usa Esquiva
+};
+
+// ============= RATIO DE DANO POR TIPO DE ARMA =============
+
+export const DAMAGE_RATIOS: Record<WeaponType, number> = {
+  'ballistic': 1,   // 1:1
+  'energy': 1,      // 1:1
+  'melee': 0.5,     // 1:2 (divide margem por 2)
+  'explosive': 2,   // 2:1 (multiplica margem por 2)
 };
 
 // ============= ROLAGEM DE DADOS =============
@@ -54,14 +117,14 @@ export function roll2d6(): { total: number; dice: [number, number] } {
 }
 
 /**
- * Verifica se é crítico (12 natural)
+ * Verifica se é crítico (12 natural - boxcars)
  */
 export function isCritical(dice: [number, number]): boolean {
   return dice[0] + dice[1] === 12;
 }
 
 /**
- * Verifica se é falha crítica (2 natural)
+ * Verifica se é falha crítica (2 natural - snake eyes)
  */
 export function isFumble(dice: [number, number]): boolean {
   return dice[0] + dice[1] === 2;
@@ -72,7 +135,6 @@ export function isFumble(dice: [number, number]): boolean {
 /**
  * Calcula o tick em que a ação será resolvida
  * Fórmula: Tick Atual + Velocidade da Carta + Velocidade da Arma
- * (Menor reação = age mais rápido, mas a carta e arma adicionam tempo)
  */
 export function calculateActionTick(
   currentTick: number,
@@ -83,73 +145,157 @@ export function calculateActionTick(
   return currentTick + cardSpeed + weaponSpeed + armorSpeedPenalty;
 }
 
+// ============= CÁLCULO DE PENALIDADES POR DANO =============
+
+export type VitalityState = 'healthy' | 'wounded' | 'severely-wounded' | 'incapacitated' | 'dying' | 'dead';
+
+/**
+ * Determina o estado de vitalidade e penalidade
+ */
+export function getVitalityState(current: number, max: number): { state: VitalityState; penalty: number } {
+  if (current <= 0) {
+    return { state: 'dead', penalty: 0 }; // Morte em 0 conforme solicitado
+  }
+  
+  const percentage = (current / max) * 100;
+  
+  if (percentage > 50) {
+    return { state: 'healthy', penalty: 0 };
+  } else if (percentage > 25) {
+    return { state: 'wounded', penalty: -1 };
+  } else {
+    return { state: 'severely-wounded', penalty: -2 };
+  }
+}
+
+/**
+ * Calcula modificadores totais de ataque
+ */
+export function calculateAttackModifiers(modifiers: Partial<CombatModifiers>): number {
+  let total = 0;
+  
+  if (modifiers.distance) {
+    total += DISTANCE_MODIFIERS[modifiers.distance].attack;
+  }
+  if (modifiers.lighting) {
+    total += LIGHTING_MODIFIERS[modifiers.lighting];
+  }
+  if (modifiers.targetMovement) {
+    total += TARGET_MOVEMENT_MODIFIERS[modifiers.targetMovement];
+  }
+  if (modifiers.position) {
+    total += POSITION_MODIFIERS[modifiers.position].attack;
+  }
+  
+  return total;
+}
+
+/**
+ * Calcula bônus de guarda do defensor
+ */
+export function calculateDefenseModifiers(modifiers: Partial<CombatModifiers>): { guardBonus: number; ignoreEsquiva: boolean } {
+  let guardBonus = 0;
+  let ignoreEsquiva = false;
+  
+  if (modifiers.cover) {
+    guardBonus += COVER_GUARD_BONUS[modifiers.cover];
+  }
+  if (modifiers.distance) {
+    guardBonus += DISTANCE_MODIFIERS[modifiers.distance].guardMod;
+  }
+  if (modifiers.position === 'surprise') {
+    ignoreEsquiva = true;
+  }
+  
+  return { guardBonus, ignoreEsquiva };
+}
+
 // ============= RESOLUÇÃO DE ATAQUE =============
 
 export interface AttackParams {
   attacker: Combatant;
   defender: Combatant;
   card: CombatCard;
+  modifiers?: Partial<CombatModifiers>;
 }
 
 /**
- * Resolve um ataque entre dois combatentes
+ * Resolve um ataque entre dois combatentes usando 2d6
  */
 export function resolveAttack(params: AttackParams): ActionResult {
-  const { attacker, defender, card } = params;
+  const { attacker, defender, card, modifiers = {} } = params;
   const stats = attacker.stats;
   const defenderStats = defender.stats;
+  
+  // Verificar cobertura total
+  if (modifiers.cover === 'total') {
+    return {
+      success: false,
+      message: `${attacker.name} não consegue atacar ${defender.name} - cobertura total!`
+    };
+  }
   
   // Determinar atributo e perícia baseado no tipo de arma
   let attribute = 0;
   let skill = 0;
   
-  const weaponType = stats.weapon?.type;
+  const weaponType = stats.weapon?.type || 'melee';
   
   if (weaponType === 'melee') {
     // Armas corpo a corpo usam Reflexos + Luta ou Lâminas
     attribute = stats.attributes.reflexos;
-    skill = Math.max(stats.skills.luta, stats.skills.laminas);
+    skill = Math.max(stats.skills.luta || 0, stats.skills.laminas || 0);
   } else {
     // Armas de distância usam Coordenação + Tiro
     attribute = stats.attributes.coordenacao;
-    skill = stats.skills.tiro;
+    skill = stats.skills.tiro || 0;
   }
+  
+  // Penalidade por ferimentos do atacante
+  const attackerVitalityState = getVitalityState(stats.vitality, stats.maxVitality);
+  const woundPenalty = attackerVitalityState.penalty;
   
   // Rolar dados
   const roll = roll2d6();
   const critical = isCritical(roll.dice);
   const fumble = isFumble(roll.dice);
   
-  // Calcular bônus de ataque
-  const weaponAttackMod = stats.weapon?.attackModifier || 0;
-  const attackBonus = attribute + skill + card.attackModifier + weaponAttackMod;
-  const attackTotal = roll.total + attackBonus;
-  
-  // Determinar defesa (Guarda para melee, Evasão para ranged)
-  let targetDefense: number;
-  
-  if (weaponType === 'melee') {
-    targetDefense = defenderStats.guard;
-  } else {
-    targetDefense = defenderStats.evasion;
-  }
-  
-  // Verificar falha crítica
+  // Verificar falha crítica (automática)
   if (fumble) {
     return {
       success: false,
       attackRoll: roll.total,
-      targetDefense,
       isCritical: false,
       isFumble: true,
-      message: `${attacker.name} cometeu uma falha crítica!`
+      message: `FALHA CRÍTICA! ${attacker.name} erra completamente e sofre consequência!`
     };
   }
   
+  // Calcular bônus de ataque
+  const weaponAttackMod = stats.weapon?.attackModifier || 0;
+  const environmentMod = calculateAttackModifiers(modifiers);
+  const attackBonus = attribute + skill + card.attackModifier + weaponAttackMod + environmentMod + woundPenalty;
+  const attackTotal = roll.total + attackBonus;
+  
+  // Calcular guarda do defensor
+  const defenseMods = calculateDefenseModifiers(modifiers);
+  const armorBonus = defenderStats.armor?.guardBonus || 0;
+  
+  // Se surpresa, não usa Esquiva
+  let baseGuard: number;
+  if (defenseMods.ignoreEsquiva) {
+    baseGuard = (defenderStats.attributes.reflexos * 2) + armorBonus;
+  } else {
+    baseGuard = defenderStats.guard;
+  }
+  
+  const targetDefense = baseGuard + defenseMods.guardBonus;
+  
+  // Verificar acerto
   const margin = attackTotal - targetDefense;
   
-  // Verificar acerto (crítico sempre acerta)
-  if (margin < 0 && !critical) {
+  // Crítico sempre acerta, mas precisa superar para causar dano extra
+  if (margin <= 0 && !critical) {
     return {
       success: false,
       attackRoll: attackTotal,
@@ -157,22 +303,26 @@ export function resolveAttack(params: AttackParams): ActionResult {
       margin,
       isCritical: false,
       isFumble: false,
-      message: `${attacker.name} errou o ataque contra ${defender.name}. (${attackTotal} vs ${targetDefense})`
+      message: `${attacker.name} erra o ataque contra ${defender.name}. (${attackTotal} vs ${targetDefense})`
     };
   }
   
   // Calcular dano
   const baseDamage = stats.weapon?.damage || 1;
+  const damageRatio = DAMAGE_RATIOS[weaponType] || 1;
   
-  // Dano total = dano base + margem de sucesso
-  let totalDamage = baseDamage + Math.max(0, margin);
+  // Dano da margem aplicando ratio do tipo de arma
+  const marginDamage = Math.floor(Math.max(0, margin) * damageRatio);
   
-  // Crítico dobra o dano
+  // Dano total = dano base + margem modificada pelo ratio
+  let totalDamage = baseDamage + marginDamage;
+  
+  // Crítico dobra o dano total
   if (critical) {
     totalDamage *= 2;
   }
   
-  // Redução de dano da armadura
+  // Redução de dano da armadura (se aplicável)
   const damageReduction = defenderStats.armor?.damageReduction || 0;
   const finalDamage = Math.max(1, totalDamage - damageReduction);
   
@@ -182,16 +332,18 @@ export function resolveAttack(params: AttackParams): ActionResult {
     targetDefense,
     margin,
     baseDamage,
-    bonusDamage: Math.max(0, margin),
+    bonusDamage: marginDamage,
     totalDamage,
     reducedDamage: damageReduction,
     finalDamage,
     isCritical: critical,
     isFumble: false,
     effectTriggered: card.effect,
+    distanceModifier: modifiers.distance ? DISTANCE_MODIFIERS[modifiers.distance].attack : undefined,
+    coverBonus: modifiers.cover ? COVER_GUARD_BONUS[modifiers.cover] : undefined,
     message: critical 
-      ? `CRÍTICO! ${attacker.name} causa ${finalDamage} de dano em ${defender.name}!`
-      : `${attacker.name} acerta ${defender.name} causando ${finalDamage} de dano. (${attackTotal} vs ${targetDefense})`
+      ? `CRÍTICO! ${attacker.name} causa ${finalDamage} de dano em ${defender.name}! (${attackTotal} vs ${targetDefense})`
+      : `${attacker.name} acerta ${defender.name} causando ${finalDamage} de dano. (${attackTotal} vs ${targetDefense}, margem ${margin}×${damageRatio})`
   };
 }
 
