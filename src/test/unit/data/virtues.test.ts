@@ -87,18 +87,15 @@ describe('Data - Virtues', () => {
       expect(getFactionVirtue('pacto')).toBe('perseveranca');
       expect(getFactionVirtue('brunianos')).toBe('sabedoria');
       expect(getFactionVirtue('federacao')).toBe('harmonia');
-      expect(getFactionVirtue('star-knights')).toBe('coragem');
     });
 
-    it('should return choice for alianca (free choice)', () => {
+    it('should return choice for alianca and independentes (free choice)', () => {
       expect(getFactionVirtue('alianca')).toBe('choice');
+      expect(getFactionVirtue('independentes')).toBe('choice');
     });
 
     it('should return undefined for factions without virtue bonus', () => {
       expect(getFactionVirtue('concordia')).toBeUndefined();
-      expect(getFactionVirtue('corporacoes')).toBeUndefined();
-      expect(getFactionVirtue('astra')).toBeUndefined();
-      expect(getFactionVirtue('piratas')).toBeUndefined();
     });
 
     it('should return correct virtues for tenebralux factions', () => {
@@ -192,11 +189,11 @@ describe('Data - Virtues', () => {
     it('should return choice for faction with free choice', () => {
       expect(getStartingVirtue('alianca')).toBe('choice');
       expect(getStartingVirtue('brecht')).toBe('choice');
+      expect(getStartingVirtue('independentes')).toBe('choice');
     });
 
     it('should return choice for faction without virtue (attribute bonuses only)', () => {
       expect(getStartingVirtue('concordia')).toBe('choice');
-      expect(getStartingVirtue('corporacoes')).toBe('choice');
     });
 
     it('should return choice for undefined faction', () => {

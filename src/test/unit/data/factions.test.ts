@@ -11,8 +11,19 @@ import {
 
 describe('Data - Factions', () => {
   describe('AKASHIC_FACTIONS constant', () => {
-    it('should have at least 5 factions', () => {
-      expect(AKASHIC_FACTIONS.length).toBeGreaterThanOrEqual(5);
+    it('should have exactly 7 factions', () => {
+      expect(AKASHIC_FACTIONS.length).toBe(7);
+    });
+
+    it('should have the correct factions', () => {
+      const ids = AKASHIC_FACTIONS.map(f => f.id);
+      expect(ids).toContain('hegemonia');
+      expect(ids).toContain('alianca');
+      expect(ids).toContain('pacto');
+      expect(ids).toContain('concordia');
+      expect(ids).toContain('brunianos');
+      expect(ids).toContain('federacao');
+      expect(ids).toContain('independentes');
     });
 
     it('should have unique IDs', () => {
@@ -30,6 +41,14 @@ describe('Data - Factions', () => {
         expect(faction).toHaveProperty('icon');
         expect(faction.theme).toBe('akashic');
       });
+    });
+
+    it('should have independentes with choice for virtue and attribute', () => {
+      const independentes = AKASHIC_FACTIONS.find(f => f.id === 'independentes');
+      expect(independentes).toBeDefined();
+      expect(independentes?.virtue).toBe('choice');
+      expect(independentes?.attributeBonuses).toContain('choice');
+      expect(independentes?.freeSkillPoints).toBe(2);
     });
   });
 
