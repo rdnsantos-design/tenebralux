@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useCharacterBuilder } from '@/contexts/CharacterBuilderContext';
 import { useTheme } from '@/themes';
 import { useCharacterPDF } from '@/hooks/useCharacterPDF';
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { 
   calculateDerivedStats, 
@@ -19,6 +20,7 @@ import { getPrivilegeById } from '@/data/character/privileges';
 import { getEquipmentById, getEquipmentName } from '@/data/character/equipment';
 import { getFactionById } from '@/data/character/factions';
 import { getCultureById } from '@/data/character/cultures';
+import { CharacterSheet } from '../CharacterSheet';
 import { 
   User,
   Sparkles,
@@ -42,7 +44,9 @@ import {
   Save,
   Crown,
   Loader2,
-  FileText
+  FileText,
+  LayoutGrid,
+  ScrollText
 } from 'lucide-react';
 
 // Ícones das virtudes
@@ -148,9 +152,11 @@ export function StepSummary({ onFinish }: StepSummaryProps) {
     previewPDF(draft, activeTheme);
   };
 
+  const [viewMode, setViewMode] = useState<'edit' | 'sheet'>('sheet');
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header com toggle de visualização */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Resumo do Personagem</h2>
@@ -158,12 +164,31 @@ export function StepSummary({ onFinish }: StepSummaryProps) {
             Revise todas as escolhas antes de finalizar.
           </p>
         </div>
-        <Badge variant="outline" className="text-lg px-3 py-1">
-          {activeTheme === 'akashic' ? '🚀 Akashic' : '🏰 Tenebra'}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'edit' | 'sheet')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="sheet" className="gap-2">
+                <ScrollText className="w-4 h-4" />
+                Ficha
+              </TabsTrigger>
+              <TabsTrigger value="edit" className="gap-2">
+                <LayoutGrid className="w-4 h-4" />
+                Editar
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Badge variant="outline" className="text-lg px-3 py-1">
+            {activeTheme === 'akashic' ? '🚀 Akashic' : '🏰 Tenebra'}
+          </Badge>
+        </div>
       </div>
 
-      {/* Nome e Conceito */}
+      {/* Conteúdo baseado no modo */}
+      {viewMode === 'sheet' ? (
+        <CharacterSheet draft={draft} theme={activeTheme} />
+      ) : (
+        <>
+          {/* Nome e Conceito */}
       <SummarySection 
         title="Conceito" 
         icon={User} 
@@ -371,8 +396,8 @@ export function StepSummary({ onFinish }: StepSummaryProps) {
           <p className="text-sm text-muted-foreground">Nenhum equipamento selecionado</p>
         )}
       </SummarySection>
-
-      {/* PDF Error Display */}
+        </>
+      )}
       {pdfError && (
         <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm border border-destructive/30">
           {pdfError}

@@ -1,5 +1,6 @@
 export * from './CharacterBuilderLayout';
 export * from './CharacterWizard';
+export * from './CharacterSheet';
 export * from './steps/StepPlaceholder';
 export * from './steps/StepConcept';
 export * from './steps/StepAttributes';
