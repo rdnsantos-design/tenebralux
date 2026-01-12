@@ -11,7 +11,7 @@ import { getFactionsByTheme, getFactionById, FactionDefinition, getFactionFreeSk
 import { getCulturesByTheme, getCulturesByFaction, getCultureById, CultureDefinition } from '@/data/character/cultures';
 import { VIRTUES, getVirtueById } from '@/data/character/virtues';
 import { ATTRIBUTES } from '@/data/character/attributes';
-import { Sparkles, Moon, Check, Circle, Globe, Building2, Cpu, Rocket, Ghost, Crown, Landmark, TreePine, Ship, Axe, Star, Shield, Users, Handshake, Scale, BookOpen, Sword, Skull } from 'lucide-react';
+import { Sparkles, Moon, Check, Circle, Globe, Building2, Cpu, Rocket, Ghost, Crown, Landmark, TreePine, Ship, Axe, Star, Shield, Users, Handshake, Scale, BookOpen, Sword, Skull, Compass } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -34,6 +34,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?:
   Sword,
   Skull,
   Star,
+  Compass,
 };
 
 interface StepConceptProps {
