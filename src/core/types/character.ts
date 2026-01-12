@@ -6,9 +6,11 @@ import {
   RegencyStats,
   CommandStats,
   DomainStats,
+  DomainSkillStats,
   ExperienceLevel 
 } from './base';
 import { ThemeId } from '@/themes/types';
+import { calculateDomainSkills, DomainSkillsResult } from '@/data/character/domainSkills';
 
 // === PERÍCIA ===
 export interface Skill {
@@ -67,6 +69,9 @@ export interface Character extends BaseEntity {
   
   // Stats de regência (calculados)
   regencyStats?: RegencyStats;
+  
+  // Perícias de Domínio (calculados)
+  domainSkillStats?: DomainSkillStats;
   
   // Equipamento
   equipment: Equipment[];
@@ -143,6 +148,12 @@ export function calculateRegencyStats(
       : 0,
   };
 }
+
+/**
+ * Calcula as Perícias de Domínio
+ * Re-export da função do módulo domainSkills
+ */
+export { calculateDomainSkills, type DomainSkillsResult } from '@/data/character/domainSkills';
 
 /**
  * Converte RegencyStats para CommandStats (compatibilidade)

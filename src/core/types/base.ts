@@ -74,6 +74,16 @@ export interface DomainStats {
   regencyPoints: number;
 }
 
+// === PERÍCIAS DE DOMÍNIO (NOVO) ===
+export interface DomainSkillStats {
+  regencia: number;       // Intuição + Administração
+  seguranca: number;      // (Regência + Militarismo) / 2
+  industria: number;      // (Regência + Engenharia) / 2
+  comercio: number;       // (Regência + Persuasão) / 2
+  politica: number;       // (Regência + Empatia) / 2
+  inovacao: number;       // (Regência + Pesquisa) / 2
+}
+
 // === EXPERIÊNCIA ===
 export type ExperienceLevel = 
   | 'Amador' 
