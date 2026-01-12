@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { getFactionsByTheme, getFactionById, FactionDefinition } from '@/data/character/factions';
+import { getFactionsByTheme, getFactionById, FactionDefinition, getFactionFreeSkillPoints } from '@/data/character/factions';
 import { getCulturesByTheme, getCulturesByFaction, getCultureById, CultureDefinition } from '@/data/character/cultures';
-import { Sparkles, Moon, Check, Circle, Globe, Building2, Cpu, Rocket, Ghost, Crown, Landmark, TreePine, Ship, Axe } from 'lucide-react';
+import { VIRTUES, getVirtueById } from '@/data/character/virtues';
+import { ATTRIBUTES } from '@/data/character/attributes';
+import { Sparkles, Moon, Check, Circle, Globe, Building2, Cpu, Rocket, Ghost, Crown, Landmark, TreePine, Ship, Axe, Star, Shield, Users, Handshake, Scale, BookOpen, Sword, Skull } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   Globe,
@@ -23,6 +26,14 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?:
   Ship,
   Axe,
   Circle,
+  Shield,
+  Users,
+  Handshake,
+  Scale,
+  BookOpen,
+  Sword,
+  Skull,
+  Star,
 };
 
 interface StepConceptProps {
@@ -258,6 +269,19 @@ interface FactionCardProps {
 function FactionCard({ faction, selected, onClick }: FactionCardProps) {
   const IconComponent = ICON_MAP[faction.icon] || Circle;
   
+  // Obter informações de bônus
+  const virtueInfo = faction.virtue 
+    ? faction.virtue === 'choice' 
+      ? 'Livre escolha' 
+      : getVirtueById(faction.virtue)?.name
+    : null;
+  
+  const attrBonuses = faction.attributeBonuses?.map(attrId => 
+    ATTRIBUTES.find(a => a.id === attrId)?.name || attrId
+  );
+  
+  const freePoints = faction.freeSkillPoints;
+  
   return (
     <button
       type="button"
@@ -277,9 +301,29 @@ function FactionCard({ faction, selected, onClick }: FactionCardProps) {
         <span className="font-medium text-sm">{faction.name}</span>
         {selected && <Check className="w-4 h-4 text-primary ml-auto" />}
       </div>
-      <p className="text-xs text-muted-foreground line-clamp-2">
+      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
         {faction.description}
       </p>
+      
+      {/* Bônus da Facção */}
+      <div className="flex flex-wrap gap-1 mt-1">
+        {virtueInfo && (
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+            {virtueInfo}
+          </Badge>
+        )}
+        {attrBonuses && attrBonuses.length > 0 && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            +1 {attrBonuses.join(', ')}
+          </Badge>
+        )}
+        {freePoints && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            <Star className="w-2.5 h-2.5 mr-0.5" />
+            {freePoints} pts livres
+          </Badge>
+        )}
+      </div>
     </button>
   );
 }
