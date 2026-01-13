@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { 
   calculateDerivedStats, 
@@ -19,6 +20,15 @@ import { getPrivilegeById } from '@/data/character/privileges';
 import { getEquipmentById, getEquipmentName } from '@/data/character/equipment';
 import { getFactionById } from '@/data/character/factions';
 import { getCultureById } from '@/data/character/cultures';
+import { 
+  BASIC_CARDS,
+  BLADE_TACTICAL_CARDS,
+  RANGED_TACTICAL_CARDS,
+  MELEE_TACTICAL_CARDS,
+  getCardsBySkill,
+} from '@/data/combat/cards';
+import { getPostureCards } from '@/data/combat/postures';
+import { CombatCard } from '@/types/tactical-combat';
 import { 
   User,
   Sparkles,
@@ -46,7 +56,11 @@ import {
   Coins,
   Vote,
   Lightbulb,
-  ChevronRight
+  ChevronRight,
+  Layers,
+  Play,
+  Clock,
+  Move
 } from 'lucide-react';
 
 // Ícones
@@ -177,6 +191,47 @@ export function CharacterSheet({ draft, theme, className }: CharacterSheetProps)
     }
     return powers;
   }, [activeVirtue, draft.virtuePowers]);
+
+  // Combat Cards disponíveis baseado nas perícias
+  const combatCards = useMemo(() => {
+    const basicCards = BASIC_CARDS;
+    const postures = getPostureCards();
+    
+    // Cartas táticas desbloqueadas por perícias
+    const tacticalCards: CombatCard[] = [];
+    
+    // Lâminas
+    const laminasLevel = skills['laminas'] || 0;
+    if (laminasLevel >= 1) {
+      BLADE_TACTICAL_CARDS.forEach(card => {
+        if (card.requirements?.skillMin && laminasLevel >= card.requirements.skillMin) {
+          tacticalCards.push(card);
+        }
+      });
+    }
+    
+    // Tiro
+    const tiroLevel = skills['tiro'] || 0;
+    if (tiroLevel >= 1) {
+      RANGED_TACTICAL_CARDS.forEach(card => {
+        if (card.requirements?.skillMin && tiroLevel >= card.requirements.skillMin) {
+          tacticalCards.push(card);
+        }
+      });
+    }
+    
+    // Luta
+    const lutaLevel = skills['luta'] || 0;
+    if (lutaLevel >= 1) {
+      MELEE_TACTICAL_CARDS.forEach(card => {
+        if (card.requirements?.skillMin && lutaLevel >= card.requirements.skillMin) {
+          tacticalCards.push(card);
+        }
+      });
+    }
+    
+    return { basicCards, postures, tacticalCards };
+  }, [skills]);
 
   return (
     <div className={cn("bg-background", className)}>
@@ -354,7 +409,82 @@ export function CharacterSheet({ draft, theme, className }: CharacterSheetProps)
 
             <Separator />
 
-            {/* Perícias de Domínio */}
+            {/* Combat Cards */}
+            <section>
+              <SectionTitle icon={Layers} title="Cartas de Combate" />
+              <div className="mt-3 space-y-4">
+                
+                {/* Cartas Básicas - Sempre disponíveis */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Play className="w-4 h-4 text-green-500" />
+                    <span className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">
+                      Cartas Básicas (Gratuitas)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {combatCards.basicCards.map(card => (
+                      <CombatCardMini 
+                        key={card.id} 
+                        card={card} 
+                        theme={theme} 
+                        variant="basic"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Posturas - Sempre disponíveis */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="w-4 h-4 text-blue-500" />
+                    <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                      Posturas (Mantidas até mudar)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {combatCards.postures.map(card => (
+                      <CombatCardMini 
+                        key={card.id} 
+                        card={card} 
+                        theme={theme}
+                        variant="posture"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cartas Táticas - Desbloqueadas por perícias */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sword className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                      Cartas Táticas Desbloqueadas ({combatCards.tacticalCards.length})
+                    </span>
+                  </div>
+                  {combatCards.tacticalCards.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {combatCards.tacticalCards.map(card => (
+                        <CombatCardMini 
+                          key={card.id} 
+                          card={card} 
+                          theme={theme}
+                          variant="tactical"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 text-center">
+                      <p className="text-sm text-muted-foreground italic">
+                        Aumente suas perícias de combate (Lâminas, Tiro, Luta) para desbloquear cartas táticas
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <Separator />
             <section>
               <SectionTitle icon={Castle} title="Perícias de Domínio" />
               <div className="mt-3 space-y-3">
@@ -673,5 +803,90 @@ function StatBox({ label, value, icon: Icon, color, variant = 'default' }: StatB
         {label}
       </span>
     </div>
+  );
+}
+
+// Componente de Combat Card mini para a ficha
+interface CombatCardMiniProps {
+  card: CombatCard;
+  theme: ThemeId;
+  variant: 'basic' | 'tactical' | 'posture';
+}
+
+function CombatCardMini({ card, theme, variant }: CombatCardMiniProps) {
+  const cardName = card.name[theme] || card.name.akashic;
+  const cardDesc = card.description[theme] || card.description.akashic;
+  
+  const variantStyles = {
+    basic: 'bg-green-500/5 border-green-500/20 hover:border-green-500/40',
+    tactical: 'bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40',
+    posture: 'bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40',
+  };
+  
+  const variantColors = {
+    basic: 'text-green-600 dark:text-green-400',
+    tactical: 'text-amber-600 dark:text-amber-400',
+    posture: 'text-blue-600 dark:text-blue-400',
+  };
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div 
+            className={cn(
+              "p-2 rounded-lg border cursor-help transition-colors",
+              variantStyles[variant]
+            )}
+          >
+            <p className={cn("font-medium text-xs truncate", variantColors[variant])}>
+              {cardName}
+            </p>
+            <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+              {card.speedModifier !== 0 && (
+                <span className="flex items-center gap-0.5">
+                  <Clock className="w-3 h-3" />
+                  {card.speedModifier > 0 ? `+${card.speedModifier}` : card.speedModifier}
+                </span>
+              )}
+              {card.attackModifier !== 0 && (
+                <span className="flex items-center gap-0.5">
+                  <Sword className="w-3 h-3" />
+                  {card.attackModifier > 0 ? `+${card.attackModifier}` : card.attackModifier}
+                </span>
+              )}
+              {card.movementModifier !== 0 && (
+                <span className="flex items-center gap-0.5">
+                  <Move className="w-3 h-3" />
+                  {card.movementModifier}m
+                </span>
+              )}
+              {card.defenseBonus && card.defenseBonus > 0 && (
+                <span className="flex items-center gap-0.5">
+                  <Shield className="w-3 h-3" />
+                  +{card.defenseBonus}
+                </span>
+              )}
+            </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <div className="space-y-1">
+            <p className="font-semibold">{cardName}</p>
+            <p className="text-xs text-muted-foreground">{cardDesc}</p>
+            {card.effect && (
+              <p className="text-xs font-medium text-primary">
+                Efeito: {card.effect}
+              </p>
+            )}
+            {card.requirements && (
+              <p className="text-[10px] text-muted-foreground">
+                Req: {card.requirements.skillId} nível {card.requirements.skillMin} | {card.requirements.xpCost} XP
+              </p>
+            )}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
