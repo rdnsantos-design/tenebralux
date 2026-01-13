@@ -1,3 +1,4 @@
+// CharacterBuilderContext - Manages character creation wizard state
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { CharacterDraft, WizardStep, StepValidation, ValidationError } from '@/types/character-builder';
 import { Character, CharacterAttributes, calculateDerivedStats, calculateRegencyStats } from '@/core/types';
