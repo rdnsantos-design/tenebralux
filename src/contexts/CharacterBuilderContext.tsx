@@ -137,20 +137,13 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
     const skillsForAttribute = getSkillsByAttribute(attributeId);
     const skillIds = skillsForAttribute.map(s => s.id);
     
-    // Conta pontos de atributo
+    // Conta apenas pontos de atributo (sem especializações)
     const skillPoints = Object.entries(draft.skills)
       .filter(([skillId]) => skillIds.includes(skillId))
       .reduce((sum, [, level]) => sum + level, 0);
     
-    // Só conta especializações que vieram de pontos de atributo (skills >= 3)
-    const specPointsFromAttr = draft.skillSpecializations
-      ? Object.keys(draft.skillSpecializations)
-          .filter(id => skillIds.includes(id) && (draft.skills?.[id] || 0) >= 3)
-          .length
-      : 0;
-    
-    return skillPoints + specPointsFromAttr;
-  }, [draft.skills, draft.skillSpecializations]);
+    return skillPoints;
+  }, [draft.skills]);
 
   // Calcular pontos livres usados
   const getUsedFreeSkillPoints = useCallback((): number => {
