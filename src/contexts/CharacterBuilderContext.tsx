@@ -241,6 +241,10 @@ export function CharacterBuilderProvider({ children }: { children: React.ReactNo
         // Recomendado ter arma, mas não obrigatório
         // Apenas valida se não excedeu o orçamento
         break;
+        
+      case 8: // Reputação
+        // Step opcional - não há requisitos obrigatórios
+        break;
     }
 
     return { isValid: errors.length === 0, errors };
