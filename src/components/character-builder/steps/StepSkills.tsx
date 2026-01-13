@@ -74,13 +74,24 @@ export function StepSkills() {
 
   // ===== CÁLCULOS DE PONTOS DE ATRIBUTO =====
   
-  // Pontos de atributo usados por atributo
+  // Verifica se uma especialização foi adquirida via ponto de atributo
+  // Uma especialização vem de ponto de atributo se skills[skillId] >= 3
+  // (pois o jogador precisa de nível 3 para poder adicionar especialização)
+  const isSpecFromAttributePoints = (skillId: string): boolean => {
+    const fromAttr = skills[skillId] || 0;
+    // Se tem 3+ pontos de atributo, a especialização veio de atributo
+    return fromAttr >= 3;
+  };
+
+  // Pontos de atributo usados por atributo (NÃO conta especializações de pontos livres)
   const getUsedAttributePointsFor = (attributeId: string): number => {
     const attrSkills = getSkillsByAttribute(attributeId);
     return attrSkills.reduce((sum, skill) => {
       const baseValue = skills[skill.id] || 0;
       const hasSpec = skillSpecializations[skill.id] !== undefined;
-      return sum + baseValue + (hasSpec ? 1 : 0);
+      // Só conta a especialização se ela veio de pontos de atributo
+      const specFromAttr = hasSpec && isSpecFromAttributePoints(skill.id) ? 1 : 0;
+      return sum + baseValue + specFromAttr;
     }, 0);
   };
 
@@ -346,8 +357,11 @@ export function StepSkills() {
 
   const totalAttributePointsUsed = useMemo(() => {
     const skillPoints = Object.values(skills).reduce((sum, val) => sum + (val || 0), 0);
-    const specPoints = Object.keys(skillSpecializations).length;
-    return skillPoints + specPoints;
+    // Só conta especializações que vieram de pontos de atributo
+    const specPointsFromAttr = Object.keys(skillSpecializations).filter(skillId => 
+      isSpecFromAttributePoints(skillId)
+    ).length;
+    return skillPoints + specPointsFromAttr;
   }, [skills, skillSpecializations]);
 
   // Especializações da perícia pendente
