@@ -195,56 +195,152 @@ function mapEquipmentToTacticalArmor(equipmentId: string): TacticalArmor | undef
 
 /**
  * Cria um inimigo genérico para testes
+ * 
+ * Stats padronizados para facilitar debug:
+ * - Arma: Pistola Leve (velocidade +2)
+ * - Armadura: Leve (defesa +1)
+ * - Reação: 5 (tick base)
+ * - Guarda: 8
+ * - Vitalidade: 10
+ * - Movimento: 4 hexes
+ * - Cards: apenas "standard_shot" (Tiro Padrão, velocidade +3)
+ * 
+ * Velocidade final: Reação(5) + Arma(+2) + Card(+3) = 10
  */
 export function createGenericEnemy(
   name: string,
   level: 'weak' | 'normal' | 'strong' | 'elite',
   theme: 'akashic' | 'tenebralux' = 'akashic'
 ): Combatant {
-  const statsByLevel = {
-    weak: { attr: 1, skill: 0, vitality: 6 },
-    normal: { attr: 2, skill: 1, vitality: 10 },
-    strong: { attr: 3, skill: 2, vitality: 14 },
-    elite: { attr: 4, skill: 3, vitality: 20 }
+  // Stats fixos para teste - ignorar level por enquanto
+  const FIXED_STATS = {
+    // Atributos
+    corpo: 2,
+    reflexos: 2,
+    coordenacao: 2,
+    determinacao: 2,
+    intuicao: 2,
+    // Perícias
+    tiro: 2,
+    esquiva: 1,
+    prontidao: 1,
+    instinto: 1,
+    percepcao: 1,
+    atletismo: 0,
+    resistencia: 1,
+    resiliencia: 1,
+    vigor: 1,
+    luta: 0,
+    laminas: 0,
   };
   
-  const s = statsByLevel[level];
+  // Arma: Pistola simples
+  const weapon: TacticalWeapon = {
+    id: 'npc_pistol',
+    name: { akashic: 'Pistola Leve', tenebralux: 'Besta de Mão' },
+    type: 'ballistic',
+    tier: 1,
+    damage: 4, // 1d6 média
+    attackModifier: 0,
+    range: 20,
+    speedModifier: 2, // +2 velocidade
+    slots: 1,
+    description: { akashic: 'Arma padrão de NPC', tenebralux: 'Arma padrão de NPC' }
+  };
   
-  const draft: CharacterDraft = {
-    name,
-    theme,
+  // Armadura: Leve
+  const armor: TacticalArmor = {
+    id: 'npc_light_armor',
+    name: { akashic: 'Armadura Leve', tenebralux: 'Couro Leve' },
+    tier: 1,
+    guardBonus: 1,
+    damageReduction: 0,
+    speedPenalty: 0,
+    movementPenalty: 0,
+    description: { akashic: 'Armadura padrão de NPC', tenebralux: 'Armadura padrão de NPC' }
+  };
+  
+  // Calcular stats derivados usando valores fixos
+  // Reação = Reflexos × 2 + Prontidão = 2×2 + 1 = 5
+  const reaction = 5;
+  // Guarda = Reflexos + Esquiva + Instinto + Armadura = 2 + 1 + 1 + 1 = 5 (base) + armor
+  const guard = 5 + armor.guardBonus;
+  // Evasão = Intuição × 2 + Percepção = 2×2 + 1 = 5
+  const evasion = 5;
+  // Vitalidade = Corpo × 2 + Resistência = 2×2 + 1 = 5 (base) -> ajustar para 10
+  const vitality = 10;
+  // Movimento = 4 hexes fixo
+  const movement = 4;
+  // Preparo = Determinação + Corpo + Vigor = 2 + 2 + 1 = 5
+  const prep = 5;
+  
+  // Cards disponíveis: APENAS tiro padrão para simplificar
+  const availableCards = ['standard_shot'];
+  
+  const stats: CombatantStats = {
     attributes: {
-      corpo: s.attr,
-      reflexos: s.attr,
-      coordenacao: s.attr,
-      determinacao: s.attr,
-      intuicao: s.attr,
-      conhecimento: 1,
-      raciocinio: 1,
-      carisma: 1
+      corpo: FIXED_STATS.corpo,
+      reflexos: FIXED_STATS.reflexos,
+      coordenacao: FIXED_STATS.coordenacao,
+      determinacao: FIXED_STATS.determinacao,
+      intuicao: FIXED_STATS.intuicao
     },
     skills: {
-      luta: s.skill,
-      laminas: s.skill,
-      tiro: s.skill,
-      esquiva: s.skill,
-      prontidao: s.skill,
-      atletismo: s.skill,
-      resistencia: s.skill,
-      resiliencia: s.skill,
-      instinto: s.skill,
-      percepcao: s.skill,
-      vigor: s.skill
-    }
+      luta: FIXED_STATS.luta,
+      laminas: FIXED_STATS.laminas,
+      tiro: FIXED_STATS.tiro,
+      esquiva: FIXED_STATS.esquiva,
+      prontidao: FIXED_STATS.prontidao,
+      atletismo: FIXED_STATS.atletismo,
+      resistencia: FIXED_STATS.resistencia,
+      percepcao: FIXED_STATS.percepcao,
+      vigor: FIXED_STATS.vigor,
+      resiliencia: FIXED_STATS.resiliencia,
+      instinto: FIXED_STATS.instinto
+    },
+    vitality,
+    maxVitality: vitality,
+    evasion,
+    maxEvasion: evasion,
+    guard,
+    reaction,
+    movement,
+    prep,
+    weapon,
+    armor,
+    currentTick: 0,
+    fatigue: 0,
+    slowness: 0,
+    wounds: 0,
+    isDown: false,
+    currentMovement: movement,
+    lastFatigueTick: 0,
+    pendingCardChoice: true,
+    chosenCardId: undefined,
+    chosenTargetId: undefined,
+    availableCards,
+    purchasedCards: [],
+    activePosture: null
   };
   
-  const combatant = convertCharacterToCombatant(draft, { team: 'enemy' });
+  console.log('[createGenericEnemy]', {
+    name,
+    reaction,
+    guard,
+    vitality,
+    movement,
+    weaponSpeed: weapon.speedModifier,
+    availableCards
+  });
   
-  // Ajustar vitalidade pelo nível
-  combatant.stats.maxVitality = s.vitality;
-  combatant.stats.vitality = s.vitality;
-  
-  return combatant;
+  return {
+    id: crypto.randomUUID(),
+    name,
+    theme,
+    characterId: undefined,
+    stats,
+    team: 'enemy'
+  };
 }
 
 /**
