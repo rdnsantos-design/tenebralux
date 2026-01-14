@@ -563,19 +563,39 @@ export function chooseCard(
  */
 export function aiChooseCard(state: BattleState, combatantId: string): BattleState {
   const combatant = state.combatants.find(c => c.id === combatantId);
-  if (!combatant || !combatant.stats.pendingCardChoice) return state;
+  if (!combatant || !combatant.stats.pendingCardChoice) {
+    console.warn('[aiChooseCard] Combatant not found or no pending choice:', {
+      combatantId,
+      found: !!combatant,
+      pendingCardChoice: combatant?.stats.pendingCardChoice
+    });
+    return state;
+  }
   
   // IA simples: escolhe carta aleatória
   const cards = combatant.stats.availableCards;
-  if (cards.length === 0) return state;
+  if (cards.length === 0) {
+    console.warn('[aiChooseCard] No available cards for:', combatant.name);
+    return state;
+  }
   
   const randomCardId = cards[Math.floor(Math.random() * cards.length)];
   
   // Selecionar alvo (jogador vivo)
   const targets = state.combatants.filter(c => c.team === 'player' && !c.stats.isDown);
-  if (targets.length === 0) return state;
+  if (targets.length === 0) {
+    console.warn('[aiChooseCard] No valid targets');
+    return state;
+  }
   
   const randomTarget = targets[Math.floor(Math.random() * targets.length)];
+  
+  console.log('[aiChooseCard] AI choosing:', {
+    combatant: combatant.name,
+    cardId: randomCardId,
+    targetId: randomTarget.id,
+    targetName: randomTarget.name
+  });
   
   return chooseCard(state, combatantId, randomCardId, randomTarget.id);
 }
