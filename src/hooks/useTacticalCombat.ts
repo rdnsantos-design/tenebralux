@@ -176,20 +176,33 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     const next = getNextCombatant(battleState);
     if (!next) return;
     
+    // Verificar se o próximo combatente tem card e alvo escolhidos
+    if (!next.stats.chosenCardId || !next.stats.chosenTargetId) {
+      // Combatente precisa escolher mas estamos na fase de combate - voltar para choosing
+      console.warn('Combatente sem escolha na fase de combate, voltando para choosing:', next.name);
+      setBattleState(prev => prev ? { ...prev, phase: 'choosing' } : null);
+      return;
+    }
+    
     // Se próximo é inimigo, resolver automaticamente
-    if (next.team === 'enemy' && next.stats.chosenCardId && next.stats.chosenTargetId) {
+    if (next.team === 'enemy') {
       const timer = setTimeout(() => {
         const newState = resolveNextAction(battleState);
-        setBattleState(newState);
+        // Só atualizar se o estado realmente mudou (evitar loop)
+        if (newState !== battleState) {
+          setBattleState(newState);
+        }
       }, 800);
       
       return () => clearTimeout(timer);
     }
     
-    // Se é jogador e tem escolha, resolver
-    if (next.team === 'player' && next.stats.chosenCardId && next.stats.chosenTargetId) {
+    // Se é jogador e tem escolha, resolver imediatamente
+    if (next.team === 'player') {
       const newState = resolveNextAction(battleState);
-      setBattleState(newState);
+      if (newState !== battleState) {
+        setBattleState(newState);
+      }
     }
   }, [battleState]);
   
