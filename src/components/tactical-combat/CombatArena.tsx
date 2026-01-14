@@ -274,6 +274,7 @@ export function CombatArena({
                                 selectedCard?.id === card.id ? null : card
                               )}
                               theme="akashic"
+                              computedStats={activeCombatant ? getComputedCardStats(activeCombatant, card) : undefined}
                             />
                           ))}
                         </div>
@@ -482,6 +483,7 @@ export function CombatArena({
                             onClick={() => onSelectCard(
                               selectedCard?.id === card.id ? null : card
                             )}
+                            computedStats={activeCombatant ? getComputedCardStats(activeCombatant, card) : undefined}
                           />
                         ))}
                       </div>
