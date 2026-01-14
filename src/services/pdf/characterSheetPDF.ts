@@ -17,6 +17,14 @@ import {
   calculateRegencyStats,
   CharacterAttributes 
 } from '@/core/types';
+import { CombatCard } from '@/types/tactical-combat';
+import { 
+  BASIC_CARDS, 
+  BLADE_TACTICAL_CARDS, 
+  RANGED_TACTICAL_CARDS, 
+  MELEE_TACTICAL_CARDS 
+} from '@/data/combat/cards';
+import { POSTURE_CARDS } from '@/data/combat/postures';
 
 export interface PDFOptions {
   theme: 'akashic' | 'tenebralux';
@@ -385,6 +393,208 @@ export function generateCharacterPDF(character: CharacterDraft, options: PDFOpti
     pageHeight - 10,
     { align: 'center' }
   );
+
+  // ============= COMBAT CARDS PAGES =============
+  const characterSkills = character.skills || {};
+  
+  // Collect all available cards
+  const availableCards: { card: CombatCard; category: string }[] = [];
+  
+  // Basic cards
+  BASIC_CARDS.forEach(card => {
+    availableCards.push({ card, category: 'Básica' });
+  });
+  
+  // Postures
+  POSTURE_CARDS.forEach(card => {
+    availableCards.push({ card, category: 'Postura' });
+  });
+  
+  // Tactical cards based on skills
+  const bladesLevel = characterSkills.laminas || 0;
+  const shootingLevel = characterSkills.tiro || 0;
+  const fightingLevel = characterSkills.luta || 0;
+  
+  BLADE_TACTICAL_CARDS.forEach(card => {
+    if (bladesLevel >= (card.requirements?.skillMin || 0)) {
+      availableCards.push({ card, category: 'Tática - Lâminas' });
+    }
+  });
+  
+  RANGED_TACTICAL_CARDS.forEach(card => {
+    if (shootingLevel >= (card.requirements?.skillMin || 0)) {
+      availableCards.push({ card, category: 'Tática - Tiro' });
+    }
+  });
+  
+  MELEE_TACTICAL_CARDS.forEach(card => {
+    if (fightingLevel >= (card.requirements?.skillMin || 0)) {
+      availableCards.push({ card, category: 'Tática - Luta' });
+    }
+  });
+  
+  // Card dimensions (small playing cards ~56x86mm)
+  const cardWidth = 50;
+  const cardHeight = 75;
+  const cardPadding = 5;
+  const cardsPerRow = 3;
+  const cardsPerCol = 3;
+  const cardsPerPage = cardsPerRow * cardsPerCol;
+  
+  // Helper to draw a single combat card
+  const drawCombatCard = (
+    cardData: { card: CombatCard; category: string },
+    x: number, 
+    y: number
+  ): void => {
+    const { card, category } = cardData;
+    const theme = options.theme;
+    
+    // Card background
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
+    
+    // Card border color based on type
+    let borderColor: [number, number, number];
+    if (card.type === 'basic') {
+      borderColor = colors.primary;
+    } else if (card.type === 'posture') {
+      borderColor = colors.accent;
+    } else {
+      borderColor = colors.secondary;
+    }
+    
+    doc.setDrawColor(...borderColor);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'S');
+    
+    // Card header
+    doc.setFillColor(...borderColor);
+    doc.roundedRect(x + 1, y + 1, cardWidth - 2, 12, 2, 2, 'F');
+    
+    // Card name
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    const cardName = card.name[theme] || card.name.akashic;
+    const truncatedName = cardName.length > 18 ? cardName.substring(0, 16) + '...' : cardName;
+    doc.text(truncatedName, x + cardWidth / 2, y + 7.5, { align: 'center' });
+    
+    // Category label
+    doc.setTextColor(...borderColor);
+    doc.setFontSize(5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(category, x + cardWidth / 2, y + 16, { align: 'center' });
+    
+    // Modifiers section
+    let modY = y + 22;
+    doc.setTextColor(...colors.text);
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'bold');
+    
+    const modifiers: string[] = [];
+    if (card.speedModifier !== 0) {
+      modifiers.push(`Vel: ${card.speedModifier >= 0 ? '+' : ''}${card.speedModifier}`);
+    }
+    if (card.attackModifier !== 0) {
+      modifiers.push(`Atq: ${card.attackModifier >= 0 ? '+' : ''}${card.attackModifier}`);
+    }
+    if (card.movementModifier !== 0 && card.movementModifier !== -999) {
+      modifiers.push(`Mov: ${card.movementModifier >= 0 ? '+' : ''}${card.movementModifier}`);
+    }
+    if (card.defenseBonus) {
+      modifiers.push(`Def: ${card.defenseBonus >= 0 ? '+' : ''}${card.defenseBonus}`);
+    }
+    if (card.guardMultiplier) {
+      modifiers.push(`Guarda: x${card.guardMultiplier}`);
+    }
+    
+    // Draw modifiers in columns
+    const modColWidth = (cardWidth - 4) / 2;
+    modifiers.forEach((mod, idx) => {
+      const modX = x + 2 + (idx % 2) * modColWidth;
+      const modYOffset = modY + Math.floor(idx / 2) * 5;
+      doc.text(mod, modX, modYOffset);
+    });
+    
+    modY += Math.ceil(modifiers.length / 2) * 5 + 3;
+    
+    // Description
+    doc.setTextColor(...colors.muted);
+    doc.setFontSize(5);
+    doc.setFont('helvetica', 'normal');
+    const description = card.description?.[theme] || card.description?.akashic || '';
+    const descLines = doc.splitTextToSize(description, cardWidth - 6);
+    const maxDescLines = Math.min(descLines.length, 4);
+    for (let i = 0; i < maxDescLines; i++) {
+      doc.text(descLines[i], x + 3, modY + i * 4);
+    }
+    modY += maxDescLines * 4 + 2;
+    
+    // Effect (if any)
+    if (card.effect) {
+      doc.setTextColor(...colors.accent);
+      doc.setFontSize(5);
+      doc.setFont('helvetica', 'italic');
+      const effectLines = doc.splitTextToSize(`★ ${card.effect}`, cardWidth - 6);
+      const maxEffectLines = Math.min(effectLines.length, 2);
+      for (let i = 0; i < maxEffectLines; i++) {
+        doc.text(effectLines[i], x + 3, modY + i * 4);
+      }
+    }
+    
+    // Requirements (if tactical)
+    if (card.requirements) {
+      doc.setTextColor(...colors.muted);
+      doc.setFontSize(4);
+      doc.setFont('helvetica', 'normal');
+      const reqText = `Req: ${card.requirements.skillId} ${card.requirements.skillMin}+`;
+      doc.text(reqText, x + cardWidth / 2, y + cardHeight - 3, { align: 'center' });
+    }
+  };
+  
+  // Draw cards on new pages
+  if (availableCards.length > 0) {
+    let cardIndex = 0;
+    
+    while (cardIndex < availableCards.length) {
+      doc.addPage();
+      
+      // Page header
+      doc.setFillColor(...colors.primary);
+      doc.rect(0, 0, pageWidth, 15, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CARTAS DE COMBATE', pageWidth / 2, 10, { align: 'center' });
+      
+      // Calculate starting position to center cards
+      const totalGridWidth = cardsPerRow * cardWidth + (cardsPerRow - 1) * cardPadding;
+      const startX = (pageWidth - totalGridWidth) / 2;
+      const startY = 22;
+      
+      // Draw cards in grid
+      for (let row = 0; row < cardsPerCol && cardIndex < availableCards.length; row++) {
+        for (let col = 0; col < cardsPerRow && cardIndex < availableCards.length; col++) {
+          const x = startX + col * (cardWidth + cardPadding);
+          const y = startY + row * (cardHeight + cardPadding);
+          
+          drawCombatCard(availableCards[cardIndex], x, y);
+          cardIndex++;
+        }
+      }
+      
+      // Page footer
+      doc.setTextColor(...colors.muted);
+      doc.setFontSize(7);
+      doc.text(
+        `${characterName} - Cartas de Combate`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+    }
+  }
 
   return doc;
 }
