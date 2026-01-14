@@ -4,6 +4,7 @@ export interface EquipmentStats {
   damage?: string;
   range?: string;
   defense?: number;
+  speedModifier?: number; // Modificador de velocidade da arma
   special?: string;
 }
 
@@ -27,7 +28,7 @@ export interface EquipmentDefinition {
 export const STARTING_CREDITS = 100;
 
 export const WEAPONS: EquipmentDefinition[] = [
-  // Melee
+  // Melee (+1 velocidade)
   {
     id: 'knife',
     name: { akashic: 'Faca Tática', tenebralux: 'Adaga' },
@@ -39,7 +40,7 @@ export const WEAPONS: EquipmentDefinition[] = [
       akashic: 'Lâmina compacta para combate próximo e utilidades.',
       tenebralux: 'Uma adaga de aço afiada, ideal para golpes rápidos.'
     },
-    stats: { damage: '1d4+FOR', range: 'Corpo a corpo', special: 'Leve, Oculta' }
+    stats: { damage: '1d4+FOR', range: 'Corpo a corpo', speedModifier: 1, special: 'Leve, Oculta' }
   },
   {
     id: 'sword',
@@ -52,7 +53,7 @@ export const WEAPONS: EquipmentDefinition[] = [
       akashic: 'Arma branca padrão das forças armadas.',
       tenebralux: 'Uma espada bem balanceada de aço forjado.'
     },
-    stats: { damage: '1d8+FOR', range: 'Corpo a corpo', special: 'Versátil' }
+    stats: { damage: '1d8+FOR', range: 'Corpo a corpo', speedModifier: 1, special: 'Versátil' }
   },
   {
     id: 'axe',
@@ -65,7 +66,7 @@ export const WEAPONS: EquipmentDefinition[] = [
       akashic: 'Ferramenta pesada convertida para combate.',
       tenebralux: 'Machado de lâmina dupla, devastador em combate.'
     },
-    stats: { damage: '1d10+FOR', range: 'Corpo a corpo', special: 'Brutal' }
+    stats: { damage: '1d10+FOR', range: 'Corpo a corpo', speedModifier: 1, special: 'Brutal' }
   },
   {
     id: 'spear',
@@ -78,9 +79,22 @@ export const WEAPONS: EquipmentDefinition[] = [
       akashic: 'Arma de alcance para formações defensivas.',
       tenebralux: 'Lança de madeira reforçada com ponta de ferro.'
     },
-    stats: { damage: '1d6+FOR', range: 'Alcance', special: 'Alcance, Arremesso' }
+    stats: { damage: '1d6+FOR', range: 'Alcance', speedModifier: 1, special: 'Alcance, Arremesso' }
   },
-  // Ranged
+  {
+    id: 'unarmed',
+    name: { akashic: 'Desarmado', tenebralux: 'Punhos' },
+    category: 'weapon',
+    type: 'melee',
+    cost: 0,
+    weight: 0,
+    description: {
+      akashic: 'Combate corpo a corpo sem armas.',
+      tenebralux: 'Luta com punhos e pés.'
+    },
+    stats: { damage: '1d2+FOR', range: 'Corpo a corpo', speedModifier: 1, special: 'Sempre disponível' }
+  },
+  // Ranged pequenas (+2 velocidade)
   {
     id: 'pistol',
     name: { akashic: 'Pistola', tenebralux: 'Besta de Mão' },
@@ -92,8 +106,9 @@ export const WEAPONS: EquipmentDefinition[] = [
       akashic: 'Arma de fogo semiautomática compacta.',
       tenebralux: 'Pequena besta que pode ser usada com uma mão.'
     },
-    stats: { damage: '1d6+DES', range: '20m', special: 'Leve, Recarga rápida' }
+    stats: { damage: '1d6+DES', range: '20m', speedModifier: 2, special: 'Leve, Recarga rápida' }
   },
+  // Ranged rifle (+3 velocidade)
   {
     id: 'rifle',
     name: { akashic: 'Rifle de Precisão', tenebralux: 'Arco Longo' },
@@ -105,7 +120,7 @@ export const WEAPONS: EquipmentDefinition[] = [
       akashic: 'Arma de longo alcance com mira telescópica.',
       tenebralux: 'Arco de madeira curvada para disparos à distância.'
     },
-    stats: { damage: '1d10+DES', range: '100m', special: 'Precisão, Duas mãos' }
+    stats: { damage: '1d10+DES', range: '100m', speedModifier: 3, special: 'Precisão, Duas mãos' }
   },
   {
     id: 'shotgun',
@@ -118,9 +133,9 @@ export const WEAPONS: EquipmentDefinition[] = [
       akashic: 'Arma de dispersão para combate em curto alcance.',
       tenebralux: 'Besta reforçada que dispara virotes pesados.'
     },
-    stats: { damage: '2d6', range: '10m', special: 'Dispersão, Recarga' }
+    stats: { damage: '2d6', range: '10m', speedModifier: 2, special: 'Dispersão, Recarga' }
   },
-  // Heavy
+  // Heavy - metralhadora (+3 velocidade)
   {
     id: 'machinegun',
     name: { akashic: 'Metralhadora', tenebralux: 'Balista Portátil' },
@@ -132,8 +147,9 @@ export const WEAPONS: EquipmentDefinition[] = [
       akashic: 'Arma automática de supressão.',
       tenebralux: 'Balista compacta montada em suporte portátil.'
     },
-    stats: { damage: '2d8', range: '50m', special: 'Automático, Pesado, Montagem' }
+    stats: { damage: '2d8', range: '50m', speedModifier: 3, special: 'Automático, Pesado, Montagem' }
   },
+  // Heavy - canhão/bazuca (+5 velocidade)
   {
     id: 'launcher',
     name: { akashic: 'Lançador de Granadas', tenebralux: 'Catapulta de Mão' },
@@ -145,7 +161,7 @@ export const WEAPONS: EquipmentDefinition[] = [
       akashic: 'Lança projéteis explosivos em área.',
       tenebralux: 'Dispositivo mecânico que arremessa esferas explosivas.'
     },
-    stats: { damage: '3d6', range: '30m', special: 'Área, Munição limitada' }
+    stats: { damage: '3d6', range: '30m', speedModifier: 5, special: 'Área, Munição limitada' }
   }
 ];
 
