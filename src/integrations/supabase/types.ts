@@ -1708,6 +1708,39 @@ export type Database = {
         }
         Relationships: []
       }
+      rpg_armors: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          movement_mod: number
+          name: string
+          resistance: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          movement_mod?: number
+          name: string
+          resistance: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          movement_mod?: number
+          name?: string
+          resistance?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       rpg_attributes: {
         Row: {
           created_at: string
@@ -1937,6 +1970,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rpg_weapons: {
+        Row: {
+          category: string
+          created_at: string
+          damage: number
+          damage_ratio: string
+          damage_type: string
+          id: string
+          movement_mod: number
+          name: string
+          range_base: number | null
+          range_max: number | null
+          range_penalty: number | null
+          speed_mod: number
+          updated_at: string
+          user_id: string | null
+          weapon_type: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          damage: number
+          damage_ratio?: string
+          damage_type: string
+          id?: string
+          movement_mod?: number
+          name: string
+          range_base?: number | null
+          range_max?: number | null
+          range_penalty?: number | null
+          speed_mod?: number
+          updated_at?: string
+          user_id?: string | null
+          weapon_type: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          damage?: number
+          damage_ratio?: string
+          damage_type?: string
+          id?: string
+          movement_mod?: number
+          name?: string
+          range_base?: number | null
+          range_max?: number | null
+          range_penalty?: number | null
+          speed_mod?: number
+          updated_at?: string
+          user_id?: string | null
+          weapon_type?: string
+        }
+        Relationships: []
       }
       strategic_armies: {
         Row: {
