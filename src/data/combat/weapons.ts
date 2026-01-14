@@ -18,6 +18,7 @@ export const PISTOLS: TacticalWeapon[] = [
     damage: 3,
     attackModifier: 0,
     speedModifier: 1,
+    movementModifier: 0,
     slots: 1,
     range: 20,
     description: {
@@ -33,6 +34,7 @@ export const PISTOLS: TacticalWeapon[] = [
     damage: 4,
     attackModifier: 0,
     speedModifier: 1,
+    movementModifier: 0,
     slots: 1,
     range: 25,
     description: {
@@ -48,6 +50,7 @@ export const PISTOLS: TacticalWeapon[] = [
     damage: 2,
     attackModifier: 1,
     speedModifier: 1,
+    movementModifier: 0,
     effect: 'Ignora 1 de escudo',
     slots: 1,
     range: 25,
@@ -69,6 +72,7 @@ export const RIFLES: TacticalWeapon[] = [
     damage: 5,
     attackModifier: 0,
     speedModifier: 2,
+    movementModifier: -2,
     slots: 2,
     range: 80,
     description: {
@@ -84,6 +88,7 @@ export const RIFLES: TacticalWeapon[] = [
     damage: 4,
     attackModifier: 1,
     speedModifier: 2,
+    movementModifier: -2,
     effect: 'Ignora 2 de escudo',
     slots: 2,
     range: 60,
@@ -100,6 +105,7 @@ export const RIFLES: TacticalWeapon[] = [
     damage: 7,
     attackModifier: 1,
     speedModifier: 3,
+    movementModifier: -2,
     slots: 2,
     range: 120,
     description: {
@@ -120,6 +126,7 @@ export const MELEE_WEAPONS: TacticalWeapon[] = [
     damage: 1,
     attackModifier: 0,
     speedModifier: 0,
+    movementModifier: 0,
     slots: 0,
     range: 0,
     description: {
@@ -135,6 +142,7 @@ export const MELEE_WEAPONS: TacticalWeapon[] = [
     damage: 2,
     attackModifier: 1,
     speedModifier: 0,
+    movementModifier: 0,
     effect: 'Oculta',
     slots: 1,
     range: 0,
@@ -151,6 +159,7 @@ export const MELEE_WEAPONS: TacticalWeapon[] = [
     damage: 3,
     attackModifier: 0,
     speedModifier: 1,
+    movementModifier: 0,
     slots: 1,
     range: 0,
     description: {
@@ -166,6 +175,7 @@ export const MELEE_WEAPONS: TacticalWeapon[] = [
     damage: 4,
     attackModifier: 0,
     speedModifier: 2,
+    movementModifier: 0,
     slots: 1,
     range: 0,
     description: {
@@ -181,6 +191,7 @@ export const MELEE_WEAPONS: TacticalWeapon[] = [
     damage: 6,
     attackModifier: -1,
     speedModifier: 3,
+    movementModifier: -3,
     effect: 'Duas mãos, Alcance',
     slots: 2,
     range: 0,

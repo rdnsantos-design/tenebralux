@@ -67,6 +67,7 @@ export interface TacticalWeapon {
   damage: number;
   attackModifier: number;
   speedModifier: number;      // Velocidade da arma (somado ao tempo)
+  movementModifier: number;   // Modificador de movimento (0 = neutro, negativo = penalidade)
   effect?: string;
   slots: number;              // Slots ocupados
   range: number;              // Alcance em hexes (0 = melee adjacente, 2 = lança)
