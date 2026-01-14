@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SavedCharacter } from '@/types/character-storage';
+import { SimplifiedCharacter, CHARACTER_LEVELS, SIMPLIFIED_WEAPONS } from '@/types/simplified-character';
 import { useCharacterStorageHybrid } from '@/hooks/useCharacterStorageHybrid';
 import { CharacterCard } from './CharacterCard';
 import { CharacterFilters } from './CharacterFilters';
@@ -11,6 +12,8 @@ import { CharacterSheetDialog } from './CharacterSheetDialog';
 import { UserMenu } from '@/components/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   Plus, 
   Upload, 
@@ -20,6 +23,11 @@ import {
   AlertCircle,
   RefreshCw,
   ArrowLeft,
+  Zap,
+  Crown,
+  Edit,
+  Trash2,
+  Copy,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,6 +35,89 @@ interface CharacterListProps {
   onCreateNew: () => void;
   onEdit: (id: string) => void;
   onContinue: (id: string) => void;
+}
+
+// Component for simplified character card
+function SimplifiedCharacterCard({ 
+  character, 
+  onEdit, 
+  onDelete,
+  onDuplicate 
+}: { 
+  character: SimplifiedCharacter;
+  onEdit: () => void;
+  onDelete: () => void;
+  onDuplicate: () => void;
+}) {
+  const levelInfo = CHARACTER_LEVELS.find(l => l.value === character.level);
+  const weapon = SIMPLIFIED_WEAPONS[character.weaponType];
+  
+  return (
+    <Card className="hover:shadow-md transition-all">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              {character.name}
+              {character.isRegent && (
+                <Crown className="w-4 h-4 text-amber-500" />
+              )}
+            </CardTitle>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="secondary" className="text-xs">
+                <Zap className="w-3 h-3 mr-1" />
+                Resumido
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {levelInfo?.label}
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-4 gap-2 text-xs">
+          <div className="text-center p-1.5 bg-muted rounded">
+            <div className="font-semibold">DEF</div>
+            <div>{character.defesa}</div>
+          </div>
+          <div className="text-center p-1.5 bg-muted rounded">
+            <div className="font-semibold">EVA</div>
+            <div>{character.evasao}</div>
+          </div>
+          <div className="text-center p-1.5 bg-muted rounded">
+            <div className="font-semibold">VIT</div>
+            <div>{character.vitalidade}</div>
+          </div>
+          <div className="text-center p-1.5 bg-muted rounded">
+            <div className="font-semibold">MOV</div>
+            <div>{character.movimento}</div>
+          </div>
+        </div>
+        
+        <div className="text-xs text-muted-foreground">
+          <span className="font-medium">Ataques:</span> Tiro {character.tiro} | Luta {character.luta} | Lâminas {character.laminas}
+        </div>
+        
+        <div className="text-xs text-muted-foreground">
+          <span className="font-medium">Arma:</span> {weapon.name} (Dano {weapon.damage})
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <Button variant="outline" size="sm" className="flex-1" onClick={onEdit}>
+            <Edit className="w-3 h-3 mr-1" />
+            Editar
+          </Button>
+          <Button variant="outline" size="sm" onClick={onDuplicate}>
+            <Copy className="w-3 h-3" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function CharacterList({ 
@@ -51,9 +142,30 @@ export function CharacterList({
     syncNow,
   } = useCharacterStorageHybrid();
 
+  // Simplified characters from localStorage
+  const [simplifiedCharacters, setSimplifiedCharacters] = useState<SimplifiedCharacter[]>([]);
+  const [deleteSimplifiedTarget, setDeleteSimplifiedTarget] = useState<SimplifiedCharacter | null>(null);
+
+  // Load simplified characters
+  useEffect(() => {
+    const loadSimplified = () => {
+      try {
+        const stored = localStorage.getItem('simplifiedCharacters');
+        setSimplifiedCharacters(stored ? JSON.parse(stored) : []);
+      } catch {
+        setSimplifiedCharacters([]);
+      }
+    };
+    loadSimplified();
+    
+    // Listen for storage changes
+    window.addEventListener('storage', loadSimplified);
+    return () => window.removeEventListener('storage', loadSimplified);
+  }, []);
+
   // Stats calculados localmente
   const stats = {
-    count: characters.length,
+    count: characters.length + simplifiedCharacters.length,
     maxCount: 50,
     storageUsed: storageMode === 'cloud' ? 'Cloud' : 'Local',
   };
@@ -113,6 +225,34 @@ export function CharacterList({
     }
   };
 
+  // Funções para personagens simplificados
+  const handleDeleteSimplified = (id: string) => {
+    const updated = simplifiedCharacters.filter(c => c.id !== id);
+    localStorage.setItem('simplifiedCharacters', JSON.stringify(updated));
+    setSimplifiedCharacters(updated);
+    setDeleteSimplifiedTarget(null);
+    toast.success('Personagem simplificado deletado');
+  };
+
+  const handleDuplicateSimplified = (character: SimplifiedCharacter) => {
+    const newChar: SimplifiedCharacter = {
+      ...character,
+      id: crypto.randomUUID(),
+      name: `${character.name} (Cópia)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    const updated = [...simplifiedCharacters, newChar];
+    localStorage.setItem('simplifiedCharacters', JSON.stringify(updated));
+    setSimplifiedCharacters(updated);
+    toast.success(`"${newChar.name}" criado`);
+  };
+
+  // Filtrar personagens simplificados pela busca
+  const filteredSimplified = simplifiedCharacters.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -137,6 +277,8 @@ export function CharacterList({
       toast.error(err instanceof Error ? err.message : 'Erro ao sincronizar');
     }
   };
+
+  const totalCharacters = filteredCharacters.length + filteredSimplified.length;
 
   return (
     <div className="space-y-6 p-6">
@@ -210,7 +352,7 @@ export function CharacterList({
       )}
 
       {/* Character Grid */}
-      {filteredCharacters.length === 0 ? (
+      {totalCharacters === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">
             {stats.count === 0 
@@ -227,6 +369,7 @@ export function CharacterList({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Full characters */}
           {filteredCharacters.map((character) => (
             <CharacterCard
               key={character.id}
@@ -238,15 +381,33 @@ export function CharacterList({
               onViewSheet={() => setViewSheetCharacter(character)}
             />
           ))}
+          {/* Simplified characters */}
+          {filteredSimplified.map((character) => (
+            <SimplifiedCharacterCard
+              key={character.id}
+              character={character}
+              onEdit={() => onEdit(character.id)}
+              onDuplicate={() => handleDuplicateSimplified(character)}
+              onDelete={() => setDeleteSimplifiedTarget(character)}
+            />
+          ))}
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialog - Full character */}
       <DeleteConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         characterName={deleteTarget?.name || ''}
         onConfirm={handleDelete}
+      />
+
+      {/* Delete Confirmation Dialog - Simplified character */}
+      <DeleteConfirmDialog
+        open={!!deleteSimplifiedTarget}
+        onOpenChange={(open) => !open && setDeleteSimplifiedTarget(null)}
+        characterName={deleteSimplifiedTarget?.name || ''}
+        onConfirm={() => deleteSimplifiedTarget && handleDeleteSimplified(deleteSimplifiedTarget.id)}
       />
 
       {/* Import/Export Dialog */}
