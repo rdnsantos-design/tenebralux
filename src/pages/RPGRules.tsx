@@ -7,6 +7,7 @@ import { PrivilegeManager } from '@/components/rpg/PrivilegeManager';
 import { FactionManager } from '@/components/rpg/FactionManager';
 import { AttributeManager } from '@/components/rpg/AttributeManager';
 import { SkillManager } from '@/components/rpg/SkillManager';
+import { EquipmentManager } from '@/components/rpg/EquipmentManager';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
 export default function RPGRules() {
@@ -78,10 +79,7 @@ export default function RPGRules() {
           </TabsContent>
 
           <TabsContent value="equipment">
-            <div className="text-center py-12 text-muted-foreground">
-              <Swords className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Gerenciador de Equipamentos em desenvolvimento...</p>
-            </div>
+            <EquipmentManager />
           </TabsContent>
         </Tabs>
       </main>
