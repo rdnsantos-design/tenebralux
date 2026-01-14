@@ -165,6 +165,13 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
   // Resolver ações na fase de combate
   useEffect(() => {
     if (!battleState || battleState.phase !== 'combat') return;
+
+    // Debug (temporário)
+    console.log('[combat] phase=combat', {
+      currentTick: battleState.currentTick,
+      round: battleState.round,
+      next: getNextCombatant(battleState)?.name,
+    });
     
     // Verificar vitória/derrota
     const result = checkVictoryCondition(battleState);
@@ -179,7 +186,14 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     // Verificar se o próximo combatente tem card e alvo escolhidos
     if (!next.stats.chosenCardId || !next.stats.chosenTargetId) {
       // Combatente precisa escolher mas estamos na fase de combate - voltar para choosing
-      console.warn('Combatente sem escolha na fase de combate, voltando para choosing:', next.name);
+      console.warn('Combatente sem escolha na fase de combate, voltando para choosing:', {
+        name: next.name,
+        team: next.team,
+        tick: next.stats.currentTick,
+        chosenCardId: next.stats.chosenCardId,
+        chosenTargetId: next.stats.chosenTargetId,
+        pendingCardChoice: next.stats.pendingCardChoice,
+      });
       setBattleState(prev => prev ? { ...prev, phase: 'choosing' } : null);
       return;
     }
@@ -187,6 +201,12 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     // Se próximo é inimigo, resolver automaticamente
     if (next.team === 'enemy') {
       const timer = setTimeout(() => {
+        console.log('[combat] resolving enemy action', {
+          name: next.name,
+          tick: next.stats.currentTick,
+          card: next.stats.chosenCardId,
+          target: next.stats.chosenTargetId,
+        });
         const newState = resolveNextAction(battleState);
         // Só atualizar se o estado realmente mudou (evitar loop)
         if (newState !== battleState) {
@@ -199,12 +219,20 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     
     // Se é jogador e tem escolha, resolver imediatamente
     if (next.team === 'player') {
+      console.log('[combat] resolving player action', {
+        name: next.name,
+        tick: next.stats.currentTick,
+        card: next.stats.chosenCardId,
+        target: next.stats.chosenTargetId,
+      });
       const newState = resolveNextAction(battleState);
       if (newState !== battleState) {
         setBattleState(newState);
       }
     }
   }, [battleState]);
+
+  // ... keep existing code
   
   // Reiniciar combate
   const resetBattle = useCallback(() => {
