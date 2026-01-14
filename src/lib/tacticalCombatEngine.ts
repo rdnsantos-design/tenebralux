@@ -142,9 +142,10 @@ export function calculateActionTick(
   weaponSpeed: number,
   armorSpeedPenalty: number = 0
 ): number {
-  // Garantir progresso na timeline: mesmo ações "0" devem avançar pelo menos 1 tick
+  // Regra: se a soma der 0, a ação acontece no mesmo tick.
+  // (Tick 0 é válido e pode resolver ações simultâneas.)
   const delta = cardSpeed + weaponSpeed + armorSpeedPenalty;
-  return currentTick + Math.max(1, delta);
+  return currentTick + Math.max(0, delta);
 }
 
 // ============= CÁLCULO DE PENALIDADES POR DANO =============

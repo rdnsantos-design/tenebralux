@@ -99,15 +99,32 @@ export function CombatArena({
   // Determinar se estamos na fase de escolha
   const isChoosingPhase = battleState.phase === 'choosing';
 
-  // Auto-executar turno da IA
-  useEffect(() => {
-    if (autoPlayAI && !isPlayerTurn && currentCombatant && phase === 'battle') {
-      const timer = setTimeout(() => {
-        onAIAction();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [isPlayerTurn, currentCombatant, phase, autoPlayAI, onAIAction]);
+  const getRelevantSkill = (combatant: Combatant, card: CombatCard): number => {
+    const skillId = card.requirements?.skillId as keyof Combatant['stats']['skills'] | undefined;
+    if (skillId && combatant.stats.skills[skillId] != null) return combatant.stats.skills[skillId];
+    // Fallback: para cartas sem requisito, usar o melhor entre luta e lâminas.
+    return Math.max(combatant.stats.skills.luta, combatant.stats.skills.laminas);
+  };
+
+  const getComputedCardStats = (combatant: Combatant, card: CombatCard) => {
+    const weapon = combatant.stats.weapon;
+    const armor = combatant.stats.armor;
+
+    const speed = combatant.stats.reaction + card.speedModifier + (weapon?.speedModifier || 0) + (armor?.speedPenalty || 0);
+
+    const attackSkill = getRelevantSkill(combatant, card);
+    const attack = attackSkill + card.attackModifier + (weapon?.attackModifier || 0);
+
+    // Movimento final (ficha + carta + arma - penalidade de armadura)
+    const movement = card.movementModifier === -999
+      ? 0
+      : Math.max(
+          0,
+          combatant.stats.movement + card.movementModifier + (weapon?.movementModifier || 0) - (armor?.movementPenalty || 0)
+        );
+
+    return { speed, attack, movement };
+  };
 
   // Função para obter cartas de um combatente
   const getCombatantCards = (combatant: Combatant): CombatCard[] => {

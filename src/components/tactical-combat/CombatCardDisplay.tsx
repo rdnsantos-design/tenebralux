@@ -14,6 +14,15 @@ interface CombatCardDisplayProps {
   isDisabled?: boolean;
   onClick?: () => void;
   theme?: 'akashic' | 'tenebralux';
+  /**
+   * Se fornecido, mostra valores finais (ficha + manobra + arma + armadura)
+   * ao invés dos modificadores crus da carta.
+   */
+  computedStats?: {
+    speed: number; // velocidade final (Reação + mods)
+    attack: number; // ataque final (perícia + mods)
+    movement: number; // movimento final disponível
+  };
 }
 
 // Determina o estilo de combate da carta
@@ -54,7 +63,8 @@ export function CombatCardDisplay({
   isSelected = false,
   isDisabled = false,
   onClick,
-  theme = 'akashic'
+  theme = 'akashic',
+  computedStats
 }: CombatCardDisplayProps) {
   const name = card.name[theme];
   const description = card.description[theme];
@@ -102,31 +112,34 @@ export function CombatCardDisplay({
           {name}
         </h5>
 
-        {/* Modificadores */}
+        {/* Modificadores / Valores finais */}
         <div className="flex justify-center gap-2 text-xs">
+          {/* Velocidade */}
           <div className={cn(
             'flex items-center gap-0.5 px-1.5 py-0.5 rounded',
-            card.speedModifier <= 1 ? 'bg-green-500/20 text-green-700' : 
-            card.speedModifier <= 3 ? 'bg-yellow-500/20 text-yellow-700' : 
+            (computedStats?.speed ?? card.speedModifier) <= 1 ? 'bg-green-500/20 text-green-700' :
+            (computedStats?.speed ?? card.speedModifier) <= 3 ? 'bg-yellow-500/20 text-yellow-700' :
             'bg-red-500/20 text-red-700'
           )}>
             <Zap className="h-3 w-3" />
-            +{card.speedModifier}
+            {computedStats ? `T${computedStats.speed}` : `+${card.speedModifier}`}
           </div>
-          
+
+          {/* Ataque */}
           <div className={cn(
             'flex items-center gap-0.5 px-1.5 py-0.5 rounded',
-            card.attackModifier >= 2 ? 'bg-green-500/20 text-green-700' : 
-            card.attackModifier >= 0 ? 'bg-yellow-500/20 text-yellow-700' : 
+            (computedStats?.attack ?? card.attackModifier) >= 8 ? 'bg-green-500/20 text-green-700' :
+            (computedStats?.attack ?? card.attackModifier) >= 0 ? 'bg-yellow-500/20 text-yellow-700' :
             'bg-red-500/20 text-red-700'
           )}>
             <Crosshair className="h-3 w-3" />
-            {card.attackModifier >= 0 ? '+' : ''}{card.attackModifier}
+            {computedStats ? `ATK ${computedStats.attack}` : `${card.attackModifier >= 0 ? '+' : ''}${card.attackModifier}`}
           </div>
-          
+
+          {/* Movimento */}
           <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted">
             <Move className="h-3 w-3" />
-            {card.movementModifier}m
+            {computedStats ? `${computedStats.movement}m` : `${card.movementModifier}m`}
           </div>
         </div>
 
