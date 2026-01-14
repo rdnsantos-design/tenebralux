@@ -473,8 +473,11 @@ export function generateCharacterPDF(character: CharacterDraft, options: PDFOpti
   const calculateFinalStats = (card: CombatCard, category: string) => {
     const skillLevel = getRelevantSkillLevel(category);
     
-    // Velocidade Final = Reação + mod.carta
-    const finalSpeed = derivedStatsForCards.reacao + card.speedModifier;
+    // Modificador de velocidade da arma
+    const weaponSpeedMod = weapon?.stats?.speedModifier || 1; // Default +1 para desarmado
+    
+    // Velocidade Final = Reação + mod.carta + mod.arma
+    const finalSpeed = derivedStatsForCards.reacao + card.speedModifier + weaponSpeedMod;
     
     // Ataque Final = Perícia + mod.carta
     const finalAttack = skillLevel + card.attackModifier;
