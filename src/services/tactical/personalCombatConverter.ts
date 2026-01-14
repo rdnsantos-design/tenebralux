@@ -243,7 +243,7 @@ export function createGenericEnemy(
     damage: 4, // 1d6 média
     attackModifier: 0,
     range: 20,
-    speedModifier: 2, // +2 velocidade
+    speedModifier: 1, // +1 velocidade (pistola)
     movementModifier: 0, // Pistola não penaliza movimento
     slots: 1,
     description: { akashic: 'Arma padrão de NPC', tenebralux: 'Arma padrão de NPC' }
