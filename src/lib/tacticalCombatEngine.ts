@@ -516,7 +516,8 @@ export function chooseCard(
   const armorPenalty = combatant.stats.armor?.speedPenalty || 0;
   
   // Calcular tick de ação baseado na velocidade do card + arma
-  const actionTick = calculateActionTick(0, card.speedModifier, weaponSpeed, armorPenalty);
+  // IMPORTANTE: usar o tick atual da batalha como base (senão fica preso no 0)
+  const actionTick = calculateActionTick(state.currentTick, card.speedModifier, weaponSpeed, armorPenalty);
   
   // Atualizar combatente com a escolha
   const updatedCombatant = {
