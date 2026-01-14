@@ -242,8 +242,8 @@ export function CombatArena({
                     )}
                   </div>
                   
-                  {/* Cards (modo ataque) */}
-                  {actionMode === 'attack' && (
+                  {/* Cards (modo ataque) - fase de escolha */}
+                  {actionMode === 'attack' && isChoosingPhase && (
                     <>
                       <Separator orientation="vertical" className="h-8" />
                       <ScrollArea className="flex-1">
@@ -264,6 +264,25 @@ export function CombatArena({
                     </>
                   )}
                   
+                  {/* Card já escolhido - fase de combate */}
+                  {actionMode === 'attack' && !isChoosingPhase && currentCombatant?.stats.chosenCardId && (
+                    <>
+                      <Separator orientation="vertical" className="h-8" />
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-sm">
+                          Carta: {(() => {
+                            const card = getCardById(currentCombatant.stats.chosenCardId);
+                            if (!card) return 'Desconhecida';
+                            return typeof card.name === 'string' ? card.name : card.name.akashic;
+                          })()}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          → Mova se quiser, depois clique em "Executar Ataque!"
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  
                   {/* Instruções de movimento */}
                   {actionMode === 'move' && (
                     <div className="flex-1 text-center text-sm text-muted-foreground">
@@ -278,14 +297,26 @@ export function CombatArena({
                     </div>
                   )}
                   
-                  {/* Botão confirmar */}
-                  {actionMode === 'attack' && selectedCard && selectedTarget && (
+                  {/* Botão confirmar - fase de escolha */}
+                  {isChoosingPhase && actionMode === 'attack' && selectedCard && selectedTarget && (
                     <Button 
                       size="sm"
                       onClick={onConfirmAction}
                     >
                       <PlayCircle className="h-4 w-4 mr-1" />
-                      {isChoosingPhase ? 'Confirmar!' : 'Atacar!'}
+                      Confirmar Carta
+                    </Button>
+                  )}
+                  
+                  {/* Botão executar ataque - fase de combate (jogador já escolheu card) */}
+                  {!isChoosingPhase && isPlayerTurn && currentCombatant?.stats.chosenCardId && (
+                    <Button 
+                      size="sm"
+                      variant="destructive"
+                      onClick={onConfirmAction}
+                    >
+                      <Swords className="h-4 w-4 mr-1" />
+                      Executar Ataque!
                     </Button>
                   )}
                 </div>
