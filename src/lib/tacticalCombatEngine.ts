@@ -142,10 +142,10 @@ export function calculateActionTick(
   weaponSpeed: number,
   armorSpeedPenalty: number = 0
 ): number {
-  // Regra: se a soma der 0, a ação acontece no mesmo tick.
-  // (Tick 0 é válido e pode resolver ações simultâneas.)
+  // IMPORTANTE: garantir avanço mínimo de 1 tick para evitar loops
+  // Se a soma der 0 ou negativo, forçamos pelo menos +1
   const delta = cardSpeed + weaponSpeed + armorSpeedPenalty;
-  return currentTick + Math.max(0, delta);
+  return currentTick + Math.max(1, delta);
 }
 
 // ============= CÁLCULO DE PENALIDADES POR DANO =============
@@ -652,16 +652,28 @@ export function resolveNextAction(state: BattleState): BattleState {
   // Atualizar tick atual da batalha
   newState.currentTick = next.stats.currentTick;
   
-  // Marcar que este combatente precisa escolher novo card
+  // CRÍTICO: Avançar o tick do atacante ANTES de marcar pendingCardChoice
+  // Isso evita que ele fique preso no mesmo tick
   const attackerIndex = newState.combatants.findIndex(c => c.id === next.id);
   if (attackerIndex >= 0) {
     const updatedAttacker = { ...newState.combatants[attackerIndex] };
+    const weaponSpeed = updatedAttacker.stats.weapon?.speedModifier || 0;
+    const armorPenalty = updatedAttacker.stats.armor?.speedPenalty || 0;
+    
+    // Calcular próximo tick (garante avanço mínimo de 1)
+    const nextTick = calculateActionTick(
+      newState.currentTick,
+      card.speedModifier,
+      weaponSpeed,
+      armorPenalty
+    );
+    
     updatedAttacker.stats = {
       ...updatedAttacker.stats,
+      currentTick: nextTick, // IMPORTANTE: avançar o tick!
       pendingCardChoice: true,
       chosenCardId: undefined,
       chosenTargetId: undefined,
-      // Aplicar movimento
       currentMovement: Math.max(0, updatedAttacker.stats.currentMovement + card.movementModifier)
     };
     newState.combatants[attackerIndex] = updatedAttacker;
@@ -682,11 +694,17 @@ export function resolveNextAction(state: BattleState): BattleState {
       type: 'system'
     }];
   } else {
-    // Voltar para fase de escolha se alguém precisa escolher
-    const needsChoice = newState.combatants.some(c => c.stats.pendingCardChoice && !c.stats.isDown);
-    if (needsChoice) {
+    // Verificar se TODOS precisam escolher (início de nova "rodada de escolha")
+    const allNeedChoice = newState.combatants
+      .filter(c => !c.stats.isDown)
+      .every(c => c.stats.pendingCardChoice);
+    
+    // Só volta pra choosing se TODOS precisam escolher
+    // Caso contrário, continua em combat para resolver quem ainda tem ação
+    if (allNeedChoice) {
       newState.phase = 'choosing';
     }
+    // Se ainda há combatentes com ação pendente, mantém em 'combat'
   }
   
   return newState;

@@ -207,15 +207,18 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     return () => clearTimeout(timer);
   }, [battleState]);
   
-  // Resolver ações na fase de combate
+  // Resolver ações na fase de combate (SIMPLIFICADO)
   useEffect(() => {
     if (!battleState || battleState.phase !== 'combat') return;
 
-    // Debug (temporário)
+    // Debug
+    const next = getNextCombatant(battleState);
     console.log('[combat] phase=combat', {
       currentTick: battleState.currentTick,
       round: battleState.round,
-      next: getNextCombatant(battleState)?.name,
+      next: next?.name,
+      nextTick: next?.stats.currentTick,
+      hasChoice: next ? !!(next.stats.chosenCardId && next.stats.chosenTargetId) : false,
     });
     
     // Verificar vitória/derrota
@@ -225,62 +228,32 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
       return;
     }
     
-    const next = getNextCombatant(battleState);
     if (!next) return;
     
-    // Verificar se o próximo combatente tem card e alvo escolhidos
+    // Se o próximo não tem escolha, forçar volta pra choosing
     if (!next.stats.chosenCardId || !next.stats.chosenTargetId) {
-      // Combatente precisa escolher mas estamos na fase de combate - voltar para choosing
-      console.warn('Combatente sem escolha na fase de combate, voltando para choosing:', {
-        name: next.name,
-        team: next.team,
-        tick: next.stats.currentTick,
-        chosenCardId: next.stats.chosenCardId,
-        chosenTargetId: next.stats.chosenTargetId,
-        pendingCardChoice: next.stats.pendingCardChoice,
-      });
+      console.log('[combat] next has no choice, switching to choosing');
       setBattleState(prev => prev ? { ...prev, phase: 'choosing' } : null);
       return;
     }
     
-    // Se próximo é inimigo, resolver automaticamente
-    if (next.team === 'enemy') {
-      const timer = setTimeout(() => {
-        console.log('[combat] resolving enemy action', {
-          name: next.name,
-          tick: next.stats.currentTick,
-          card: next.stats.chosenCardId,
-          target: next.stats.chosenTargetId,
-        });
-        const newState = resolveNextAction(battleState);
-        // Só atualizar se o estado realmente mudou (evitar loop)
-        if (newState !== battleState) {
-          setBattleState(newState);
-        }
-      }, 800);
-      
-      return () => clearTimeout(timer);
-    }
+    // SIMPLIFICADO: Resolver automaticamente tanto player quanto enemy
+    // (temporário - remove a necessidade de confirmação manual)
+    const delay = next.team === 'enemy' ? 800 : 600;
     
-    // Se é jogador, esperar confirmação manual (para permitir movimento antes)
-    if (next.team === 'player') {
-      // Só resolver se o jogador já confirmou
-      if (playerActionConfirmed) {
-        console.log('[combat] resolving player action (confirmed)', {
-          name: next.name,
-          tick: next.stats.currentTick,
-          card: next.stats.chosenCardId,
-          target: next.stats.chosenTargetId,
-        });
-        const newState = resolveNextAction(battleState);
-        if (newState !== battleState) {
-          setBattleState(newState);
-          setPlayerActionConfirmed(false); // Reset para próxima ação
-        }
-      }
-      // Se não confirmou, aguardar (jogador pode mover antes de atacar)
-    }
-  }, [battleState, playerActionConfirmed]);
+    const timer = setTimeout(() => {
+      console.log('[combat] resolving action', {
+        name: next.name,
+        team: next.team,
+        tick: next.stats.currentTick,
+        card: next.stats.chosenCardId,
+      });
+      const newState = resolveNextAction(battleState);
+      setBattleState(newState);
+    }, delay);
+    
+    return () => clearTimeout(timer);
+  }, [battleState]);
 
   // ... keep existing code
   
