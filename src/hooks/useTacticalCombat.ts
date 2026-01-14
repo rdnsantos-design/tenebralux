@@ -50,6 +50,7 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [actionMode, setActionMode] = useState<ActionMode>('attack');
   const [selectedHex, setSelectedHex] = useState<HexCoord | null>(null);
+  const [playerActionConfirmed, setPlayerActionConfirmed] = useState(false); // Jogador precisa confirmar ataque manualmente
   
   // Verificar se jogador precisa escolher card
   const playerNeedsToChoose = useMemo(() => {
@@ -261,20 +262,25 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
       return () => clearTimeout(timer);
     }
     
-    // Se é jogador e tem escolha, resolver imediatamente
+    // Se é jogador, esperar confirmação manual (para permitir movimento antes)
     if (next.team === 'player') {
-      console.log('[combat] resolving player action', {
-        name: next.name,
-        tick: next.stats.currentTick,
-        card: next.stats.chosenCardId,
-        target: next.stats.chosenTargetId,
-      });
-      const newState = resolveNextAction(battleState);
-      if (newState !== battleState) {
-        setBattleState(newState);
+      // Só resolver se o jogador já confirmou
+      if (playerActionConfirmed) {
+        console.log('[combat] resolving player action (confirmed)', {
+          name: next.name,
+          tick: next.stats.currentTick,
+          card: next.stats.chosenCardId,
+          target: next.stats.chosenTargetId,
+        });
+        const newState = resolveNextAction(battleState);
+        if (newState !== battleState) {
+          setBattleState(newState);
+          setPlayerActionConfirmed(false); // Reset para próxima ação
+        }
       }
+      // Se não confirmou, aguardar (jogador pode mover antes de atacar)
     }
-  }, [battleState]);
+  }, [battleState, playerActionConfirmed]);
 
   // ... keep existing code
   
@@ -287,6 +293,7 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     setSelectedTarget(null);
     setActionMode('attack');
     setSelectedHex(null);
+    setPlayerActionConfirmed(false);
   }, []);
   
   // Selecionar carta
@@ -343,12 +350,18 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     setSelectedHex(coord);
   }, [battleState, actionMode, validMoveHexes, movePlayer, selectedCard, selectTarget]);
   
-  // Confirmar ação (escolher card)
+  // Confirmar ação (escolher card na fase choosing, ou executar ação na fase combat)
   const confirmAction = useCallback(() => {
-    if (selectedCard && selectedTarget) {
+    if (!battleState) return;
+    
+    if (battleState.phase === 'choosing' && selectedCard && selectedTarget) {
+      // Fase de escolha: registrar card escolhido
       choosePlayerCard(selectedCard.id, selectedTarget);
+    } else if (battleState.phase === 'combat') {
+      // Fase de combate: confirmar execução da ação (após mover, se quiser)
+      setPlayerActionConfirmed(true);
     }
-  }, [selectedCard, selectedTarget, choosePlayerCard]);
+  }, [battleState, selectedCard, selectedTarget, choosePlayerCard]);
   
   // Executar ação do jogador (legado - mantido para compatibilidade)
   const executePlayerAction = useCallback((cardId: string, targetId: string) => {
