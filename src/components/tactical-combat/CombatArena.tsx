@@ -26,7 +26,9 @@ import {
   PlayCircle,
   Target,
   Map,
-  ListOrdered
+  ListOrdered,
+  Move,
+  Crosshair
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -60,6 +62,8 @@ interface CombatArenaProps {
   onCombatantClick?: (combatant: Combatant) => void;
   validMoveHexes?: HexCoord[];
   validTargetHexes?: HexCoord[];
+  actionMode?: 'move' | 'attack';
+  onToggleActionMode?: () => void;
 }
 
 export function CombatArena({
@@ -82,7 +86,9 @@ export function CombatArena({
   onHexClick,
   onCombatantClick,
   validMoveHexes = [],
-  validTargetHexes = []
+  validTargetHexes = [],
+  actionMode = 'attack',
+  onToggleActionMode
 }: CombatArenaProps) {
   const [autoPlayAI, setAutoPlayAI] = useState(true);
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
@@ -193,33 +199,87 @@ export function CombatArena({
       {/* Mapa Hexagonal (se disponível e selecionado) */}
       {battleState.map && viewMode === 'map' && (
         <div className="space-y-4">
-          {/* Painel de Cartas no Modo Mapa */}
+          {/* Painel de Ação no Modo Mapa */}
           {isPlayerTurn && (
             <Card className="border-primary/50 bg-background/95">
               <CardContent className="py-3">
                 <div className="flex items-center gap-4">
+                  {/* Botões de modo */}
+                  {onToggleActionMode && (
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant={actionMode === 'move' ? 'default' : 'outline'}
+                        onClick={() => actionMode !== 'move' && onToggleActionMode()}
+                        className="gap-1"
+                      >
+                        <Move className="h-3.5 w-3.5" />
+                        Mover
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={actionMode === 'attack' ? 'default' : 'outline'}
+                        onClick={() => actionMode !== 'attack' && onToggleActionMode()}
+                        className="gap-1"
+                      >
+                        <Crosshair className="h-3.5 w-3.5" />
+                        Atacar
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <Separator orientation="vertical" className="h-8" />
+                  
+                  {/* Info do combatente */}
                   <div className="flex-shrink-0">
                     <Badge variant="default" className="text-sm">
-                      {isChoosingPhase ? '⚔️ Escolha sua Carta' : '🎯 Sua Vez'} - {activeCombatant?.name}
+                      {activeCombatant?.name}
                     </Badge>
+                    {activeCombatant && (
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        Mov: {activeCombatant.stats.currentMovement}/{activeCombatant.stats.movement}
+                      </Badge>
+                    )}
                   </div>
-                  <Separator orientation="vertical" className="h-8" />
-                  <ScrollArea className="flex-1">
-                    <div className="flex gap-2">
-                      {availableCards.map((card) => (
-                        <CombatCardDisplay
-                          key={card.id}
-                          card={card}
-                          isSelected={selectedCard?.id === card.id}
-                          onClick={() => onSelectCard(
-                            selectedCard?.id === card.id ? null : card
-                          )}
-                          theme="akashic"
-                        />
-                      ))}
+                  
+                  {/* Cards (modo ataque) */}
+                  {actionMode === 'attack' && (
+                    <>
+                      <Separator orientation="vertical" className="h-8" />
+                      <ScrollArea className="flex-1">
+                        <div className="flex gap-2">
+                          {availableCards.map((card) => (
+                            <CombatCardDisplay
+                              key={card.id}
+                              card={card}
+                              isSelected={selectedCard?.id === card.id}
+                              onClick={() => onSelectCard(
+                                selectedCard?.id === card.id ? null : card
+                              )}
+                              theme="akashic"
+                            />
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </>
+                  )}
+                  
+                  {/* Instruções de movimento */}
+                  {actionMode === 'move' && (
+                    <div className="flex-1 text-center text-sm text-muted-foreground">
+                      {validMoveHexes.length > 0 ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Move className="h-4 w-4" />
+                          Clique em um hex verde para mover ({validMoveHexes.length} posições disponíveis)
+                        </span>
+                      ) : (
+                        <span className="text-amber-600">Sem movimento restante nesta rodada</span>
+                      )}
                     </div>
-                  </ScrollArea>
-                  {selectedCard && selectedTarget && (
+                  )}
+                  
+                  {/* Botão confirmar */}
+                  {actionMode === 'attack' && selectedCard && selectedTarget && (
                     <Button 
                       size="sm"
                       onClick={onConfirmAction}
@@ -229,7 +289,8 @@ export function CombatArena({
                     </Button>
                   )}
                 </div>
-                {selectedCard && !selectedTarget && (
+                
+                {actionMode === 'attack' && selectedCard && !selectedTarget && (
                   <div className="text-center text-sm text-muted-foreground mt-2 flex items-center justify-center gap-2">
                     <Target className="h-4 w-4" />
                     Clique em um inimigo no mapa para selecionar alvo
@@ -261,17 +322,17 @@ export function CombatArena({
             map={battleState.map}
             combatants={battleState.combatants}
             selectedCombatant={currentCombatant}
-            validMoveHexes={validMoveHexes}
-            validTargetHexes={validTargetHexes}
+            validMoveHexes={actionMode === 'move' ? validMoveHexes : []}
+            validTargetHexes={actionMode === 'attack' ? validTargetHexes : []}
             onHexClick={onHexClick || (() => {})}
             onCombatantClick={(combatant) => {
               // Permite selecionar inimigos como alvo ao clicar neles
-              if (isPlayerTurn && selectedCard && combatant.team === 'enemy' && !combatant.stats.isDown) {
+              if (isPlayerTurn && actionMode === 'attack' && selectedCard && combatant.team === 'enemy' && !combatant.stats.isDown) {
                 onSelectTarget(selectedTarget === combatant.id ? null : combatant.id);
               }
               onCombatantClick?.(combatant);
             }}
-            showLoS={selectedCard !== null && selectedCard.attackModifier !== 0}
+            showLoS={actionMode === 'attack' && selectedCard !== null && selectedCard.attackModifier !== 0}
           />
         </div>
       )}
