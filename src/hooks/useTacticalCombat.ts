@@ -6,27 +6,35 @@
  * 2. O tick de ação = velocidade do card + velocidade da arma
  * 3. Fase 'combat': Ações são resolvidas na ordem dos ticks
  * 4. Após agir, combatente volta para escolher novo card
+ * 
+ * Sistema de Movimento:
+ * - Cada combatente tem pontos de movimento por rodada
+ * - Movimento pode ser feito antes de escolher carta
+ * - Custo de movimento baseado no terreno
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { CharacterDraft } from '@/types/character-builder';
-import { BattleState, Combatant, CombatCard } from '@/types/tactical-combat';
+import { BattleState, Combatant, CombatCard, HexCoord } from '@/types/tactical-combat';
 import { 
   initializeBattle, 
   chooseCard,
   aiChooseCard,
   resolveNextAction,
   getNextCombatant,
-  checkVictoryCondition
+  checkVictoryCondition,
+  moveCombatant
 } from '@/lib/tacticalCombatEngine';
 import { 
   convertCharacterToCombatant, 
   createGenericEnemy 
 } from '@/services/tactical/personalCombatConverter';
 import { getCardById } from '@/data/combat/cards';
+import { getValidMoveHexes, hexKey } from '@/lib/hexCombatUtils';
 import { ThemeId } from '@/themes/types';
 
 export type CombatPhase = 'setup' | 'battle' | 'victory' | 'defeat';
+export type ActionMode = 'move' | 'attack';
 
 export interface UseTacticalCombatOptions {
   theme?: ThemeId;
@@ -40,6 +48,8 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
   const [playerCharacter, setPlayerCharacter] = useState<CharacterDraft | null>(null);
   const [selectedCard, setSelectedCard] = useState<CombatCard | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
+  const [actionMode, setActionMode] = useState<ActionMode>('attack');
+  const [selectedHex, setSelectedHex] = useState<HexCoord | null>(null);
   
   // Verificar se jogador precisa escolher card
   const playerNeedsToChoose = useMemo(() => {
@@ -97,6 +107,40 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
       .map(id => getCardById(id))
       .filter((c): c is CombatCard => c !== undefined);
   }, [playerCombatantToChoose, currentCombatant]);
+  
+  // Hexes válidos para movimento do jogador atual
+  const validMoveHexes = useMemo(() => {
+    if (!battleState?.map) return [];
+    const combatant = playerCombatantToChoose || currentCombatant;
+    if (!combatant || combatant.team !== 'player') return [];
+    if (!combatant.stats.position) return [];
+    if (combatant.stats.currentMovement <= 0) return [];
+    
+    // Calcular hexes ocupados
+    const occupiedHexes = new Set<string>();
+    for (const c of battleState.combatants) {
+      if (c.stats.position && c.id !== combatant.id) {
+        occupiedHexes.add(hexKey(c.stats.position));
+      }
+    }
+    
+    return getValidMoveHexes(
+      combatant.stats.position,
+      combatant.stats.currentMovement,
+      battleState.map,
+      occupiedHexes
+    );
+  }, [battleState, playerCombatantToChoose, currentCombatant]);
+  
+  // Hexes válidos para ataque (inimigos)
+  const validTargetHexes = useMemo(() => {
+    if (!battleState?.map || !selectedCard) return [];
+    
+    return battleState.combatants
+      .filter(c => c.team === 'enemy' && !c.stats.isDown && c.stats.position)
+      .map(c => c.stats.position!)
+      .filter(Boolean);
+  }, [battleState, selectedCard]);
   
   // Iniciar combate
   const startBattle = useCallback((
@@ -241,17 +285,63 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     setPlayerCharacter(null);
     setSelectedCard(null);
     setSelectedTarget(null);
+    setActionMode('attack');
+    setSelectedHex(null);
   }, []);
   
   // Selecionar carta
   const selectCard = useCallback((card: CombatCard | null) => {
     setSelectedCard(card);
+    setActionMode('attack');
   }, []);
   
   // Selecionar alvo
   const selectTarget = useCallback((targetId: string | null) => {
     setSelectedTarget(targetId);
   }, []);
+  
+  // Alternar modo de ação
+  const toggleActionMode = useCallback(() => {
+    setActionMode(prev => prev === 'move' ? 'attack' : 'move');
+    setSelectedCard(null);
+    setSelectedTarget(null);
+    setSelectedHex(null);
+  }, []);
+  
+  // Mover combatente
+  const movePlayer = useCallback((targetHex: HexCoord) => {
+    if (!battleState) return;
+    const combatant = playerCombatantToChoose || currentCombatant;
+    if (!combatant || combatant.team !== 'player') return;
+    
+    const newState = moveCombatant(battleState, combatant.id, targetHex);
+    setBattleState(newState);
+    setSelectedHex(null);
+  }, [battleState, playerCombatantToChoose, currentCombatant]);
+  
+  // Handler de clique no hex
+  const handleHexClick = useCallback((coord: HexCoord) => {
+    if (!battleState) return;
+    
+    if (actionMode === 'move') {
+      // Verificar se é hex válido para movimento
+      const isValidMove = validMoveHexes.some(h => h.q === coord.q && h.r === coord.r);
+      if (isValidMove) {
+        movePlayer(coord);
+      }
+    } else {
+      // No modo ataque, verificar se clicou em um inimigo
+      const enemy = battleState.combatants.find(
+        c => c.team === 'enemy' && !c.stats.isDown && 
+        c.stats.position?.q === coord.q && c.stats.position?.r === coord.r
+      );
+      if (enemy && selectedCard) {
+        selectTarget(enemy.id);
+      }
+    }
+    
+    setSelectedHex(coord);
+  }, [battleState, actionMode, validMoveHexes, movePlayer, selectedCard, selectTarget]);
   
   // Confirmar ação (escolher card)
   const confirmAction = useCallback(() => {
@@ -286,6 +376,12 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     selectedCard,
     selectedTarget,
     availableCards,
+    actionMode,
+    selectedHex,
+    
+    // Movimento
+    validMoveHexes,
+    validTargetHexes,
     
     // Ações
     startBattle,
@@ -295,6 +391,9 @@ export function useTacticalCombat(options: UseTacticalCombatOptions = {}) {
     resetBattle,
     selectCard,
     selectTarget,
-    confirmAction
+    confirmAction,
+    toggleActionMode,
+    movePlayer,
+    handleHexClick
   };
 }

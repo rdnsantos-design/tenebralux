@@ -809,3 +809,89 @@ export function advanceToNextTick(state: BattleState): BattleState {
     round: newRound
   };
 }
+
+// ============= MOVIMENTO DE COMBATENTE =============
+
+/**
+ * Move um combatente para uma posição no mapa
+ * Gasta pontos de movimento baseado na distância
+ */
+export function moveCombatant(
+  state: BattleState,
+  combatantId: string,
+  targetHex: HexCoord
+): BattleState {
+  if (!state.map) return state;
+  
+  const combatantIndex = state.combatants.findIndex(c => c.id === combatantId);
+  if (combatantIndex < 0) return state;
+  
+  const combatant = state.combatants[combatantIndex];
+  const startPos = combatant.stats.position;
+  if (!startPos) return state;
+  
+  // Calcular custo de movimento (distância simples por enquanto)
+  const distance = hexDistance(startPos, targetHex);
+  
+  // Verificar se tem movimento suficiente
+  if (distance > combatant.stats.currentMovement) {
+    console.warn('[movement] Movimento insuficiente:', {
+      needed: distance,
+      available: combatant.stats.currentMovement
+    });
+    return state;
+  }
+  
+  // Atualizar mapa - limpar ocupante do hex anterior
+  const oldKey = hexKey(startPos);
+  const oldTile = state.map.hexes.get(oldKey);
+  if (oldTile) {
+    oldTile.occupantId = undefined;
+  }
+  
+  // Atualizar mapa - marcar novo hex como ocupado
+  const newKey = hexKey(targetHex);
+  const newTile = state.map.hexes.get(newKey);
+  if (newTile) {
+    newTile.occupantId = combatantId;
+  }
+  
+  // Atualizar combatente
+  const updatedCombatant = {
+    ...combatant,
+    stats: {
+      ...combatant.stats,
+      position: targetHex,
+      currentMovement: combatant.stats.currentMovement - distance
+    }
+  };
+  
+  const newCombatants = [...state.combatants];
+  newCombatants[combatantIndex] = updatedCombatant;
+  
+  // Adicionar ao log
+  const logEntry: BattleLogEntry = {
+    tick: state.currentTick,
+    round: state.round,
+    message: `${combatant.name} move ${distance} hex${distance > 1 ? 'es' : ''}.`,
+    type: 'action',
+    combatantId
+  };
+  
+  return {
+    ...state,
+    combatants: newCombatants,
+    log: [...state.log, logEntry]
+  };
+}
+
+/**
+ * Calcula distância entre dois hexes (coordenadas axiais)
+ */
+function hexDistance(a: HexCoord, b: HexCoord): number {
+  return Math.max(
+    Math.abs(a.q - b.q),
+    Math.abs(a.r - b.r),
+    Math.abs((a.q + a.r) - (b.q + b.r))
+  );
+}

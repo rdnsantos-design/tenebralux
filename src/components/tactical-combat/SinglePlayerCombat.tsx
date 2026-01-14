@@ -105,6 +105,11 @@ export function SinglePlayerCombat() {
         onAIAction={combat.executeAIAction}
         onReset={handleReset}
         phase={combat.phase}
+        validMoveHexes={combat.validMoveHexes}
+        validTargetHexes={combat.validTargetHexes}
+        onHexClick={combat.handleHexClick}
+        actionMode={combat.actionMode}
+        onToggleActionMode={combat.toggleActionMode}
       />
     </div>
   );
