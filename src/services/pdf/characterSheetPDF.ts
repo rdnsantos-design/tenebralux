@@ -396,6 +396,34 @@ export function generateCharacterPDF(character: CharacterDraft, options: PDFOpti
 
   // ============= COMBAT CARDS PAGES =============
   const characterSkills = character.skills || {};
+  const charAttributes = (character.attributes || {}) as CharacterAttributes;
+  
+  // Calculate derived stats for final values
+  const weapon = character.weaponId ? getEquipmentById(character.weaponId) : null;
+  const armor = character.armorId ? getEquipmentById(character.armorId) : null;
+  const armorDefense = armor?.stats?.defense || 0;
+  const derivedStatsForCards = calculateDerivedStats(charAttributes, characterSkills, armorDefense);
+  
+  // Extract base damage from weapon (e.g., "1d8+FOR" -> "1d8")
+  const weaponDamage = weapon?.stats?.damage?.split('+')[0] || '-';
+  const weaponType = weapon?.type || 'melee';
+  
+  // Determine relevant skill based on weapon type
+  const getRelevantSkillLevel = (cardCategory: string): number => {
+    if (cardCategory.includes('Lâminas') || (weapon && weaponType === 'melee')) {
+      return characterSkills.laminas || 0;
+    }
+    if (cardCategory.includes('Tiro') || (weapon && weaponType === 'ranged')) {
+      return characterSkills.tiro || 0;
+    }
+    if (cardCategory.includes('Luta')) {
+      return characterSkills.luta || 0;
+    }
+    // For basic cards, use weapon type to determine
+    if (weaponType === 'ranged') return characterSkills.tiro || 0;
+    if (weaponType === 'melee') return characterSkills.laminas || 0;
+    return 0;
+  };
   
   // Collect all available cards
   const availableCards: { card: CombatCard; category: string }[] = [];
@@ -441,7 +469,40 @@ export function generateCharacterPDF(character: CharacterDraft, options: PDFOpti
   const cardsPerCol = 3;
   const cardsPerPage = cardsPerRow * cardsPerCol;
   
-  // Helper to draw a single combat card
+  // Helper to calculate final card stats
+  const calculateFinalStats = (card: CombatCard, category: string) => {
+    const skillLevel = getRelevantSkillLevel(category);
+    
+    // Velocidade Final = Reação + mod.carta
+    const finalSpeed = derivedStatsForCards.reacao + card.speedModifier;
+    
+    // Ataque Final = Perícia + mod.carta
+    const finalAttack = skillLevel + card.attackModifier;
+    
+    // Movimento disponível considerando custo da carta
+    const movementCost = card.movementModifier !== -999 ? card.movementModifier : 0;
+    const finalMovement = derivedStatsForCards.movimento + movementCost;
+    
+    // Defesa Final = Defesa (Guarda + Resistência) + mod.carta
+    const defenseBonus = card.defenseBonus || 0;
+    const finalDefense = derivedStatsForCards.defesa + defenseBonus;
+    
+    // Guard multiplier for special postures
+    const guardWithMultiplier = card.guardMultiplier 
+      ? Math.floor(derivedStatsForCards.guarda * card.guardMultiplier)
+      : null;
+    
+    return {
+      finalSpeed,
+      finalAttack,
+      finalMovement,
+      finalDefense,
+      guardWithMultiplier,
+      weaponDamage: card.type !== 'posture' ? weaponDamage : null,
+    };
+  };
+  
+  // Helper to draw a single combat card with calculated final values
   const drawCombatCard = (
     cardData: { card: CombatCard; category: string },
     x: number, 
@@ -449,6 +510,7 @@ export function generateCharacterPDF(character: CharacterDraft, options: PDFOpti
   ): void => {
     const { card, category } = cardData;
     const theme = options.theme;
+    const finalStats = calculateFinalStats(card, category);
     
     // Card background
     doc.setFillColor(255, 255, 255);
@@ -470,86 +532,127 @@ export function generateCharacterPDF(character: CharacterDraft, options: PDFOpti
     
     // Card header
     doc.setFillColor(...borderColor);
-    doc.roundedRect(x + 1, y + 1, cardWidth - 2, 12, 2, 2, 'F');
+    doc.roundedRect(x + 1, y + 1, cardWidth - 2, 10, 2, 2, 'F');
     
     // Card name
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
+    doc.setFontSize(6);
     doc.setFont('helvetica', 'bold');
     const cardName = card.name[theme] || card.name.akashic;
-    const truncatedName = cardName.length > 18 ? cardName.substring(0, 16) + '...' : cardName;
-    doc.text(truncatedName, x + cardWidth / 2, y + 7.5, { align: 'center' });
+    const truncatedName = cardName.length > 20 ? cardName.substring(0, 18) + '...' : cardName;
+    doc.text(truncatedName, x + cardWidth / 2, y + 6.5, { align: 'center' });
     
     // Category label
     doc.setTextColor(...borderColor);
-    doc.setFontSize(5);
+    doc.setFontSize(4);
     doc.setFont('helvetica', 'normal');
-    doc.text(category, x + cardWidth / 2, y + 16, { align: 'center' });
+    doc.text(category, x + cardWidth / 2, y + 14, { align: 'center' });
     
-    // Modifiers section
-    let modY = y + 22;
-    doc.setTextColor(...colors.text);
+    // Stats section - show FINAL calculated values
+    let modY = y + 18;
     doc.setFontSize(6);
     doc.setFont('helvetica', 'bold');
     
-    const modifiers: string[] = [];
-    if (card.speedModifier !== 0) {
-      modifiers.push(`Vel: ${card.speedModifier >= 0 ? '+' : ''}${card.speedModifier}`);
-    }
-    if (card.attackModifier !== 0) {
-      modifiers.push(`Atq: ${card.attackModifier >= 0 ? '+' : ''}${card.attackModifier}`);
-    }
-    if (card.movementModifier !== 0 && card.movementModifier !== -999) {
-      modifiers.push(`Mov: ${card.movementModifier >= 0 ? '+' : ''}${card.movementModifier}`);
-    }
-    if (card.defenseBonus) {
-      modifiers.push(`Def: ${card.defenseBonus >= 0 ? '+' : ''}${card.defenseBonus}`);
-    }
-    if (card.guardMultiplier) {
-      modifiers.push(`Guarda: x${card.guardMultiplier}`);
-    }
+    // Draw stats in a clean grid format
+    const statBoxWidth = (cardWidth - 6) / 2;
+    const statBoxHeight = 8;
     
-    // Draw modifiers in columns
-    const modColWidth = (cardWidth - 4) / 2;
-    modifiers.forEach((mod, idx) => {
-      const modX = x + 2 + (idx % 2) * modColWidth;
-      const modYOffset = modY + Math.floor(idx / 2) * 5;
-      doc.text(mod, modX, modYOffset);
-    });
-    
-    modY += Math.ceil(modifiers.length / 2) * 5 + 3;
-    
-    // Description
+    // Row 1: Velocidade | Ataque
+    // Velocidade (lower is faster)
+    doc.setFillColor(245, 245, 250);
+    doc.roundedRect(x + 2, modY, statBoxWidth, statBoxHeight, 1, 1, 'F');
     doc.setTextColor(...colors.muted);
-    doc.setFontSize(5);
+    doc.setFontSize(4);
+    doc.text('VELOCIDADE', x + 2 + statBoxWidth / 2, modY + 2.5, { align: 'center' });
+    doc.setTextColor(...colors.primary);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text(String(finalStats.finalSpeed), x + 2 + statBoxWidth / 2, modY + 6.5, { align: 'center' });
+    
+    // Ataque
+    doc.setFillColor(245, 245, 250);
+    doc.roundedRect(x + 3 + statBoxWidth, modY, statBoxWidth, statBoxHeight, 1, 1, 'F');
+    doc.setTextColor(...colors.muted);
+    doc.setFontSize(4);
+    doc.text('ATAQUE', x + 3 + statBoxWidth + statBoxWidth / 2, modY + 2.5, { align: 'center' });
+    doc.setTextColor(...colors.primary);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    const atkSign = finalStats.finalAttack >= 0 ? '+' : '';
+    doc.text(`${atkSign}${finalStats.finalAttack}`, x + 3 + statBoxWidth + statBoxWidth / 2, modY + 6.5, { align: 'center' });
+    
+    modY += statBoxHeight + 2;
+    
+    // Row 2: Movimento | Defesa (or Dano for attack cards)
+    // Movimento
+    doc.setFillColor(245, 250, 245);
+    doc.roundedRect(x + 2, modY, statBoxWidth, statBoxHeight, 1, 1, 'F');
+    doc.setTextColor(...colors.muted);
+    doc.setFontSize(4);
+    doc.text('MOVIMENTO', x + 2 + statBoxWidth / 2, modY + 2.5, { align: 'center' });
+    doc.setTextColor(...(card.movementModifier === -999 ? [200, 50, 50] as [number, number, number] : colors.text));
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    const movText = card.movementModifier === -999 ? '—' : String(finalStats.finalMovement);
+    doc.text(movText, x + 2 + statBoxWidth / 2, modY + 6.5, { align: 'center' });
+    
+    // Defesa ou Dano
+    doc.setFillColor(250, 245, 245);
+    doc.roundedRect(x + 3 + statBoxWidth, modY, statBoxWidth, statBoxHeight, 1, 1, 'F');
+    doc.setTextColor(...colors.muted);
+    doc.setFontSize(4);
+    
+    if (card.type === 'posture' || card.defenseBonus) {
+      doc.text('DEFESA', x + 3 + statBoxWidth + statBoxWidth / 2, modY + 2.5, { align: 'center' });
+      doc.setTextColor(...colors.accent);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      const defValue = finalStats.guardWithMultiplier !== null 
+        ? finalStats.guardWithMultiplier 
+        : finalStats.finalDefense;
+      doc.text(String(defValue), x + 3 + statBoxWidth + statBoxWidth / 2, modY + 6.5, { align: 'center' });
+    } else {
+      doc.text('DANO', x + 3 + statBoxWidth + statBoxWidth / 2, modY + 2.5, { align: 'center' });
+      doc.setTextColor(...colors.accent);
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'bold');
+      doc.text(finalStats.weaponDamage || '-', x + 3 + statBoxWidth + statBoxWidth / 2, modY + 6.5, { align: 'center' });
+    }
+    
+    modY += statBoxHeight + 3;
+    
+    // Effect (if any) - shortened
+    if (card.effect) {
+      doc.setTextColor(...colors.secondary);
+      doc.setFontSize(4);
+      doc.setFont('helvetica', 'italic');
+      const effectLines = doc.splitTextToSize(`★ ${card.effect}`, cardWidth - 6);
+      const maxEffectLines = Math.min(effectLines.length, 3);
+      for (let i = 0; i < maxEffectLines; i++) {
+        doc.text(effectLines[i], x + 3, modY + i * 3.5);
+      }
+      modY += maxEffectLines * 3.5 + 1;
+    }
+    
+    // Description - very brief
+    doc.setTextColor(...colors.muted);
+    doc.setFontSize(4);
     doc.setFont('helvetica', 'normal');
     const description = card.description?.[theme] || card.description?.akashic || '';
     const descLines = doc.splitTextToSize(description, cardWidth - 6);
-    const maxDescLines = Math.min(descLines.length, 4);
+    const availableSpace = cardHeight - (modY - y) - 6;
+    const maxDescLines = Math.min(descLines.length, Math.floor(availableSpace / 3.5));
     for (let i = 0; i < maxDescLines; i++) {
-      doc.text(descLines[i], x + 3, modY + i * 4);
-    }
-    modY += maxDescLines * 4 + 2;
-    
-    // Effect (if any)
-    if (card.effect) {
-      doc.setTextColor(...colors.accent);
-      doc.setFontSize(5);
-      doc.setFont('helvetica', 'italic');
-      const effectLines = doc.splitTextToSize(`★ ${card.effect}`, cardWidth - 6);
-      const maxEffectLines = Math.min(effectLines.length, 2);
-      for (let i = 0; i < maxEffectLines; i++) {
-        doc.text(effectLines[i], x + 3, modY + i * 4);
-      }
+      doc.text(descLines[i], x + 3, modY + i * 3.5);
     }
     
-    // Requirements (if tactical)
-    if (card.requirements) {
+    // Weapon name at bottom (if applicable)
+    if (weapon && card.type !== 'posture') {
       doc.setTextColor(...colors.muted);
-      doc.setFontSize(4);
-      doc.setFont('helvetica', 'normal');
-      const reqText = `Req: ${card.requirements.skillId} ${card.requirements.skillMin}+`;
-      doc.text(reqText, x + cardWidth / 2, y + cardHeight - 3, { align: 'center' });
+      doc.setFontSize(3.5);
+      doc.setFont('helvetica', 'italic');
+      const weaponName = getEquipmentName(weapon, theme);
+      doc.text(weaponName.substring(0, 18), x + cardWidth / 2, y + cardHeight - 2.5, { align: 'center' });
     }
   };
   
