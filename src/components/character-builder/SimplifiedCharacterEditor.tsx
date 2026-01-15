@@ -238,45 +238,43 @@ export function SimplifiedCharacterEditor({
               </div>
             </div>
 
-            <Separator />
-
-            {/* Ataques */}
-            <div>
-              <Label className="flex items-center gap-1 mb-3">
-                <Target className="w-4 h-4" />
-                Ataques (Atributo + Perícia)
-              </Label>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Tiro</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={10}
-                    value={formData.tiro}
-                    onChange={(e) => updateField('tiro', parseInt(e.target.value) || 0)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Luta</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={10}
-                    value={formData.luta}
-                    onChange={(e) => updateField('luta', parseInt(e.target.value) || 0)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Lâminas</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={10}
-                    value={formData.laminas}
-                    onChange={(e) => updateField('laminas', parseInt(e.target.value) || 0)}
-                  />
-                </div>
+            {/* Evasão, Vitalidade, Movimento */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Evasão</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={formData.evasao}
+                  onChange={(e) => updateField('evasao', parseInt(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1">
+                  <Heart className="w-4 h-4" />
+                  Vitalidade
+                </Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={formData.vitalidade}
+                  onChange={(e) => updateField('vitalidade', parseInt(e.target.value) || 1)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1">
+                  <Footprints className="w-4 h-4" />
+                  Movimento
+                </Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={formData.movimento}
+                  onChange={(e) => updateField('movimento', parseInt(e.target.value) || 1)}
+                />
               </div>
             </div>
 
@@ -320,43 +318,43 @@ export function SimplifiedCharacterEditor({
 
             <Separator />
 
-            {/* Outros Stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Evasão</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={10}
-                  value={formData.evasao}
-                  onChange={(e) => updateField('evasao', parseInt(e.target.value) || 0)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  <Heart className="w-4 h-4" />
-                  Vitalidade
-                </Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={formData.vitalidade}
-                  onChange={(e) => updateField('vitalidade', parseInt(e.target.value) || 1)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  <Footprints className="w-4 h-4" />
-                  Movimento
-                </Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={formData.movimento}
-                  onChange={(e) => updateField('movimento', parseInt(e.target.value) || 1)}
-                />
+            {/* Ataques */}
+            <div>
+              <Label className="flex items-center gap-1 mb-3">
+                <Target className="w-4 h-4" />
+                Ataques (Atributo + Perícia)
+              </Label>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Tiro</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={formData.tiro}
+                    onChange={(e) => updateField('tiro', parseInt(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Luta</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={formData.luta}
+                    onChange={(e) => updateField('luta', parseInt(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Lâminas</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={formData.laminas}
+                    onChange={(e) => updateField('laminas', parseInt(e.target.value) || 0)}
+                  />
+                </div>
               </div>
             </div>
           </CardContent>
