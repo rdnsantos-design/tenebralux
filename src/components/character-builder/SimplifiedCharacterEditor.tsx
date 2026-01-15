@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Save, Crown, Swords, Shield, Target, Heart, Footprints } from 'lucide-react';
+import { ArrowLeft, Save, Crown, Swords, Shield, Target, Heart, Footprints, Flag, Users } from 'lucide-react';
 import {
   SimplifiedCharacter,
   SimplifiedWeaponType,
@@ -275,6 +275,44 @@ export function SimplifiedCharacterEditor({
                     max={10}
                     value={formData.laminas}
                     onChange={(e) => updateField('laminas', parseInt(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Perícias de Guerra */}
+            <div>
+              <Label className="flex items-center gap-1 mb-3">
+                <Flag className="w-4 h-4" />
+                Perícias de Guerra
+              </Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Crown className="w-3 h-3" />
+                    Estratégia (General)
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={formData.estrategia}
+                    onChange={(e) => updateField('estrategia', parseInt(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Comando (Líder de Campo)
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={formData.comando}
+                    onChange={(e) => updateField('comando', parseInt(e.target.value) || 0)}
                   />
                 </div>
               </div>

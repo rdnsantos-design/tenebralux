@@ -68,6 +68,10 @@ export interface SimplifiedCharacter {
   luta: number;
   laminas: number;
   
+  // Perícias de guerra
+  estrategia: number; // Usada pelo general
+  comando: number;    // Usada pelo líder de campo
+  
   // Outros stats
   evasao: number;
   vitalidade: number;
@@ -123,6 +127,8 @@ export function createEmptySimplifiedCharacter(theme: 'akashic' | 'tenebralux' =
     tiro: 2,
     luta: 2,
     laminas: 2,
+    estrategia: 2,
+    comando: 2,
     evasao: 2,
     vitalidade: 10,
     movimento: 6,
